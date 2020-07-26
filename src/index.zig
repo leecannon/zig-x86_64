@@ -1,6 +1,8 @@
 pub usingnamespace @import("addr.zig");
 
 pub const structures = @import("structures/structures.zig");
+pub const instructions = @import("instructions/instructions.zig");
+pub const registers = @import("registers/registers.zig");
 
 pub const PrivilegeLevel = packed enum(u8) {
     /// Privilege-level 0 (most privilege): This level is used by critical system-software
@@ -40,6 +42,16 @@ pub const PrivilegeLevel = packed enum(u8) {
 };
 
 test "" {
-    // Test non-public files
-    const bits = @import("bits.zig");
+    // Test all files
+    const test_bits = @import("bits.zig");
+    const test_addr = @import("addr.zig");
+    
+    const test_instructions = @import("instructions/instructions.zig");
+    const interrupts = test_instructions.interrupts;
+    
+    const test_registers = @import("registers/registers.zig");
+    const rflags = test_registers.rflags;
+    
+    const test_structures = @import("structures/structures.zig");
+    const paging = test_structures.paging;
 }

@@ -186,14 +186,23 @@ pub const PhysAddr = packed struct {
     }
 };
 
-inline fn align_down(addr: u64, comptime alignment: u64) u64 {
+/// Align address downwards.
+///
+/// Returns the greatest x with alignment `align` so that x <= addr. The alignment must be
+///  a power of 2.
+pub inline fn align_down(addr: u64, comptime alignment: u64) u64 {
     comptime {
         if (!std.math.isPowerOfTwo(alignment)) @compileError("alignment must be a power of two");
     }
+        
     return add & ~(alignment - 1);
 }
 
-inline fn align_up(addr: u64, comptime alignment: u64) u64 {
+/// Align address upwards.
+///
+/// Returns the smallest x with alignment `align` so that x >= addr. The alignment must be
+/// a power of 2.
+pub inline fn align_up(addr: u64, comptime alignment: u64) u64 {
     comptime {
         if (!std.math.isPowerOfTwo(alignment)) @compileError("alignment must be a power of two");
     }
