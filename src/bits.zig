@@ -39,17 +39,17 @@ pub inline fn get_bit(target: anytype, comptime bit: comptime_int) bool {
 /// bit array, or if the range can't be contained by the bit field T.
 pub inline fn get_bits(target: anytype, comptime start_bit: comptime_int, comptime length: comptime_int) @TypeOf(target) {
     const target_type = @TypeOf(target);
-    
+
     comptime {
         if (@typeInfo(target_type) != .Int and @typeInfo(target_type) != .ComptimeInt) @compileError("not an integer");
         if (length <= 0) @compileError("length must be greater than zero");
         if (start_bit >= @bitSizeOf(target_type)) @compileError("start_bit index is out of bounds of the bit field");
         if (start_bit + length > @bitSizeOf(target_type)) @compileError("start_bit plus length is out of bounds of the bit field");
     }
-    
+
     // shift away high bits
     const bits = target << (@bitSizeOf(target_type) - (start_bit + length)) >> (@bitSizeOf(target_type) - (start_bit + length));
-    
+
     // shift away low bits
     return bits >> start_bit;
 }
@@ -73,14 +73,14 @@ pub inline fn set_bit(target: anytype, comptime bit: comptime_int, value: bool) 
     comptime {
         if (ptr_type_info != .Pointer) @compileError("not a pointer");
     }
-    
+
     const target_type = ptr_type_info.Pointer.child;
-    
+
     comptime {
         if (@typeInfo(target_type) != .Int and @typeInfo(target_type) != .ComptimeInt) @compileError("not an integer");
         if (bit >= @bitSizeOf(target_type)) @compileError("bit index is out of bounds of the bit field");
     }
-    
+
     if (value) {
         target.* |= @as(target_type, 1) << bit;
     } else {
@@ -108,24 +108,24 @@ pub inline fn set_bits(target: anytype, comptime start_bit: comptime_int, compti
     comptime {
         if (ptr_type_info != .Pointer) @compileError("not a pointer");
     }
-    
+
     const target_type = ptr_type_info.Pointer.child;
-    
+
     comptime {
         if (@typeInfo(target_type) != .Int and @typeInfo(target_type) != .ComptimeInt) @compileError("not an integer");
         if (length <= 0) @compileError("length must be greater than zero");
         if (start_bit >= @bitSizeOf(target_type)) @compileError("start_bit index is out of bounds of the bit field");
         if (start_bit + length > @bitSizeOf(target_type)) @compileError("start_bit plus length is out of bounds of the bit field");
     }
-    
+
     if (get_bits(@as(target_type, value), 0, length) != value) {
         @panic("value does not fit into bit range");
     }
-    
+
     const end = start_bit + length;
-    
+
     const bitmask: target_type = ~(~@as(target_type, 0) << (@bitSizeOf(target_type) - end) >> (@bitSizeOf(target_type) - end) >> start_bit << start_bit);
-    
+
     target.* = (target.* & bitmask) | (value << start_bit);
 }
 
@@ -133,11 +133,11 @@ test "get_bit" {
     const a: u8 = 0b00000000;
     testing.expect(!get_bit(a, 0));
     testing.expect(!get_bit(a, 1));
-    
+
     const b: u8 = 0b11111111;
     testing.expect(get_bit(b, 0));
     testing.expect(get_bit(b, 1));
-    
+
     const c: u8 = 0b00000010;
     testing.expect(!get_bit(c, 0));
     testing.expect(get_bit(c, 1));

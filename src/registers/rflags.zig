@@ -1,4 +1,3 @@
-/// The RFLAGS register.
 usingnamespace @import("../common.zig");
 
 pub const RFlags = packed struct {
@@ -57,38 +56,46 @@ pub const RFlags = packed struct {
     ///
     /// If this flag is modifiable, the CPU supports CPUID.
     ID: bool,
-    
+
     // This exact amount of padding is required to guarrentee that @bitSizeOf(u25) == @bitSizeOf(RFlags) and @sizeOf(u25) == @sizeOf(RFlags)
     // What you actually want here is to pad up to u64 but it is not possible to get the same @bitSizeOf and the @sizeOf as u64 :(
     // I cant't wait for better bitfields in Zig... this is a mess
     _padding: u3,
-    
+
     pub inline fn from_u64(value: u64) RFlags {
         return @bitCast(RFlags, @intCast(u25, value));
     }
-    
+
     pub inline fn to_u64(self: RFlags) u64 {
         return @as(u64, @bitCast(u25, self));
     }
-    
+
     /// Returns the current value of the RFLAGS register.
     pub inline fn read_raw() RFlags {
-        const raw = asm ("pushfq; popq %[ret]" : [ret] "=r" (-> u64) :: "memory");
+        const raw = asm ("pushfq; popq %[ret]"
+            : [ret] "=r" (-> u64)
+            :
+            : "memory"
+        );
         return from_u64(raw);
     }
 
     /// Writes the RFLAGS register.
     pub inline fn write_raw(self: RFlags) void {
-        asm volatile ("pushq %[val]; popfq" : : [val] "r" (self.to_u64()) : "memory", "flags");
+        asm volatile ("pushq %[val]; popfq"
+            :
+            : [val] "r" (self.to_u64())
+            : "memory", "flags"
+        );
     }
 };
 
 test "" {
     std.testing.expectEqual(@bitSizeOf(u25), @bitSizeOf(RFlags));
     std.testing.expectEqual(@sizeOf(u25), @sizeOf(RFlags));
-    
+
     const a = RFlags.from_u64(10);
     const b = a.to_u64();
-    
+
     std.testing.expectEqual(@as(u64, 10), b);
 }
