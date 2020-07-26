@@ -1,6 +1,8 @@
 usingnamespace @import("../common.zig");
 
 pub const interrupts = @import("interrupts.zig");
+pub const port = @import("port.zig");
+pub const random = @import("random.zig");
 
 /// Halts the CPU until the next interrupt arrives.
 pub inline fn hlt() void {
