@@ -128,6 +128,7 @@ test "" {
 
     const test_registers = @import("registers/registers.zig");
     const rflags = test_registers.rflags;
+    const control = @import("registers/control.zig");
 
     const test_structures = @import("structures/structures.zig");
     const paging = test_structures.paging;

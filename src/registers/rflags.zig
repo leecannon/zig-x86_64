@@ -70,7 +70,7 @@ pub const RFlags = packed struct {
         return @as(u64, @bitCast(u25, self));
     }
 
-    /// Returns the current value of the RFLAGS register.
+    /// Returns the raw current value of the RFLAGS register.
     pub inline fn read_raw() RFlags {
         const raw = asm ("pushfq; popq %[ret]"
             : [ret] "=r" (-> u64)
@@ -81,6 +81,8 @@ pub const RFlags = packed struct {
     }
 
     /// Writes the RFLAGS register.
+    ///
+    /// Does not preserve any bits, including reserved bits.
     pub inline fn write_raw(self: RFlags) void {
         asm volatile ("pushq %[val]; popfq"
             :
@@ -90,7 +92,7 @@ pub const RFlags = packed struct {
     }
 };
 
-test "" {
+test "RFlags" {
     std.testing.expectEqual(@bitSizeOf(u25), @bitSizeOf(RFlags));
     std.testing.expectEqual(@sizeOf(u25), @sizeOf(RFlags));
 
