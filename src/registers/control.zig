@@ -34,12 +34,15 @@ pub const Cr0 = packed struct {
     /// Enables page translation.
     PAGING: bool,
 
+    // I can't wait for better bitfields in Zig... this is a mess
+    _padding_a: u26,
+
     pub inline fn from_u64(value: u64) Cr0 {
-        return @bitCast(Cr0, @intCast(u38, value));
+        return @bitCast(Cr0, value);
     }
 
     pub inline fn to_u64(self: Cr0) u64 {
-        return @as(u64, @bitCast(u38, self));
+        return @bitCast(u64, self);
     }
 
     /// Read the current raw CR0 value.
@@ -63,8 +66,8 @@ pub const Cr0 = packed struct {
 };
 
 test "Cr0" {
-    std.testing.expectEqual(@bitSizeOf(u38), @bitSizeOf(Cr0));
-    std.testing.expectEqual(@sizeOf(u38), @sizeOf(Cr0));
+    std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(Cr0));
+    std.testing.expectEqual(@sizeOf(u64), @sizeOf(Cr0));
 }
 
 /// Contains the Page Fault Linear Address (PFLA).
@@ -88,34 +91,42 @@ pub const Cr3 = packed struct {
     /// Disable caching for the P4 table.
     PAGE_LEVEL_CACHE_DISABLE: bool,
 
+    // I can't wait for better bitfields in Zig... this is a mess
+    _padding_a: u3,
+    _padding_b: u8,
+    _padding_c: u16,
+    _padding_d: u32,
+
     pub inline fn from_u64(value: u64) Cr3 {
-        return @bitCast(Cr3, @intCast(u5, value));
+        return @bitCast(Cr3, value);
     }
 
     pub inline fn to_u64(self: Cr3) u64 {
-        return @as(u64, @bitCast(u5, self));
+        return @bitCast(u64, self);
     }
 
-    // Waiting on PhysFrame
+    // TODO: Waiting on PhysFrame
     // pub const FrameAndCr3 = struct {
     //     frame: PhysFrame,
     //     cr3: Cr3,
     // };
 
+    // TODO: Waiting on PhysFrame
     // /// Read the current P4 table address from the CR3 register.
     // pub inline fn read() FrameAndCr3 {
-
+    //
     // }
 
+    // TODO: Waiting on PhysFrame
     // /// Write a new P4 table address into the CR3 register.
     // pub inline fn write(data: FrameAndCr3) void {
-
+    //
     // }
 };
 
 test "Cr3" {
-    std.testing.expectEqual(@bitSizeOf(u5), @bitSizeOf(Cr3));
-    std.testing.expectEqual(@sizeOf(u5), @sizeOf(Cr3));
+    std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(Cr3));
+    std.testing.expectEqual(@sizeOf(u64), @sizeOf(Cr3));
 }
 
 /// Various control flags modifying the basic operation of the CPU while in protected mode.
@@ -172,17 +183,16 @@ pub const Cr4 = packed struct {
     /// Enables 4-level paging to associate each linear address with a protection key.
     PROTECTION_KEY: bool,
 
-    // This exact amount of padding is required to guarrentee that @bitSizeOf(u25) == @bitSizeOf(Cr4) and @sizeOf(u25) == @sizeOf(Cr4)
-    // What you actually want here is to pad up to u64 but it is not possible to get the same @bitSizeOf and the @sizeOf as u64 :(
-    // I cant't wait for better bitfields in Zig... this is a mess
-    _padding: u4,
+    // I can't wait for better bitfields in Zig... this is a mess
+    _padding_a: u11,
+    _padding_b: u32,
 
     pub inline fn from_u64(value: u64) Cr4 {
-        return @bitCast(Cr4, @intCast(u25, value));
+        return @bitCast(Cr4, value);
     }
 
     pub inline fn to_u64(self: Cr4) u64 {
-        return @as(u64, @bitCast(u25, self));
+        return @bitCast(u64, self);
     }
 
     /// Read the current raw CR4 value.
@@ -206,6 +216,6 @@ pub const Cr4 = packed struct {
 };
 
 test "Cr4" {
-    std.testing.expectEqual(@bitSizeOf(u25), @bitSizeOf(Cr4));
-    std.testing.expectEqual(@sizeOf(u25), @sizeOf(Cr4));
+    std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(Cr4));
+    std.testing.expectEqual(@sizeOf(u64), @sizeOf(Cr4));
 }

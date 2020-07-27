@@ -57,17 +57,16 @@ pub const RFlags = packed struct {
     /// If this flag is modifiable, the CPU supports CPUID.
     ID: bool,
 
-    // This exact amount of padding is required to guarrentee that @bitSizeOf(u25) == @bitSizeOf(RFlags) and @sizeOf(u25) == @sizeOf(RFlags)
-    // What you actually want here is to pad up to u64 but it is not possible to get the same @bitSizeOf and the @sizeOf as u64 :(
-    // I cant't wait for better bitfields in Zig... this is a mess
-    _padding: u3,
+    // I can't wait for better bitfields in Zig... this is a mess
+    _padding_a: u10,
+    _padding_b: u32,
 
     pub inline fn from_u64(value: u64) RFlags {
-        return @bitCast(RFlags, @intCast(u25, value));
+        return @bitCast(RFlags, value);
     }
 
     pub inline fn to_u64(self: RFlags) u64 {
-        return @as(u64, @bitCast(u25, self));
+        return @bitCast(u64, self);
     }
 
     /// Returns the raw current value of the RFLAGS register.
@@ -93,8 +92,8 @@ pub const RFlags = packed struct {
 };
 
 test "RFlags" {
-    std.testing.expectEqual(@bitSizeOf(u25), @bitSizeOf(RFlags));
-    std.testing.expectEqual(@sizeOf(u25), @sizeOf(RFlags));
+    std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(RFlags));
+    std.testing.expectEqual(@sizeOf(u64), @sizeOf(RFlags));
 
     const a = RFlags.from_u64(10);
     const b = a.to_u64();

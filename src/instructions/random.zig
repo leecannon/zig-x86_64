@@ -16,18 +16,21 @@ pub const RdRand = struct {
     /// Uniformly sampled u64.
     /// May fail in rare circumstances or heavy load.
     pub inline fn get_u64(self: RdRand) ?u64 {
+        // TODO: Investigate implementing this
         @compileError("This requires an intrinsic that zig does not provide `_rdrand64_step`");
     }
 
     /// Uniformly sampled u32.
     /// May fail in rare circumstances or heavy load.
     pub inline fn get_u32(self: RdRand) ?u32 {
+        // TODO: Investigate implementing this
         @compileError("This requires an intrinsic that zig does not provide `_rdrand32_step`");
     }
 
     /// Uniformly sampled u16.
     /// May fail in rare circumstances or heavy load.
     pub inline fn get_u16(self: RdRand) ?u16 {
+        // TODO: Investigate implementing this
         @compileError("This requires an intrinsic that zig does not provide `_rdrand16_step`");
     }
 };
