@@ -29,7 +29,7 @@ pub const VirtAddr = packed struct {
     /// either a correct sign extension (i.e. copies of bit 47) or all null. Else, an error
     /// is returned.
     pub inline fn try_new(addr: u64) VirtAddrError!VirtAddr {
-        return switch (get_bits(addr, 47, 17)) {
+        return switch (get_bits(addr, 48, 16)) {
             0, 0x1ffff => VirtAddr{ .value = addr },
             1 => new_truncate(addr),
             else => return VirtAddrError.VirtAddrNotValid,
@@ -59,18 +59,18 @@ pub const VirtAddr = packed struct {
     }
 
     /// Aligns the virtual address upwards to the given alignment.
-    pub inline fn align_up(self: VirtAddr, comptime alignment: u64) VirtAddr {
-        return VirtAddr.new(align_up(self.value, alignment));
+    pub inline fn align_up(self: VirtAddr, alignment: u64) VirtAddr {
+        return VirtAddr.new(raw_align_up(self.value, alignment));
     }
 
     /// Aligns the virtual address downwards to the given alignment.
-    pub inline fn align_down(self: VirtAddr, comptime alignment: u64) VirtAddr {
-        return VirtAddr.new(align_down(self.value, alignment));
+    pub inline fn align_down(self: VirtAddr, alignment: u64) VirtAddr {
+        return VirtAddr.new(raw_align_down(self.value, alignment));
     }
 
     /// Checks whether the virtual address has the given alignment.
-    pub inline fn is_aligned(self: VirtAddr, comptime alignment: u64) bool {
-        align_down(self.value, alignment) == self.value;
+    pub inline fn is_aligned(self: VirtAddr, alignment: u64) bool {
+        raw_align_down(self.value, alignment) == self.value;
     }
 
     /// Returns the 12-bit page offset of this virtual address.
@@ -135,7 +135,7 @@ pub const PhysAddr = packed struct {
     ///
     /// Fails if any bits in the range 52 to 64 are set.
     pub inline fn try_new(addr: u64) PhysAddrError!PhysAddr {
-        return switch (get_bits(addr, 51, 13)) {
+        return switch (get_bits(addr, 52, 12)) {
             0 => PhysAddr{ .value = addr },
             else => return PhysAddrError.PhysAddrNotValid,
         };
@@ -152,18 +152,18 @@ pub const PhysAddr = packed struct {
     }
 
     /// Aligns the physical address upwards to the given alignment.
-    pub inline fn align_up(self: PhysAddr, comptime alignment: u64) PhysAddr {
-        return PhysAddr.new(align_up(self.value, alignment));
+    pub inline fn align_up(self: PhysAddr, alignment: u64) PhysAddr {
+        return PhysAddr.new(raw_align_up(self.value, alignment));
     }
 
     /// Aligns the physical address downwards to the given alignment.
-    pub inline fn align_down(self: PhysAddr, comptime alignment: u64) PhysAddr {
-        return PhysAddr.new(align_down(self.value, alignment));
+    pub inline fn align_down(self: PhysAddr, alignment: u64) PhysAddr {
+        return PhysAddr.new(raw_align_down(self.value, alignment));
     }
 
     /// Checks whether the physical address has the given alignment.
-    pub inline fn is_aligned(self: PhysAddr, comptime alignment: u64) bool {
-        align_down(self.value, alignment) == self.value;
+    pub inline fn is_aligned(self: PhysAddr, alignment: u64) bool {
+        return raw_align_down(self.value, alignment) == self.value;
     }
 
     pub fn format(value: PhysAddr, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
@@ -185,22 +185,18 @@ pub const PhysAddr = packed struct {
 ///
 /// Returns the greatest x with alignment `align` so that x <= addr. The alignment must be
 ///  a power of 2.
-pub inline fn align_down(addr: u64, comptime alignment: u64) u64 {
-    comptime {
-        if (!std.math.isPowerOfTwo(alignment)) @compileError("alignment must be a power of two");
-    }
-
-    return add & ~(alignment - 1);
+pub inline fn raw_align_down(addr: u64, alignment: u64) u64 {
+    std.debug.assert(std.math.isPowerOfTwo(alignment));
+    return addr & ~(alignment - 1);
 }
 
 /// Align address upwards.
 ///
 /// Returns the smallest x with alignment `align` so that x >= addr. The alignment must be
 /// a power of 2.
-pub inline fn align_up(addr: u64, comptime alignment: u64) u64 {
-    comptime {
-        if (!std.math.isPowerOfTwo(alignment)) @compileError("alignment must be a power of two");
-    }
+pub inline fn raw_align_up(addr: u64, alignment: u64) u64 {
+    std.debug.assert(std.math.isPowerOfTwo(alignment));
+
     const align_mask = alignment - 1;
 
     if (addr & align_mask == 0) {

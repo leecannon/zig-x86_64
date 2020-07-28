@@ -32,8 +32,10 @@ pub const PageTableEntry = packed struct {
 
     /// Returns the flags of this entry.
     pub inline fn get_flags(self: PageTableEntry) PageTableFlags {
-        // TODO: This needs to zero the padding bits that contains the addr
-        return PageTableFlags.from_u64(self.entry);
+        // Clear out the addr part of the entry
+        var entry = self.entry;
+        set_bits(&entry, 12, 40, 0);
+        return PageTableFlags.from_u64(entry);
     }
 
     /// Returns the physical address mapped by this entry, might be zero.
@@ -46,10 +48,10 @@ pub const PageTableEntry = packed struct {
     //
     // }
 
-    /// Map the entry to the specified physical address with the specified flags.
-    pub inline fn set_addr(self: *PageTableEntry, addr: PhysAddr, flags: PageTableFlags) void {
+    /// Map the entry to the specified physical address
+    pub inline fn set_addr(self: *PageTableEntry, addr: PhysAddr) void {
         std.debug.assert(addr.is_aligned(PageSize.Size4KiB.Size()));
-        self.entry = addr.value | flags.to_u64();
+        self.entry = addr.value | self.get_flags().to_u64();
     }
 
     // TODO: Waiting on PhysFrame
@@ -86,6 +88,33 @@ pub const PageTableEntry = packed struct {
         try writer.writeAll(")");
     }
 };
+
+test "PageTableEntry" {
+    var a = PageTableEntry.new();
+
+    var addr = PhysAddr.new(0x000fffff_ffff2000);
+    var flags = PageTableFlags.new();
+
+    a.set_addr(addr);
+    a.set_flags(flags);
+
+    testing.expectEqual(@as(u64, 0x000fffff_ffff2000), a.get_addr().value);
+    testing.expectEqual(@as(u64, 0), a.get_flags().to_u64());
+
+    flags.PRESENT = true;
+    testing.expectEqual(@as(u64, 0), a.get_flags().to_u64());
+
+    a.set_flags(flags);
+    testing.expectEqual(@as(u64, 0x000fffff_ffff2000), a.get_addr().value);
+    testing.expectEqual(@as(u64, 1), a.get_flags().to_u64());
+
+    addr.value = 0x000fffff_ffff3000;
+    testing.expectEqual(@as(u64, 0x000fffff_ffff2000), a.get_addr().value);
+
+    a.set_addr(addr);
+    testing.expectEqual(@as(u64, 0x000fffff_ffff3000), a.get_addr().value);
+    testing.expectEqual(@as(u64, 1), a.get_flags().to_u64());
+}
 
 /// Possible flags for a page table entry.
 pub const PageTableFlags = packed struct {

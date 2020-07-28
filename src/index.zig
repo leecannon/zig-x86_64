@@ -36,7 +36,7 @@ pub const PrivilegeLevel = packed enum(u8) {
             1 => PrivilegeLevel.Ring1,
             2 => PrivilegeLevel.Ring2,
             3 => PrivilegeLevel.Ring3,
-            else => @panic("{} is not a valid privilege level", .{value}),
+            else => @panic("Not a valid privilege level"),
         };
     }
 };
@@ -123,13 +123,15 @@ test "" {
 
     const test_instructions = @import("instructions/instructions.zig");
     const interrupts = test_instructions.interrupts;
-    const port = test_instructions.port;
+    const port_instructions = test_instructions.port;
     const random = test_instructions.random;
 
     const test_registers = @import("registers/registers.zig");
     const rflags = test_registers.rflags;
-    const control = @import("registers/control.zig");
+    const control = test_registers.control;
 
     const test_structures = @import("structures/structures.zig");
     const paging = test_structures.paging;
+    const port = test_structures.port;
+    const gdt = test_structures.gdt;
 }

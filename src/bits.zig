@@ -119,7 +119,7 @@ pub inline fn set_bits(target: anytype, comptime start_bit: comptime_int, compti
     }
 
     if (get_bits(@as(target_type, value), 0, length) != value) {
-        @panic("value does not fit into bit range");
+        @panic("value exceeds bit range");
     }
 
     const end = start_bit + length;
