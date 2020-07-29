@@ -13,7 +13,7 @@ pub const SegmentSelector = packed struct {
     /// # Arguments
     ///  * `index`: index in GDT or LDT array (not the offset)
     ///  * `rpl`: the requested privilege level
-    pub inline fn new(index: u16, rpl: PrivilegeLevel) SegmentSelector {
+    pub inline fn init(index: u16, rpl: PrivilegeLevel) SegmentSelector {
         return SegmentSelector{ .selector = index << 3 | @as(u16, @enumToInt(rpl)) };
     }
 
@@ -42,7 +42,7 @@ pub const SegmentSelector = packed struct {
 };
 
 test "SegmentSelector" {
-    var a = SegmentSelector.new(1, .Ring0);
+    var a = SegmentSelector.init(1, .Ring0);
     testing.expectEqual(@as(u16, 1), a.gdt_index());
     testing.expectEqual(PrivilegeLevel.Ring0, a.get_rpl());
     a.set_rpl(.Ring3);
@@ -73,7 +73,7 @@ test "SegmentSelector" {
 /// # Example
 /// ```zig
 ///
-/// var gdt = GlobalDescriptorTable.new();
+/// var gdt = GlobalDescriptorTable.init();
 /// gdt.add_entry(kernel_code_segment());
 /// gdt.add_entry(user_code_segment());
 /// gdt.add_entry(user_data_segment());
@@ -85,7 +85,7 @@ pub const GlobalDescriptorTable = struct {
     next_free: u16,
 
     /// Creates an empty GDT.
-    pub inline fn new() GlobalDescriptorTable {
+    pub inline fn init() GlobalDescriptorTable {
         return GlobalDescriptorTable{
             .table = [_]u64{0} ** 8,
             .next_free = 1,
@@ -99,12 +99,12 @@ pub const GlobalDescriptorTable = struct {
         switch (entry) {
             .UserSegment => |value| {
                 const rpl = if (value & Descriptor.DPL_RING_3 != 0) PrivilegeLevel.Ring3 else PrivilegeLevel.Ring0;
-                return SegmentSelector.new(self.push(value), rpl);
+                return SegmentSelector.init(self.push(value), rpl);
             },
             .SystemSegment => |systemSegmentData| {
                 const index = self.push(systemSegmentData.low);
                 _ = self.push(systemSegmentData.high);
-                return SegmentSelector.new(index, PrivilegeLevel.Ring0);
+                return SegmentSelector.init(index, PrivilegeLevel.Ring0);
             },
         }
     }
@@ -134,7 +134,7 @@ pub const GlobalDescriptorTable = struct {
 };
 
 test "GlobalDescriptorTable" {
-    var gdt = GlobalDescriptorTable.new();
+    var gdt = GlobalDescriptorTable.init();
     _ = gdt.add_entry(kernel_code_segment());
     _ = gdt.add_entry(user_code_segment());
     _ = gdt.add_entry(user_data_segment());

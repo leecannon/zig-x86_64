@@ -3,7 +3,7 @@ usingnamespace @import("../common.zig");
 /// Used to obtain random numbers using x86_64's RDRAND opcode
 pub const RdRand = struct {
     /// Creates RdRand if RDRAND is supported
-    pub inline fn new() ?RdRand {
+    pub inline fn init() ?RdRand {
         // RDRAND support indicated by CPUID page 01h, ecx bit 30
         // https://en.wikipedia.org/wiki/RdRand#Overview
         const cpu_id = cpuid(0x1);
@@ -53,7 +53,7 @@ pub const RdRand = struct {
 /// Used to obtain seed numbers using x86_64's RDSEED opcode
 pub const RdSeed = struct {
     /// Creates RdSeed if RDSEED is supported
-    pub inline fn new() ?RdSeed {
+    pub inline fn init() ?RdSeed {
         // RDSEED support indicated by CPUID page 07h, ebx bit 18
         // https://en.wikipedia.org/wiki/RdRand#Overview
         const cpu_id = cpuid(0x7);

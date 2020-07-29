@@ -79,7 +79,7 @@ pub const Cr2 = struct {
         const value = asm ("mov %%cr2, %[ret]"
             : [ret] "=r" (-> u64)
         );
-        return VirtAddr.new(value);
+        return VirtAddr.init(value);
     }
 };
 

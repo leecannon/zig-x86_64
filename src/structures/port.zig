@@ -27,7 +27,7 @@ fn Port(comptime bitness: PortBitness) type {
         port: u16,
 
         /// Creates an I/O port with the given port number
-        pub inline fn new(port: u16) Self {
+        pub inline fn init(port: u16) Self {
             return Self{ .port = port };
         }
 

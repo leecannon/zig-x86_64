@@ -16,7 +16,7 @@ pub const PageTableEntry = packed struct {
     entry: u64,
 
     /// Creates an unused page table entry.
-    pub inline fn new() PageTableEntry {
+    pub inline fn init() PageTableEntry {
         return PageTableEntry{ .entry = 0 };
     }
 
@@ -40,7 +40,7 @@ pub const PageTableEntry = packed struct {
 
     /// Returns the physical address mapped by this entry, might be zero.
     pub inline fn get_addr(self: PageTableEntry) PhysAddr {
-        return PhysAddr.new(self.entry & 0x000fffff_fffff000);
+        return PhysAddr.init(self.entry & 0x000fffff_fffff000);
     }
 
     // TODO: Waiting on PhysFrame
@@ -90,10 +90,10 @@ pub const PageTableEntry = packed struct {
 };
 
 test "PageTableEntry" {
-    var a = PageTableEntry.new();
+    var a = PageTableEntry.init();
 
-    var addr = PhysAddr.new(0x000fffff_ffff2000);
-    var flags = PageTableFlags.new();
+    var addr = PhysAddr.init(0x000fffff_ffff2000);
+    var flags = PageTableFlags.init();
 
     a.set_addr(addr);
     a.set_flags(flags);
@@ -200,7 +200,7 @@ pub const PageTableFlags = packed struct {
     NO_EXECUTE: bool,
 
     // Create a blank/empty `PageTableFlags`
-    pub inline fn new() PageTableFlags {
+    pub inline fn init() PageTableFlags {
         return from_u64(0);
     }
 
@@ -226,8 +226,8 @@ pub const PageTable = extern struct {
     entries: [ENTRY_COUNT]PageTableEntry,
 
     /// Creates an empty page table.
-    pub inline fn new() PageTable {
-        return PageTable{ .entries = [_]PageTableEntry{PageTableEntry.new()} ** ENTRY_COUNT };
+    pub inline fn init() PageTable {
+        return PageTable{ .entries = [_]PageTableEntry{PageTableEntry.init()} ** ENTRY_COUNT };
     }
 
     /// Clears all entries.
@@ -243,7 +243,7 @@ pub const PageTable = extern struct {
 };
 
 test "" {
-    var a = PageTable.new();
+    var a = PageTable.init();
     a.zero();
 }
 
@@ -252,13 +252,13 @@ pub const PageOffset = packed struct {
     value: u16,
 
     /// Creates a new offset from the given `u16`. Panics if the passed value is >=4096.
-    pub inline fn new(offset: u16) PageOffset {
+    pub inline fn init(offset: u16) PageOffset {
         std.debug.assert(offset < (1 << 12));
         return PageOffset{ .value = offset };
     }
 
     /// Creates a new offset from the given `u16`. Throws away bits if the value is >=4096.
-    pub inline fn new_truncate(offset: u16) PageOffset {
+    pub inline fn init_truncate(offset: u16) PageOffset {
         return PageOffset{ .value = offset % (1 << 12) };
     }
 };
@@ -268,13 +268,13 @@ pub const PageTableIndex = packed struct {
     value: u16,
 
     /// Creates a new index from the given `u16`. Panics if the given value is >=ENTRY_COUNT.
-    pub inline fn new(index: u16) PageTableIndex {
+    pub inline fn init(index: u16) PageTableIndex {
         std.debug.assert(@as(usize, index) < ENTRY_COUNT);
         return PageTableIndex{ .value = index };
     }
 
     /// Creates a new index from the given `u16`. Throws away bits if the value is >=ENTRY_COUNT.
-    pub inline fn new_truncate(index: u16) PageTableIndex {
+    pub inline fn init_truncate(index: u16) PageTableIndex {
         return PageTableIndex{ .value = index % @as(u16, ENTRY_COUNT) };
     }
 };
