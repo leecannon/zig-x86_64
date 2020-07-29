@@ -50,3 +50,7 @@ fn Port(comptime bitness: PortBitness) type {
         }
     };
 }
+
+test "" {
+    std.meta.refAllDecls(@This());
+}

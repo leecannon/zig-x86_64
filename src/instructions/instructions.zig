@@ -13,3 +13,8 @@ pub inline fn hlt() void {
 pub inline fn bochs_breakpoint() void {
     asm volatile ("xchgw %%bx, %%bx");
 }
+
+test "" {
+    const std = @import("std");
+    std.meta.refAllDecls(@This());
+}

@@ -219,3 +219,7 @@ test "Cr4" {
     std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(Cr4));
     std.testing.expectEqual(@sizeOf(u64), @sizeOf(Cr4));
 }
+
+test "" {
+    std.meta.refAllDecls(@This());
+}

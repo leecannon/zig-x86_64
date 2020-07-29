@@ -203,3 +203,7 @@ test "SystemSegmentData" {
     std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(Descriptor.SystemSegmentData));
     std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(Descriptor.SystemSegmentData));
 }
+
+test "" {
+    std.meta.refAllDecls(@This());
+}

@@ -29,3 +29,7 @@ pub const PageSize = enum {
         return self == .Size1GiB;
     }
 };
+
+test "" {
+    std.meta.refAllDecls(@This());
+}

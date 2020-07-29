@@ -206,3 +206,7 @@ pub inline fn raw_align_up(addr: u64, alignment: u64) u64 {
 
     return (addr | align_mask) + 1;
 }
+
+test "" {
+    std.meta.refAllDecls(@This());
+}

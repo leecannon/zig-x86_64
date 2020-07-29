@@ -61,7 +61,7 @@ pub const RFlags = packed struct {
     _padding_a: u10,
     _padding_b: u32,
 
-    pub inline fn from_u64(value: u64) RFlags {
+    pub fn from_u64(value: u64) RFlags {
         return @bitCast(RFlags, value);
     }
 
@@ -70,7 +70,7 @@ pub const RFlags = packed struct {
     }
 
     /// Returns the raw current value of the RFLAGS register.
-    pub inline fn read_raw() RFlags {
+    pub fn read_raw() RFlags {
         const raw = asm ("pushfq; popq %[ret]"
             : [ret] "=r" (-> u64)
             :
@@ -99,4 +99,8 @@ test "RFlags" {
     const b = a.to_u64();
 
     std.testing.expectEqual(@as(u64, 10), b);
+}
+
+test "" {
+    std.meta.refAllDecls(@This());
 }

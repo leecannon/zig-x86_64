@@ -163,3 +163,7 @@ test "set_bits" {
     set_bits(&val, 2, 4, 0b00001101);
     testing.expectEqual(@as(u8, 0b10110100), val);
 }
+
+test "" {
+    std.meta.refAllDecls(@This());
+}

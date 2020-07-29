@@ -15,7 +15,7 @@ pub inline fn lgdt(gdt: *structures.DescriptorTablePointer) void {
 ///
 /// Use the `structures.idt.InterruptDescriptorTable` struct for a high-level interface to loading a IDT.
 pub inline fn lidt(idt: *structures.DescriptorTablePointer) void {
-    asm volatile ("lidt (%[gdt])"
+    asm volatile ("lidt (%[idt])"
         :
         : [idt] "r" (idt)
         : "memory"
@@ -28,4 +28,8 @@ pub inline fn load_tss(sel: structures.gdt.SegmentSelector) void {
         :
         : [sel] "r" (sel.selector)
     );
+}
+
+test "" {
+    std.meta.refAllDecls(@This());
 }

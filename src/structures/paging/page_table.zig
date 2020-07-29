@@ -278,3 +278,7 @@ pub const PageTableIndex = packed struct {
         return PageTableIndex{ .value = index % @as(u16, ENTRY_COUNT) };
     }
 };
+
+test "" {
+    std.meta.refAllDecls(@This());
+}

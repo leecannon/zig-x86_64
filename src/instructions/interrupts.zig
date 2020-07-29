@@ -94,3 +94,7 @@ pub inline fn software_interupt(comptime num: usize) void {
         : [num] "N" (num)
     );
 }
+
+test "" {
+    std.meta.refAllDecls(@This());
+}

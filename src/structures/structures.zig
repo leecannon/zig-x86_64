@@ -16,3 +16,8 @@ test "DescriptorTablePointer" {
     std.testing.expectEqual(80, @bitSizeOf(DescriptorTablePointer));
     std.testing.expectEqual(10, @sizeOf(DescriptorTablePointer));
 }
+
+test "" {
+    const std = @import("std");
+    std.meta.refAllDecls(@This());
+}

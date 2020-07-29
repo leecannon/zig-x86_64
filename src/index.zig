@@ -65,7 +65,7 @@ pub const CpuidResult = struct {
 /// [wiki_cpuid]: https://en.wikipedia.org/wiki/CPUID
 /// [intel64_ref]: http://www.intel.de/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-instruction-set-reference-manual-325383.pdf
 /// [amd64_ref]: http://support.amd.com/TechDocs/24594.pdf
-pub inline fn cpuid_count(leaf: u32, sub_leaf: u32) CpuidResult {
+pub fn cpuid_count(leaf: u32, sub_leaf: u32) CpuidResult {
     var eax: u32 = undefined;
     var ebx: u32 = undefined;
     var ecx: u32 = undefined;
@@ -93,7 +93,7 @@ pub inline fn cpuid_count(leaf: u32, sub_leaf: u32) CpuidResult {
 }
 
 /// See `cpuid_count`
-pub inline fn cpuid(leaf: u32) CpuidResult {
+pub fn cpuid(leaf: u32) CpuidResult {
     return cpuid_count(leaf, 0);
 }
 
@@ -117,21 +117,6 @@ pub const CpuidMax = struct {
 };
 
 test "" {
-    // Test all files
-    const test_bits = @import("bits.zig");
-    const test_addr = @import("addr.zig");
-
-    const test_instructions = @import("instructions/instructions.zig");
-    const interrupts = test_instructions.interrupts;
-    const port_instructions = test_instructions.port;
-    const random = test_instructions.random;
-
-    const test_registers = @import("registers/registers.zig");
-    const rflags = test_registers.rflags;
-    const control = test_registers.control;
-
-    const test_structures = @import("structures/structures.zig");
-    const paging = test_structures.paging;
-    const port = test_structures.port;
-    const gdt = test_structures.gdt;
+    const std = @import("std");
+    std.meta.refAllDecls(@This());
 }

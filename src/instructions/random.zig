@@ -34,3 +34,7 @@ pub const RdRand = struct {
         @compileError("This requires an intrinsic that zig does not provide `_rdrand16_step`");
     }
 };
+
+test "" {
+    std.meta.refAllDecls(@This());
+}

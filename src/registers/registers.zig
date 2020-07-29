@@ -6,3 +6,8 @@ pub fn read_rip() u64 {
         : [ret] "=r" (-> u64)
     );
 }
+
+test "" {
+    const std = @import("std");
+    std.meta.refAllDecls(@This());
+}

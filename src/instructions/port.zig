@@ -44,3 +44,7 @@ pub inline fn write_u32(port: u16, value: u32) void {
           [port] "N{dx}" (port)
     );
 }
+
+test "" {
+    std.meta.refAllDecls(@This());
+}
