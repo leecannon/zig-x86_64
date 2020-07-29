@@ -70,7 +70,7 @@ pub const CpuidResult = struct {
 /// [wiki_cpuid]: https://en.wikipedia.org/wiki/CPUID
 /// [intel64_ref]: http://www.intel.de/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-instruction-set-reference-manual-325383.pdf
 /// [amd64_ref]: http://support.amd.com/TechDocs/24594.pdf
-pub fn cpuid_count(leaf: u32, sub_leaf: u32) CpuidResult {
+pub fn cpuid_with_subleaf(leaf: u32, sub_leaf: u32) CpuidResult {
     var eax: u32 = undefined;
     var ebx: u32 = undefined;
     var ecx: u32 = undefined;
@@ -99,7 +99,15 @@ pub fn cpuid_count(leaf: u32, sub_leaf: u32) CpuidResult {
 
 /// See `cpuid_count`
 pub fn cpuid(leaf: u32) CpuidResult {
-    return cpuid_count(leaf, 0);
+    return cpuid_with_subleaf(leaf, 0);
+}
+
+/// BUG: this always returns 0?
+/// Get the id of the currently executing cpu/core (Local APIC ID)
+pub inline fn get_current_cpu_id() u16 {
+    const bits = @import("bits.zig");
+    const cpu_id = cpuid(0x1);
+    return @truncate(u16, bits.get_bits(cpu_id.ebx, 24, 8));
 }
 
 /// Returns the highest-supported `leaf` (`EAX`) and sub-leaf (`ECX`) `cpuid`
@@ -110,7 +118,7 @@ pub fn cpuid(leaf: u32) CpuidResult {
 /// containing sub-leafs, the second tuple argument contains the
 /// highest-supported sub-leaf value.
 ///
-/// See also `__cpuid` and`cpuid_count`
+/// See also `cpuid` and`cpuid_count`
 pub inline fn get_cpuid_max(leaf: u32) CpuidMax {
     const result = cpuid(leaf);
     return CpuidMax{ .max_leaf = result.eax, .max_sub_leaf = result.ebx };
