@@ -2,6 +2,7 @@ pub const interrupts = @import("interrupts.zig");
 pub const port = @import("port.zig");
 pub const random = @import("random.zig");
 pub const tables = @import("tables.zig");
+pub const segmentation = @import("segmentation.zig");
 
 /// Halts the CPU until the next interrupt arrives.
 pub inline fn hlt() void {

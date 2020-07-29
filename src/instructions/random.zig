@@ -17,9 +17,10 @@ pub const RdRand = struct {
     /// May fail in rare circumstances or heavy load.
     pub inline fn get_u64(self: RdRand) ?u64 {
         var carry: u8 = undefined;
-        const num: u64 = asm volatile ("rdrand %[result]; setc %[carry]"
+        const num: u64 = asm ("rdrand %[result]; setc %[carry]"
             : [result] "=r" (-> u64)
             : [carry] "qm" (&carry)
+            : "cc"
         );
         return if (carry == 0) null else num;
     }
@@ -28,9 +29,10 @@ pub const RdRand = struct {
     /// May fail in rare circumstances or heavy load.
     pub inline fn get_u32(self: RdRand) ?u32 {
         var carry: u8 = undefined;
-        const num: u32 = asm volatile ("rdrand %[result]; setc %[carry]"
+        const num: u32 = asm ("rdrand %[result]; setc %[carry]"
             : [result] "=r" (-> u32)
             : [carry] "qm" (&carry)
+            : "cc"
         );
         return if (carry == 0) null else num;
     }
@@ -39,9 +41,10 @@ pub const RdRand = struct {
     /// May fail in rare circumstances or heavy load.
     pub inline fn get_u16(self: RdRand) ?u16 {
         var carry: u8 = undefined;
-        const num: u16 = asm volatile ("rdrand %[result]; setc %[carry]"
+        const num: u16 = asm ("rdrand %[result]; setc %[carry]"
             : [result] "=r" (-> u16)
             : [carry] "qm" (&carry)
+            : "cc"
         );
         return if (carry == 0) null else num;
     }
@@ -64,9 +67,10 @@ pub const RdSeed = struct {
     /// May fail in rare circumstances or heavy load.
     pub inline fn get_u64(self: RdSeed) ?u64 {
         var carry: u8 = undefined;
-        const num: u64 = asm volatile ("rdseed %[result]; setc %[carry]"
+        const num: u64 = asm ("rdseed %[result]; setc %[carry]"
             : [result] "=r" (-> u64)
             : [carry] "qm" (&carry)
+            : "cc"
         );
         return if (carry == 0) null else num;
     }
@@ -75,9 +79,10 @@ pub const RdSeed = struct {
     /// May fail in rare circumstances or heavy load.
     pub inline fn get_u32(self: RdSeed) ?u32 {
         var carry: u8 = undefined;
-        const num: u32 = asm volatile ("rdseed %[result]; setc %[carry]"
+        const num: u32 = asm ("rdseed %[result]; setc %[carry]"
             : [result] "=r" (-> u32)
             : [carry] "qm" (&carry)
+            : "cc"
         );
         return if (carry == 0) null else num;
     }
@@ -86,9 +91,10 @@ pub const RdSeed = struct {
     /// May fail in rare circumstances or heavy load.
     pub inline fn get_u16(self: RdSeed) ?u16 {
         var carry: u8 = undefined;
-        const num: u16 = asm volatile ("rdseed %[result]; setc %[carry]"
+        const num: u16 = asm ("rdseed %[result]; setc %[carry]"
             : [result] "=r" (-> u16)
             : [carry] "qm" (&carry)
+            : "cc"
         );
         return if (carry == 0) null else num;
     }
