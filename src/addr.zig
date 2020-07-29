@@ -185,7 +185,7 @@ pub const PhysAddr = packed struct {
 ///
 /// Returns the greatest x with alignment `align` so that x <= addr. The alignment must be
 ///  a power of 2.
-pub inline fn raw_align_down(addr: u64, alignment: u64) u64 {
+pub inline fn raw_align_down(addr: u64, alignment: u64) u64 {   
     std.debug.assert(std.math.isPowerOfTwo(alignment));
     return addr & ~(alignment - 1);
 }

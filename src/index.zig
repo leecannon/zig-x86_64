@@ -1,7 +1,12 @@
 pub usingnamespace @import("addr.zig");
 
+/// Representations of various x86 specific structures and descriptor tables.
 pub const structures = @import("structures/structures.zig");
+
+/// Special x86_64 instructions.
 pub const instructions = @import("instructions/instructions.zig");
+
+/// Access to various system and model specific registers.
 pub const registers = @import("registers/registers.zig");
 
 pub const PrivilegeLevel = packed enum(u8) {

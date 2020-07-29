@@ -1,7 +1,16 @@
+/// Enabling and disabling interrupts
 pub const interrupts = @import("interrupts.zig");
+
+/// Access to I/O ports
 pub const port = @import("port.zig");
+
+/// Support for build-in RNGs
 pub const random = @import("random.zig");
+
+/// Functions to load GDT, IDT, and TSS structures.
 pub const tables = @import("tables.zig");
+
+/// Provides functions to read and write segment registers.
 pub const segmentation = @import("segmentation.zig");
 
 /// Halts the CPU until the next interrupt arrives.

@@ -1,5 +1,10 @@
+/// Abstractions for page tables and other paging related structures.
 pub const paging = @import("paging/paging.zig");
+
+/// Types for accessing I/O ports.
 pub const port = @import("port.zig");
+
+/// Types for the Global Descriptor Table and segment selectors.
 pub const gdt = @import("gdt.zig");
 
 /// A struct describing a pointer to a descriptor table (GDT / IDT).

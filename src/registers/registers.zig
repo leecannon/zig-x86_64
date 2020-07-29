@@ -1,6 +1,11 @@
+/// Processor state stored in the RFLAGS register.
 pub const rflags = @import("rflags.zig");
+
+/// Functions to read and write control registers.
 pub const control = @import("control.zig");
 
+/// Gets the current instruction pointer. Note that this is only approximate as it requires a few
+/// instructions to execute.
 pub fn read_rip() u64 {
     return asm volatile ("lea (%%rip), %[ret]"
         : [ret] "=r" (-> u64)
