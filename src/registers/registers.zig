@@ -4,6 +4,9 @@ pub const rflags = @import("rflags.zig");
 /// Functions to read and write control registers.
 pub const control = @import("control.zig");
 
+/// Functions to read and write model specific registers.
+pub const model_specific = @import("model_specific.zig");
+
 /// Gets the current instruction pointer. Note that this is only approximate as it requires a few
 /// instructions to execute.
 pub fn read_rip() u64 {

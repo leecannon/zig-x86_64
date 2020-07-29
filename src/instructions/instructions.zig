@@ -13,6 +13,9 @@ pub const tables = @import("tables.zig");
 /// Provides functions to read and write segment registers.
 pub const segmentation = @import("segmentation.zig");
 
+/// Functions to flush the translation lookaside buffer (TLB).
+pub const tlb = @import("tlb.zig");
+
 /// Halts the CPU until the next interrupt arrives.
 pub inline fn hlt() void {
     asm volatile ("hlt");
