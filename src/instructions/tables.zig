@@ -3,7 +3,7 @@ usingnamespace @import("../common.zig");
 /// Load a GDT.
 ///
 /// Use the `structures.gdt.GlobalDescriptorTable` struct for a high-level interface to loading a GDT.
-pub inline fn lgdt(gdt: *structures.DescriptorTablePointer) void {
+pub inline fn lgdt(gdt: *const structures.DescriptorTablePointer) void {
     asm volatile ("lgdt (%[gdt])"
         :
         : [gdt] "r" (gdt)

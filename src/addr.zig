@@ -30,8 +30,8 @@ pub const VirtAddr = packed struct {
     /// is returned.
     pub inline fn try_new(addr: u64) VirtAddrError!VirtAddr {
         return switch (get_bits(addr, 48, 16)) {
-            0, 0x1ffff => VirtAddr{ .value = addr },
-            1 => new_truncate(addr),
+            0, 0xffff => VirtAddr{ .value = addr },
+            1 => init_truncate(addr),
             else => return VirtAddrError.VirtAddrNotValid,
         };
     }
