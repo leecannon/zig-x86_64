@@ -76,11 +76,7 @@ pub fn cpuid_with_subleaf(leaf: u32, sub_leaf: u32) CpuidResult {
     var ecx: u32 = undefined;
     var edx: u32 = undefined;
 
-    // Unsure if below is an issue in zig? (Copied from rust x86_64)
-    // x86-64 uses %rbx as the base register, so preserve it.
-    // This works around a bug in LLVM with ASAN enabled:
-    // https://bugs.llvm.org/show_bug.cgi?id=17907
-    asm volatile ("mov %%rbx, %%rsi; cpuid; xchg %%rbx, %%rsi"
+    asm volatile ("cpuid;"
         : [eax] "={eax}" (eax),
           [ebx] "={ebx}" (ebx),
           [ecx] "={ecx}" (ecx),
