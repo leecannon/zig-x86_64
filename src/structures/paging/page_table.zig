@@ -222,6 +222,9 @@ test "PageTableFlags" {
 /// The number of entries in a page table.
 pub const ENTRY_COUNT: usize = 512;
 
+/// Represents a page table.
+/// Always page-sized.
+/// **IMPORTANT** Must be align(4096)
 pub const PageTable = extern struct {
     entries: [ENTRY_COUNT]PageTableEntry,
 

@@ -10,6 +10,9 @@ pub const gdt = @import("gdt.zig");
 /// Provides a type for the task state segment structure.
 pub const tss = @import("tss.zig");
 
+/// Provides types for the Interrupt Descriptor Table and its entries.
+pub const idt = @import("idt.zig");
+
 /// A struct describing a pointer to a descriptor table (GDT / IDT).
 /// This is in a format suitable for giving to 'lgdt' or 'lidt'.
 pub const DescriptorTablePointer = packed struct {

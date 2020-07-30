@@ -36,7 +36,7 @@ pub const PrivilegeLevel = packed enum(u8) {
     /// to perform the accesses.
     Ring3 = 3,
 
-    pub fn from_u16(value: u16) PrivilegeLevel {
+    pub inline fn from_u16(value: u16) PrivilegeLevel {
         return switch (value) {
             0 => PrivilegeLevel.Ring0,
             1 => PrivilegeLevel.Ring1,
@@ -44,6 +44,10 @@ pub const PrivilegeLevel = packed enum(u8) {
             3 => PrivilegeLevel.Ring3,
             else => @panic("Not a valid privilege level"),
         };
+    }
+
+    pub inline fn to_u16(self: PrivilegeLevel) u16 {
+        return @enumToInt(self);
     }
 };
 

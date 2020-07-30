@@ -115,7 +115,7 @@ pub const GlobalDescriptorTable = struct {
     pub inline fn load(self: *GlobalDescriptorTable) void {
         const ptr = structures.DescriptorTablePointer{
             .base = @ptrToInt(&self.table),
-            .limit = @as(u64, self.table.len * @sizeOf(u64) - 1),
+            .limit = @as(u16, self.table.len * @sizeOf(u64) - 1),
         };
 
         instructions.tables.lgdt(&ptr);
@@ -143,6 +143,12 @@ test "GlobalDescriptorTable" {
 /// Creates a segment descriptor for a long mode kernel code segment.
 pub inline fn kernel_code_segment() Descriptor {
     const flags: u64 = Descriptor.USER_SEGMENT | Descriptor.PRESENT | Descriptor.EXECUTABLE | Descriptor.LONG_MODE;
+    return Descriptor{ .UserSegment = flags };
+}
+
+/// Creates a segment descriptor for a long mode kernel data segment.
+pub inline fn kernel_data_segment() Descriptor {
+    const flags: u64 = Descriptor.USER_SEGMENT | Descriptor.PRESENT | Descriptor.WRITABLE | Descriptor.LONG_MODE;
     return Descriptor{ .UserSegment = flags };
 }
 
