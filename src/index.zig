@@ -81,7 +81,7 @@ pub fn cpuid_with_subleaf(leaf: u32, sub_leaf: u32) CpuidResult {
           [ebx] "={ebx}" (ebx),
           [ecx] "={ecx}" (ecx),
           [edx] "={edx}" (edx)
-        : [leaf] "{eax}" (leaf),
+        : [eax] "{eax}" (leaf),
           [ecx] "{ecx}" (sub_leaf)
     );
 
