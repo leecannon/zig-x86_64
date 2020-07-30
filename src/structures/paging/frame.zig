@@ -205,7 +205,7 @@ fn PhysFrameRangeInclusive(comptime phys_frame_type: type) type {
     };
 }
 
-test "PhysFrame" {
+test "PhysFrameIterator" {
     var physAddrA = PhysAddr.init(0x000FFFFFFFFF0000);
     physAddrA = physAddrA.align_down(structures.paging.PageSize.Size4KiB.Size());
 
@@ -221,9 +221,13 @@ test "PhysFrame" {
     std.testing.expect(!iterator.is_empty());
     std.testing.expect(!inclusive_iterator.is_empty());
 
-    while (iterator.next()) |frame| {}
+    var count: usize = 0;
+    while (iterator.next()) |frame| { count += 1; }
+    testing.expectEqual(@as(usize, 15), count);
 
-    while (inclusive_iterator.next()) |frame| {}
+    count = 0;
+    while (inclusive_iterator.next()) |frame| { count += 1; }
+    testing.expectEqual(@as(usize, 16), count);
 
     std.testing.expect(iterator.is_empty());
     std.testing.expect(inclusive_iterator.is_empty());
