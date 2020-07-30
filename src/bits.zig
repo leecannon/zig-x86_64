@@ -103,7 +103,7 @@ pub inline fn set_bit(target: anytype, comptime bit: comptime_int, value: bool) 
 /// This method will panic if the range is out of bounds of the bit array,
 /// if the range can't be contained by the bit field T, or if there are `1`s
 /// not in the lower N bits of `value`.
-pub inline fn set_bits(target: anytype, comptime start_bit: comptime_int, comptime length: comptime_int, value: anytype) void {
+pub fn set_bits(target: anytype, comptime start_bit: comptime_int, comptime length: comptime_int, value: anytype) void {
     const ptr_type_info: std.builtin.TypeInfo = @typeInfo(@TypeOf(target));
     comptime {
         if (ptr_type_info != .Pointer) @compileError("not a pointer");

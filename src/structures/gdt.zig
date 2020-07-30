@@ -158,11 +158,29 @@ pub inline fn user_code_segment() Descriptor {
     return Descriptor{ .UserSegment = flags };
 }
 
-// TODO: Waiting on TaskStateSegment
-// Creates a TSS system descriptor for the given TSS.
-// pub inline fn tss_segment(tss: TaskStateSegment) Descriptor {
-//
-// }
+/// Creates a TSS system descriptor for the given TSS.
+pub inline fn tss_segment(tss: *structures.tss.TaskStateSegment) Descriptor {
+    const ptr = @ptrToInt(tss);
+
+    var low = Descriptor.PRESENT;
+    // base
+    set_bits(&low, 16, 24, get_bits(ptr, 0, 24));
+    set_bits(&low, 56, 8, get_bits(ptr, 24, 8));
+    // limit (the `-1` in needed since the bound is inclusive)
+    set_bits(&low, 0, 16, @as(u64, @sizeOf(structures.tss.TaskStateSegment) - 1));
+    // type (0b1001 = available 64-bit tss)
+    set_bits(&low, 40, 4, 0b1001);
+
+    var high: u64 = 0;
+    set_bits(&high, 0, 32, get_bits(ptr, 32, 32));
+
+    return Descriptor{
+        .SystemSegment = Descriptor.SystemSegmentData{
+            .low = low,
+            .high = high,
+        },
+    };
+}
 
 /// A 64-bit mode segment descriptor
 ///

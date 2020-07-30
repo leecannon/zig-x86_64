@@ -222,11 +222,15 @@ test "PhysFrameIterator" {
     std.testing.expect(!inclusive_iterator.is_empty());
 
     var count: usize = 0;
-    while (iterator.next()) |frame| { count += 1; }
+    while (iterator.next()) |frame| {
+        count += 1;
+    }
     testing.expectEqual(@as(usize, 15), count);
 
     count = 0;
-    while (inclusive_iterator.next()) |frame| { count += 1; }
+    while (inclusive_iterator.next()) |frame| {
+        count += 1;
+    }
     testing.expectEqual(@as(usize, 16), count);
 
     std.testing.expect(iterator.is_empty());
