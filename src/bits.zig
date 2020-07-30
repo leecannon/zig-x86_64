@@ -37,7 +37,7 @@ pub inline fn get_bit(target: anytype, comptime bit: comptime_int) bool {
 ///
 /// This method will panic if the start or end indexes of the range are out of bounds of the
 /// bit array, or if the range can't be contained by the bit field T.
-pub inline fn get_bits(target: anytype, comptime start_bit: comptime_int, comptime length: comptime_int) @TypeOf(target) {
+pub fn get_bits(target: anytype, comptime start_bit: comptime_int, comptime length: comptime_int) @TypeOf(target) {
     const target_type = @TypeOf(target);
 
     comptime {

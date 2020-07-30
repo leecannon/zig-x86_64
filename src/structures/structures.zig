@@ -7,6 +7,9 @@ pub const port = @import("port.zig");
 /// Types for the Global Descriptor Table and segment selectors.
 pub const gdt = @import("gdt.zig");
 
+/// Provides a type for the task state segment structure.
+pub const tss = @import("tss.zig");
+
 /// A struct describing a pointer to a descriptor table (GDT / IDT).
 /// This is in a format suitable for giving to 'lgdt' or 'lidt'.
 pub const DescriptorTablePointer = packed struct {
