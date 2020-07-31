@@ -343,7 +343,7 @@ pub const InterruptDescriptorTable = packed struct {
     ///   instruction pointer points to the instruction after the INTn.
     interrupts: [256 - 32]HandlerFuncEntry,
 
-    pub inline fn init() InterruptDescriptorTable {
+    pub fn init() InterruptDescriptorTable {
         return InterruptDescriptorTable{
             .divide_error = HandlerFuncEntry.missing(),
             .debug = HandlerFuncEntry.missing(),
@@ -374,7 +374,7 @@ pub const InterruptDescriptorTable = packed struct {
     }
 
     /// Resets all entries of this IDT in place.
-    pub inline fn reset(self: *InterruptDescriptorTable) void {
+    pub fn reset(self: *InterruptDescriptorTable) void {
         self.divide_error = HandlerFuncEntry.missing();
         self.debug = HandlerFuncEntry.missing();
         self.non_maskable_interrupt = HandlerFuncEntry.missing();
@@ -403,7 +403,7 @@ pub const InterruptDescriptorTable = packed struct {
     }
 
     /// Loads the IDT in the CPU using the `lidt` command.
-    pub inline fn load(self: *InterruptDescriptorTable) void {
+    pub fn load(self: *InterruptDescriptorTable) void {
         const ptr = structures.DescriptorTablePointer{
             .base = @ptrToInt(self),
             .limit = @as(u16, @sizeOf(InterruptDescriptorTable) - 1),
@@ -451,7 +451,7 @@ fn Entry(comptime handler_type: type) type {
         reserved: u32,
 
         /// Creates a non-present IDT entry (but sets the must-be-one bits).
-        pub inline fn missing() Self {
+        pub fn missing() Self {
             return .{
                 .pointer_low = 0,
                 .gdt_selector = 0,
@@ -462,7 +462,7 @@ fn Entry(comptime handler_type: type) type {
             };
         }
 
-        pub inline fn set_handler(self: *Self, handler: handler_type) void {
+        pub fn set_handler(self: *Self, handler: handler_type) void {
             const addr = @ptrToInt(handler);
 
             self.pointer_low = @truncate(u16, addr);
@@ -505,24 +505,24 @@ pub const EntryOptions = packed struct {
     value: u16,
 
     /// Creates a minimal options field with all the must-be-one bits set.
-    pub inline fn minimal() EntryOptions {
+    pub fn minimal() EntryOptions {
         return EntryOptions{ .value = 0b1110_0000_0000 };
     }
 
     /// Set or reset the preset bit.
-    pub inline fn set_present(self: *EntryOptions, present: bool) void {
+    pub fn set_present(self: *EntryOptions, present: bool) void {
         set_bit(&self.value, 15, present);
     }
 
     /// Let the CPU disable hardware interrupts when the handler is invoked. By default,
     /// interrupts are disabled on handler invocation.
-    pub inline fn disable_interupts(self: *EntryOptions, disable: bool) void {
+    pub fn disable_interupts(self: *EntryOptions, disable: bool) void {
         set_bit(&self.value, 8, !disable);
     }
 
     /// Set the required privilege level (DPL) for invoking the handler. The DPL can be 0, 1, 2,
     /// or 3, the default is 0. If CPL < DPL, a general protection fault occurs.
-    pub inline fn set_privledge_level(self: *EntryOptions, dpl: PrivilegeLevel) void {
+    pub fn set_privledge_level(self: *EntryOptions, dpl: PrivilegeLevel) void {
         set_bits(&self.value, 13, 2, dpl.to_u16());
     }
 
@@ -532,7 +532,7 @@ pub const EntryOptions = packed struct {
     ///
     /// An IST stack is specified by an IST index between 0 and 6 (inclusive). Using the same
     /// stack for multiple interrupts can be dangerous when nested interrupts are possible.
-    pub inline fn set_stack_index(self: *EntryOptions, index: u16) void {
+    pub fn set_stack_index(self: *EntryOptions, index: u16) void {
         // The hardware IST index starts at 1, but our software IST index
         // starts at 0. Therefore we need to add 1 here.
         set_bits(&self.value, 0, 3, index + 1);

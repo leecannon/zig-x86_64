@@ -16,22 +16,22 @@ pub const PageTableEntry = packed struct {
     entry: u64,
 
     /// Creates an unused page table entry.
-    pub inline fn init() PageTableEntry {
+    pub fn init() PageTableEntry {
         return PageTableEntry{ .entry = 0 };
     }
 
     /// Returns whether this entry is zero.
-    pub inline fn is_unused(self: PageTableEntry) bool {
+    pub fn is_unused(self: PageTableEntry) bool {
         return self.entry == 0;
     }
 
     /// Sets this entry to zero.
-    pub inline fn set_unused(self: *PageTableEntry) void {
+    pub fn set_unused(self: *PageTableEntry) void {
         self.entry = 0;
     }
 
     /// Returns the flags of this entry.
-    pub inline fn get_flags(self: PageTableEntry) PageTableFlags {
+    pub fn get_flags(self: PageTableEntry) PageTableFlags {
         // Clear out the addr part of the entry
         var entry = self.entry;
         set_bits(&entry, 12, 40, 0);
@@ -39,28 +39,45 @@ pub const PageTableEntry = packed struct {
     }
 
     /// Returns the physical address mapped by this entry, might be zero.
-    pub inline fn get_addr(self: PageTableEntry) PhysAddr {
+    pub fn get_addr(self: PageTableEntry) PhysAddr {
         return PhysAddr.init(self.entry & 0x000fffff_fffff000);
     }
 
-    // TODO: Waiting on PhysFrame
-    //pub inline fn frame(self:PageTableEntry) FrameError!PhysFrame {
-    //
-    // }
+    /// Returns the physical frame mapped by this entry.
+    ///
+    /// Returns the following errors:
+    ///
+    /// - `FrameError::FrameNotPresent` if the entry doesn't have the `PRESENT` flag set.
+    /// - `FrameError::HugeFrame` if the entry has the `HUGE_PAGE` flag set (for huge pages the
+    ///    `addr` function must be used)
+    pub fn get_frame(self: PageTableEntry) FrameError!structures.paging.PhysFrame4KiB {
+        const flags = self.get_flags();
+
+        if (!flags.PRESENT) {
+            return FrameError.FrameNotPresent;
+        }
+
+        if (flags.HUGE_PAGE) {
+            return FrameError.HugeFrame;
+        }
+
+        return structures.paging.PhysFrame4KiB.containing_address(self.get_addr());
+    }
 
     /// Map the entry to the specified physical address
-    pub inline fn set_addr(self: *PageTableEntry, addr: PhysAddr) void {
+    pub fn set_addr(self: *PageTableEntry, addr: PhysAddr) void {
         std.debug.assert(addr.is_aligned(PageSize.Size4KiB.Size()));
         self.entry = addr.value | self.get_flags().to_u64();
     }
 
-    // TODO: Waiting on PhysFrame
-    //pub inline fn set_frame(self: *PageTableEntry, frame: PhsyFrame, flags: PageTableFlags) void {
-    //
-    // }
+    /// Map the entry to the specified physical frame with the specified flags.
+    pub fn set_frame(self: *PageTableEntry, frame: structures.paging.PhysFrame4KiB, flags: PageTableFlags) void {
+        std.debug.assert(!self.get_flags().HUGE_PAGE);
+        self.set_addr(frame.start_address, flags);
+    }
 
     /// Sets the flags of this entry.
-    pub inline fn set_flags(self: *PageTableEntry, flags: PageTableFlags) void {
+    pub fn set_flags(self: *PageTableEntry, flags: PageTableFlags) void {
         self.entry = self.get_addr().value | flags.to_u64();
     }
 
@@ -200,16 +217,47 @@ pub const PageTableFlags = packed struct {
     NO_EXECUTE: bool,
 
     // Create a blank/empty `PageTableFlags`
-    pub inline fn init() PageTableFlags {
+    pub fn init() PageTableFlags {
         return from_u64(0);
     }
 
-    pub inline fn from_u64(value: u64) PageTableFlags {
-        return @bitCast(PageTableFlags, value);
+    pub fn from_u64(value: u64) PageTableFlags {
+        return @bitCast(PageTableFlags, value).zero_padding();
     }
 
-    pub inline fn to_u64(self: PageTableFlags) u64 {
-        return @bitCast(u64, self);
+    pub fn to_u64(self: PageTableFlags) u64 {
+        return @bitCast(u64, self.zero_padding());
+    }
+
+    pub fn zero_padding(self: PageTableFlags) PageTableFlags {
+        var result: PageTableFlags = @bitCast(PageTableFlags, @as(u64, 0));
+
+        result.PRESENT = self.PRESENT;
+        result.WRITABLE = self.WRITABLE;
+        result.USER_ACCESSIBLE = self.USER_ACCESSIBLE;
+        result.WRITE_THROUGH = self.WRITE_THROUGH;
+        result.NO_CACHE = self.NO_CACHE;
+        result.ACCESSED = self.ACCESSED;
+        result.DIRTY = self.DIRTY;
+        result.HUGE_PAGE = self.HUGE_PAGE;
+        result.GLOBAL = self.GLOBAL;
+        result.BIT_9 = self.BIT_9;
+        result.BIT_10 = self.BIT_10;
+        result.BIT_11 = self.BIT_11;
+        result.BIT_52 = self.BIT_52;
+        result.BIT_53 = self.BIT_53;
+        result.BIT_54 = self.BIT_54;
+        result.BIT_55 = self.BIT_55;
+        result.BIT_56 = self.BIT_56;
+        result.BIT_57 = self.BIT_57;
+        result.BIT_58 = self.BIT_58;
+        result.BIT_59 = self.BIT_59;
+        result.BIT_60 = self.BIT_60;
+        result.BIT_61 = self.BIT_61;
+        result.BIT_62 = self.BIT_62;
+        result.NO_EXECUTE = self.NO_EXECUTE;
+
+        return result;
     }
 };
 
@@ -229,18 +277,18 @@ pub const PageTable = extern struct {
     entries: [ENTRY_COUNT]PageTableEntry,
 
     /// Creates an empty page table.
-    pub inline fn init() PageTable {
+    pub fn init() PageTable {
         return PageTable{ .entries = [_]PageTableEntry{PageTableEntry.init()} ** ENTRY_COUNT };
     }
 
     /// Clears all entries.
-    pub inline fn zero(self: *PageTable) void {
+    pub fn zero(self: *PageTable) void {
         for (self.entries) |*entry| {
             entry.set_unused();
         }
     }
 
-    pub inline fn get_at_index(self: *PageTable, index: PageTableIndex) *PageTableEntry {
+    pub fn get_at_index(self: *PageTable, index: PageTableIndex) *PageTableEntry {
         return &self.entries[index.value];
     }
 };
@@ -255,13 +303,13 @@ pub const PageOffset = packed struct {
     value: u16,
 
     /// Creates a new offset from the given `u16`. Panics if the passed value is >=4096.
-    pub inline fn init(offset: u16) PageOffset {
+    pub fn init(offset: u16) PageOffset {
         std.debug.assert(offset < (1 << 12));
         return PageOffset{ .value = offset };
     }
 
     /// Creates a new offset from the given `u16`. Throws away bits if the value is >=4096.
-    pub inline fn init_truncate(offset: u16) PageOffset {
+    pub fn init_truncate(offset: u16) PageOffset {
         return PageOffset{ .value = offset % (1 << 12) };
     }
 };
@@ -271,13 +319,13 @@ pub const PageTableIndex = packed struct {
     value: u16,
 
     /// Creates a new index from the given `u16`. Panics if the given value is >=ENTRY_COUNT.
-    pub inline fn init(index: u16) PageTableIndex {
+    pub fn init(index: u16) PageTableIndex {
         std.debug.assert(@as(usize, index) < ENTRY_COUNT);
         return PageTableIndex{ .value = index };
     }
 
     /// Creates a new index from the given `u16`. Throws away bits if the value is >=ENTRY_COUNT.
-    pub inline fn init_truncate(index: u16) PageTableIndex {
+    pub fn init_truncate(index: u16) PageTableIndex {
         return PageTableIndex{ .value = index % @as(u16, ENTRY_COUNT) };
     }
 };

@@ -15,7 +15,7 @@ const testing = std.testing;
 /// ## Panics
 ///
 /// This method will panic if the bit index is out of bounds of the bit field.
-pub inline fn get_bit(target: anytype, comptime bit: comptime_int) bool {
+pub fn get_bit(target: anytype, comptime bit: comptime_int) bool {
     const target_type = @TypeOf(target);
     comptime {
         if (@typeInfo(target_type) != .Int and @typeInfo(target_type) != .ComptimeInt) @compileError("not an integer");
@@ -68,7 +68,7 @@ pub fn get_bits(target: anytype, comptime start_bit: comptime_int, comptime leng
 /// ## Panics
 ///
 /// This method will panic if the bit index is out of the bounds of the bit field.
-pub inline fn set_bit(target: anytype, comptime bit: comptime_int, value: bool) void {
+pub fn set_bit(target: anytype, comptime bit: comptime_int, value: bool) void {
     const ptr_type_info: std.builtin.TypeInfo = @typeInfo(@TypeOf(target));
     comptime {
         if (ptr_type_info != .Pointer) @compileError("not a pointer");

@@ -62,11 +62,35 @@ pub const RFlags = packed struct {
     _padding_b: u32,
 
     pub fn from_u64(value: u64) RFlags {
-        return @bitCast(RFlags, value);
+        return @bitCast(RFlags, value).zero_padding();
     }
 
-    pub inline fn to_u64(self: RFlags) u64 {
-        return @bitCast(u64, self);
+    pub fn to_u64(self: RFlags) u64 {
+        return @bitCast(u64, self.zero_padding());
+    }
+
+    pub fn zero_padding(self: RFlags) RFlags {
+        var result: RFlags = @bitCast(RFlags, @as(u64, 0));
+
+        result.CARRY_FLAG = self.CARRY_FLAG;
+        result.PARITY_FLAG = self.PARITY_FLAG;
+        result.AUXILIARY_CARRY_FLAG = self.AUXILIARY_CARRY_FLAG;
+        result.ZERO_FLAG = self.ZERO_FLAG;
+        result.SIGN_FLAG = self.SIGN_FLAG;
+        result.TRAP_FLAG = self.TRAP_FLAG;
+        result.INTERRUPT_FLAG = self.INTERRUPT_FLAG;
+        result.DIRECTION_FLAG = self.DIRECTION_FLAG;
+        result.OVERFLOW_FLAG = self.OVERFLOW_FLAG;
+        result.IOPL_LOW = self.IOPL_LOW;
+        result.NESTED_TASK = self.NESTED_TASK;
+        result.RESUME_FLAG = self.RESUME_FLAG;
+        result.VIRTUAL_8086_MODE = self.VIRTUAL_8086_MODE;
+        result.ALIGNMENT_CHECK = self.ALIGNMENT_CHECK;
+        result.VIRTUAL_INTERRUP = self.VIRTUAL_INTERRUP;
+        result.VIRTUAL_INTERRUPT_PENDING = self.VIRTUAL_INTERRUPT_PENDING;
+        result.ID = self.ID;
+
+        return result;
     }
 
     /// Returns the raw current value of the RFLAGS register.
@@ -82,7 +106,7 @@ pub const RFlags = packed struct {
     /// Writes the RFLAGS register.
     ///
     /// Does not preserve any bits, including reserved bits.
-    pub inline fn write_raw(self: RFlags) void {
+    pub fn write_raw(self: RFlags) void {
         asm volatile ("pushq %[val]; popfq"
             :
             : [val] "r" (self.to_u64())
@@ -95,10 +119,9 @@ test "RFlags" {
     std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(RFlags));
     std.testing.expectEqual(@sizeOf(u64), @sizeOf(RFlags));
 
-    const a = RFlags.from_u64(10);
-    const b = a.to_u64();
-
-    std.testing.expectEqual(@as(u64, 10), b);
+    var a = RFlags.from_u64(0);
+    a.PARITY_FLAG = true;
+    std.testing.expectEqual(@as(u64, 1 << 2), a.to_u64());
 }
 
 test "" {

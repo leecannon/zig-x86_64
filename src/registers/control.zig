@@ -37,16 +37,33 @@ pub const Cr0 = packed struct {
     // I can't wait for better bitfields in Zig... this is a mess
     _padding_a: u26,
 
-    pub inline fn from_u64(value: u64) Cr0 {
-        return @bitCast(Cr0, value);
+    pub fn from_u64(value: u64) Cr0 {
+        return @bitCast(Cr0, value).zero_padding();
     }
 
-    pub inline fn to_u64(self: Cr0) u64 {
-        return @bitCast(u64, self);
+    pub fn to_u64(self: Cr0) u64 {
+        return @bitCast(u64, self.zero_padding());
+    }
+
+    pub fn zero_padding(self: Cr0) Cr0 {
+        var result: Cr0 = @bitCast(Cr0, @as(u64, 0));
+
+        result.PROTECTED_MODE_ENABLE = self.PROTECTED_MODE_ENABLE;
+        result.MONITOR_COPROCESSOR = self.MONITOR_COPROCESSOR;
+        result.EMULATE_COPROCESSOR = self.EMULATE_COPROCESSOR;
+        result.TASK_SWITCHED = self.TASK_SWITCHED;
+        result.NUMERIC_ERROR = self.NUMERIC_ERROR;
+        result.WRITE_PROTECT = self.WRITE_PROTECT;
+        result.ALIGNMENT_MASK = self.ALIGNMENT_MASK;
+        result.NOT_WRITE_THROUGH = self.NOT_WRITE_THROUGH;
+        result.CACHE_DISABLE = self.CACHE_DISABLE;
+        result.PAGING = self.PAGING;
+
+        return result;
     }
 
     /// Read the current raw CR0 value.
-    pub inline fn read_raw() Cr0 {
+    pub fn read_raw() Cr0 {
         const raw = asm ("mov %%cr0, %[ret]"
             : [ret] "=r" (-> u64)
         );
@@ -56,7 +73,7 @@ pub const Cr0 = packed struct {
     /// Write raw CR0 flags.
     ///
     /// Does _not_ preserve any values, including reserved fields.
-    pub inline fn write_raw(self: Cr0) void {
+    pub fn write_raw(self: Cr0) void {
         asm volatile ("mov %[val], %%cr0"
             :
             : [val] "r" (self.to_u64())
@@ -75,7 +92,7 @@ test "Cr0" {
 /// When page fault occurs, the CPU sets this register to the accessed address.
 pub const Cr2 = struct {
     /// Read the current page fault linear address from the CR2 register.
-    pub inline fn read() VirtAddr {
+    pub fn read() VirtAddr {
         const value = asm ("mov %%cr2, %[ret]"
             : [ret] "=r" (-> u64)
         );
@@ -97,31 +114,52 @@ pub const Cr3 = packed struct {
     _padding_c: u16,
     _padding_d: u32,
 
-    pub inline fn from_u64(value: u64) Cr3 {
-        return @bitCast(Cr3, value);
+    pub fn from_u64(value: u64) Cr3 {
+        return @bitCast(Cr3, value).zero_padding();
     }
 
-    pub inline fn to_u64(self: Cr3) u64 {
-        return @bitCast(u64, self);
+    pub fn to_u64(self: Cr3) u64 {
+        return @bitCast(u64, self.zero_padding());
     }
 
-    // TODO: Waiting on PhysFrame
-    // pub const FrameAndCr3 = struct {
-    //     frame: PhysFrame,
-    //     cr3: Cr3,
-    // };
+    pub fn zero_padding(self: Cr3) Cr3 {
+        var result: Cr3 = @bitCast(Cr3, @as(u64, 0));
 
-    // TODO: Waiting on PhysFrame
-    // /// Read the current P4 table address from the CR3 register.
-    // pub inline fn read() FrameAndCr3 {
-    //
-    // }
+        result.PAGE_LEVEL_WRITETHROUGH = self.PAGE_LEVEL_WRITETHROUGH;
+        result.PAGE_LEVEL_CACHE_DISABLE = self.PAGE_LEVEL_CACHE_DISABLE;
 
-    // TODO: Waiting on PhysFrame
-    // /// Write a new P4 table address into the CR3 register.
-    // pub inline fn write(data: FrameAndCr3) void {
-    //
-    // }
+        return result;
+    }
+
+    pub const FrameAndCr3 = struct {
+        frame: structures.paging.PhysFrame4KiB,
+        cr3: Cr3,
+    };
+
+    /// Read the current P4 table address from the CR3 register.
+    pub fn read() FrameAndCr3 {
+        const value = asm ("mov %%cr3, %[value]"
+            : [value] "=r" (-> u64)
+        );
+
+        const flags = from_u64(value);
+
+        const addr = PhysAddr.init(value & 0x000ffffffffff000);
+        const frame = structures.paging.PhysFrame4KiB.containing_address(addr);
+        return FrameAndCr3{ .frame = frame, .cr3 = flags };
+    }
+
+    /// Write a new P4 table address into the CR3 register.
+    pub fn write(data: FrameAndCr3) void {
+        const addr = data.frame.start_address;
+        const value = addr.value | data.cr3.to_u64();
+
+        asm volatile ("mov %[value], %%cr3"
+            :
+            : [value] "r" (value)
+            : "memory"
+        );
+    }
 };
 
 test "Cr3" {
@@ -187,16 +225,44 @@ pub const Cr4 = packed struct {
     _padding_a: u11,
     _padding_b: u32,
 
-    pub inline fn from_u64(value: u64) Cr4 {
-        return @bitCast(Cr4, value);
+    pub fn from_u64(value: u64) Cr4 {
+        return @bitCast(Cr4, value).zero_padding();
     }
 
-    pub inline fn to_u64(self: Cr4) u64 {
-        return @bitCast(u64, self);
+    pub fn to_u64(self: Cr4) u64 {
+        return @bitCast(u64, self.zero_padding());
+    }
+
+    pub fn zero_padding(self: Cr4) Cr4 {
+        var result: Cr4 = @bitCast(Cr4, @as(u64, 0));
+
+        result.VIRTUAL_8086_MODE_EXTENSIONS = self.VIRTUAL_8086_MODE_EXTENSIONS;
+        result.PROTECTED_MODE_VIRTUAL_INTERRUPTS = self.PROTECTED_MODE_VIRTUAL_INTERRUPTS;
+        result.TIMESTAMP_DISABLE = self.TIMESTAMP_DISABLE;
+        result.DEBUGGING_EXTENSIONS = self.DEBUGGING_EXTENSIONS;
+        result.PAGE_SIZE_EXTENSION = self.PAGE_SIZE_EXTENSION;
+        result.PHYSICAL_ADDRESS_EXTENSION = self.PHYSICAL_ADDRESS_EXTENSION;
+        result.MACHINE_CHECK_EXCEPTION = self.MACHINE_CHECK_EXCEPTION;
+        result.PAGE_GLOBAL = self.PAGE_GLOBAL;
+        result.PERFORMANCE_MONITOR_COUNTER = self.PERFORMANCE_MONITOR_COUNTER;
+        result.OSFXSR = self.OSFXSR;
+        result.OSXMMEXCPT_ENABLE = self.OSXMMEXCPT_ENABLE;
+        result.USER_MODE_INSTRUCTION_PREVENTION = self.USER_MODE_INSTRUCTION_PREVENTION;
+        result.L5_PAGING = self.L5_PAGING;
+        result.VIRTUAL_MACHINE_EXTENSIONS = self.VIRTUAL_MACHINE_EXTENSIONS;
+        result.SAFER_MODE_EXTENSIONS = self.SAFER_MODE_EXTENSIONS;
+        result.FSGSBASE = self.FSGSBASE;
+        result.PCID = self.PCID;
+        result.OSXSAVE = self.OSXSAVE;
+        result.SUPERVISOR_MODE_EXECUTION_PROTECTION = self.SUPERVISOR_MODE_EXECUTION_PROTECTION;
+        result.SUPERVISOR_MODE_ACCESS_PREVENTION = self.SUPERVISOR_MODE_ACCESS_PREVENTION;
+        result.PROTECTION_KEY = self.PROTECTION_KEY;
+
+        return result;
     }
 
     /// Read the current raw CR4 value.
-    pub inline fn read_raw() Cr4 {
+    pub fn read_raw() Cr4 {
         const raw = asm ("mov %%cr4, %[ret]"
             : [ret] "=r" (-> u64)
         );
@@ -206,7 +272,7 @@ pub const Cr4 = packed struct {
     /// Write raw CR4 flags.
     ///
     /// Does _not_ preserve any values, including reserved fields.
-    pub inline fn write_raw(self: Cr4) void {
+    pub fn write_raw(self: Cr4) void {
         asm volatile ("mov %[val], %%cr4"
             :
             : [val] "r" (self.to_u64())

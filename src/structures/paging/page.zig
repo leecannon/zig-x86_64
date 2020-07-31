@@ -9,7 +9,7 @@ pub const PageSize = enum {
     Size2MiB,
     Size1GiB,
 
-    pub inline fn Size(self: PageSize) u64 {
+    pub fn Size(self: PageSize) u64 {
         return switch (self) {
             .Size4KiB => 4096,
             .Size2MiB => 4096 * 512,
@@ -17,7 +17,7 @@ pub const PageSize = enum {
         };
     }
 
-    pub inline fn SizeString(self: PageSize) []const u8 {
+    pub fn SizeString(self: PageSize) []const u8 {
         return switch (self) {
             .Size4KiB => size4KiBStr,
             .Size2MiB => size2MiBStr,
@@ -25,7 +25,7 @@ pub const PageSize = enum {
         };
     }
 
-    pub inline fn IsGiantPage(self: PageSize) bool {
+    pub fn IsGiantPage(self: PageSize) bool {
         return self == .Size1GiB;
     }
 };

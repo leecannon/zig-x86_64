@@ -34,12 +34,27 @@ pub const EferFlags = packed struct {
     _padding_a: u16,
     _padding_b: u32,
 
-    pub inline fn from_u64(value: u64) EferFlags {
-        return @bitCast(EferFlags, value);
+    pub fn from_u64(value: u64) EferFlags {
+        return @bitCast(EferFlags, value).zero_padding();
     }
 
-    pub inline fn to_u64(self: EferFlags) u64 {
-        return @bitCast(u64, self);
+    pub fn to_u64(self: EferFlags) u64 {
+        return @bitCast(u64, self.zero_padding());
+    }
+
+    pub fn zero_padding(self: EferFlags) EferFlags {
+        var result: EferFlags = @bitCast(EferFlags, @as(u64, 0));
+
+        result.SYSTEM_CALL_EXTENSIONS = self.SYSTEM_CALL_EXTENSIONS;
+        result.LONG_MODE_ENABLE = self.LONG_MODE_ENABLE;
+        result.LONG_MODE_ACTIVE = self.LONG_MODE_ACTIVE;
+        result.NO_EXECUTE_ENABLE = self.NO_EXECUTE_ENABLE;
+        result.SECURE_VIRTUAL_MACHINE_ENABLE = self.SECURE_VIRTUAL_MACHINE_ENABLE;
+        result.LONG_MODE_SEGMENT_LIMIT_ENABLE = self.LONG_MODE_SEGMENT_LIMIT_ENABLE;
+        result.FAST_FXSAVE_FXRSTOR = self.FAST_FXSAVE_FXRSTOR;
+        result.TRANSLATION_CACHE_EXTENSION = self.TRANSLATION_CACHE_EXTENSION;
+
+        return result;
     }
 };
 
@@ -53,21 +68,21 @@ pub const Efer = struct {
     const register: u32 = 0xC000_0080;
 
     /// Read the current EFER flags.
-    pub inline fn read() EferFlags {
+    pub fn read() EferFlags {
         return EferFlags.from_u64(read_msr(register));
     }
 
     /// Write the EFER flags.
     ///
     /// Does not preserve any bits, including reserved fields.
-    pub inline fn write_raw(flags: u64) void {
+    pub fn write_raw(flags: u64) void {
         write_msr(register, flags);
     }
 
     pub const UpdateEferFunc = fn (*EferFlags) void;
 
     /// Update EFER flags.
-    pub inline fn update(func: UpdateEferFunc) void {
+    pub fn update(func: UpdateEferFunc) void {
         var flags = read();
         func(&flags);
         write_raw(flags.to_u64());
@@ -91,7 +106,7 @@ pub const Star = struct {
 
     /// Read the Ring 0 and Ring 3 segment bases.
     /// The remaining fields are ignored because they are not valid for long mode
-    pub inline fn read_raw() ReadRawStruct {
+    pub fn read_raw() ReadRawStruct {
         const value = read_msr(register);
         return StarHelper{ .sysret = get_bits(value, 48, 16), .syscall = get_bits(value, 32, 16) };
     }
@@ -108,7 +123,7 @@ pub const Star = struct {
     };
 
     /// Read the Ring 0 and Ring 3 segment bases.
-    pub inline fn read() ReadStruct {
+    pub fn read() ReadStruct {
         const raw = read_raw();
 
         return ReadStruct{
@@ -130,7 +145,7 @@ pub const Star = struct {
     /// - syscall: This field is copied directly into CS.Sel. SS.Sel is set to
     ///  this field + 8. Because SYSCALL always switches to CPL 0, the RPL bits
     /// 33:32 should be initialized to 00b.
-    pub inline fn write_raw(sysret: u16, syscall: u16) void {
+    pub fn write_raw(sysret: u16, syscall: u16) void {
         var value: u64 = 0;
         set_bits(&value, 48, 16, sysret);
         set_bits(&value, 32, 16, syscall);
@@ -154,7 +169,7 @@ pub const Star = struct {
     /// This function will fail if the segment selectors are
     /// not in the correct offset of each other or if the
     /// segment selectors do not have correct privileges.
-    pub inline fn write(cs_sysret: SegmentSelector, ss_sysret: SegmentSelector, cs_syscall: SegmentSelector, ss_syscall: SegmentSelector) WriteErrors!void {
+    pub fn write(cs_sysret: SegmentSelector, ss_sysret: SegmentSelector, cs_syscall: SegmentSelector, ss_syscall: SegmentSelector) WriteErrors!void {
         if (cs_sysret.selector - 16 != ss_sysret.selector - 8) {
             return WriteErrors.InvlaidSysretOffset;
         }
@@ -186,7 +201,7 @@ pub const SFMask = struct {
     /// executed. If a bit in SFMASK is set to 1, the corresponding
     /// bit in RFLAGS is cleared to 0. If a bit in SFMASK is cleared
     /// to 0, the corresponding rFLAGS bit is not modified.
-    pub inline fn read() registers.rflags.RFlags {
+    pub fn read() registers.rflags.RFlags {
         return registers.rflags.RFlags.from_u64(read_msr(register));
     }
 
@@ -197,7 +212,7 @@ pub const SFMask = struct {
     /// executed. If a bit in SFMASK is set to 1, the corresponding
     /// bit in RFLAGS is cleared to 0. If a bit in SFMASK is cleared
     /// to 0, the corresponding rFLAGS bit is not modified.
-    pub inline fn write(value: registers.rflags.RFlags) void {
+    pub fn write(value: registers.rflags.RFlags) void {
         write_msr(register, value.to_u64());
     }
 };
@@ -220,18 +235,18 @@ fn construct_virtaddr_register(comptime reg: u32) type {
         const register: u32 = reg;
 
         /// Read the current register value.
-        pub inline fn read() VirtAddr {
+        pub fn read() VirtAddr {
             return VirtAddr.init(read_msr(register));
         }
 
         /// Write a given virtual address to the register.
-        pub inline fn write(addr: VirtAddr) void {
+        pub fn write(addr: VirtAddr) void {
             write_msr(register, addr.value);
         }
     };
 }
 
-inline fn read_msr(reg: u32) u64 {
+fn read_msr(reg: u32) u64 {
     var high: u32 = undefined;
     var low: u32 = undefined;
 
@@ -245,7 +260,7 @@ inline fn read_msr(reg: u32) u64 {
     return (@as(u64, high) << 32) | @as(u64, low);
 }
 
-inline fn write_msr(reg: u32, value: u64) void {
+fn write_msr(reg: u32, value: u64) void {
     var high: u32 = @truncate(u32, value >> 32);
     var low: u32 = @truncate(u32, value);
 

@@ -36,7 +36,7 @@ pub const PrivilegeLevel = packed enum(u8) {
     /// to perform the accesses.
     Ring3 = 3,
 
-    pub inline fn from_u16(value: u16) PrivilegeLevel {
+    pub fn from_u16(value: u16) PrivilegeLevel {
         return switch (value) {
             0 => PrivilegeLevel.Ring0,
             1 => PrivilegeLevel.Ring1,
@@ -46,7 +46,7 @@ pub const PrivilegeLevel = packed enum(u8) {
         };
     }
 
-    pub inline fn to_u16(self: PrivilegeLevel) u16 {
+    pub fn to_u16(self: PrivilegeLevel) u16 {
         return @enumToInt(self);
     }
 };
@@ -105,7 +105,7 @@ pub fn cpuid(leaf: u32) CpuidResult {
 
 /// BUG: this always returns 0?
 /// Get the id of the currently executing cpu/core (Local APIC ID)
-pub inline fn get_current_cpu_id() u16 {
+pub fn get_current_cpu_id() u16 {
     const bits = @import("bits.zig");
     const cpu_id = cpuid(0x1);
     return @truncate(u16, bits.get_bits(cpu_id.ebx, 24, 8));
@@ -120,7 +120,7 @@ pub inline fn get_current_cpu_id() u16 {
 /// highest-supported sub-leaf value.
 ///
 /// See also `cpuid` and`cpuid_count`
-pub inline fn get_cpuid_max(leaf: u32) CpuidMax {
+pub fn get_cpuid_max(leaf: u32) CpuidMax {
     const result = cpuid(leaf);
     return CpuidMax{ .max_leaf = result.eax, .max_sub_leaf = result.ebx };
 }

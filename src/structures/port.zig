@@ -27,12 +27,12 @@ fn Port(comptime bitness: PortBitness) type {
         port: u16,
 
         /// Creates an I/O port with the given port number
-        pub inline fn init(port: u16) Self {
+        pub fn init(port: u16) Self {
             return Self{ .port = port };
         }
 
         /// Read from the port
-        pub inline fn read(self: Self) int_type {
+        pub fn read(self: Self) int_type {
             return switch (bitness) {
                 .u8 => instructions.port.read_u8(self.port),
                 .u16 => instructions.port.read_u16(self.port),
@@ -41,7 +41,7 @@ fn Port(comptime bitness: PortBitness) type {
         }
 
         /// Write to the port
-        pub inline fn write(self: Self, value: int_type) void {
+        pub fn write(self: Self, value: int_type) void {
             switch (bitness) {
                 .u8 => instructions.port.write_u8(self.port, value),
                 .u16 => instructions.port.write_u16(self.port, value),

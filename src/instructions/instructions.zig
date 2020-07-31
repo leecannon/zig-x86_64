@@ -17,13 +17,13 @@ pub const segmentation = @import("segmentation.zig");
 pub const tlb = @import("tlb.zig");
 
 /// Halts the CPU until the next interrupt arrives.
-pub inline fn hlt() void {
+pub fn hlt() void {
     asm volatile ("hlt");
 }
 
 /// Emits a '[magic breakpoint](https://wiki.osdev.org/Bochs#Magic_Breakpoint)' instruction for the [Bochs](http://bochs.sourceforge.net/) CPU
 /// emulator. Make sure to set `magic_break: enabled=1` in your `.bochsrc` file.
-pub inline fn bochs_breakpoint() void {
+pub fn bochs_breakpoint() void {
     asm volatile ("xchgw %%bx, %%bx");
 }
 

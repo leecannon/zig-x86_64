@@ -13,22 +13,22 @@ pub const SegmentSelector = packed struct {
     /// # Arguments
     ///  * `index`: index in GDT or LDT array (not the offset)
     ///  * `rpl`: the requested privilege level
-    pub inline fn init(index: u16, rpl: PrivilegeLevel) SegmentSelector {
+    pub fn init(index: u16, rpl: PrivilegeLevel) SegmentSelector {
         return SegmentSelector{ .selector = index << 3 | @as(u16, @enumToInt(rpl)) };
     }
 
     /// Returns the GDT index.
-    pub inline fn gdt_index(self: SegmentSelector) u16 {
+    pub fn gdt_index(self: SegmentSelector) u16 {
         return self.selector >> 3;
     }
 
     /// Returns the requested privilege level.
-    pub inline fn get_rpl(self: SegmentSelector) PrivilegeLevel {
+    pub fn get_rpl(self: SegmentSelector) PrivilegeLevel {
         return PrivilegeLevel.from_u16(get_bits(self.selector, 0, 2));
     }
 
     /// Set the privilege level for this Segment selector.
-    pub inline fn set_rpl(self: *SegmentSelector, rpl: PrivilegeLevel) void {
+    pub fn set_rpl(self: *SegmentSelector, rpl: PrivilegeLevel) void {
         set_bits(&self.selector, 0, 2, @as(u16, @enumToInt(rpl)));
     }
 
@@ -85,7 +85,7 @@ pub const GlobalDescriptorTable = struct {
     next_free: u16,
 
     /// Creates an empty GDT.
-    pub inline fn init() GlobalDescriptorTable {
+    pub fn init() GlobalDescriptorTable {
         return GlobalDescriptorTable{
             .table = [_]u64{0} ** 8,
             .next_free = 1,
@@ -95,7 +95,7 @@ pub const GlobalDescriptorTable = struct {
     /// Adds the given segment descriptor to the GDT, returning the segment selector.
     ///
     /// Panics if the GDT has no free entries left.
-    pub inline fn add_entry(self: *GlobalDescriptorTable, entry: Descriptor) SegmentSelector {
+    pub fn add_entry(self: *GlobalDescriptorTable, entry: Descriptor) SegmentSelector {
         switch (entry) {
             .UserSegment => |value| {
                 const rpl = if (value & Descriptor.DPL_RING_3 != 0) PrivilegeLevel.Ring3 else PrivilegeLevel.Ring0;
@@ -112,7 +112,7 @@ pub const GlobalDescriptorTable = struct {
     /// Loads the GDT in the CPU using the `lgdt` instruction. This does **not** alter any of the
     /// segment registers; you **must** (re)load them yourself using the appropriate
     /// functions: `instructions.segmentation.load_ss`, `instructions.segmentation.set_cs`
-    pub inline fn load(self: *GlobalDescriptorTable) void {
+    pub fn load(self: *GlobalDescriptorTable) void {
         const ptr = structures.DescriptorTablePointer{
             .base = @ptrToInt(&self.table),
             .limit = @as(u16, self.table.len * @sizeOf(u64) - 1),
@@ -121,7 +121,7 @@ pub const GlobalDescriptorTable = struct {
         instructions.tables.lgdt(&ptr);
     }
 
-    inline fn push(self: *GlobalDescriptorTable, value: u64) u16 {
+    fn push(self: *GlobalDescriptorTable, value: u64) u16 {
         if (self.next_free < self.table.len) {
             const index = self.next_free;
             self.table[index] = value;
@@ -141,31 +141,31 @@ test "GlobalDescriptorTable" {
 }
 
 /// Creates a segment descriptor for a long mode kernel code segment.
-pub inline fn kernel_code_segment() Descriptor {
+pub fn kernel_code_segment() Descriptor {
     const flags: u64 = Descriptor.USER_SEGMENT | Descriptor.PRESENT | Descriptor.EXECUTABLE | Descriptor.LONG_MODE;
     return Descriptor{ .UserSegment = flags };
 }
 
 /// Creates a segment descriptor for a long mode kernel data segment.
-pub inline fn kernel_data_segment() Descriptor {
+pub fn kernel_data_segment() Descriptor {
     const flags: u64 = Descriptor.USER_SEGMENT | Descriptor.PRESENT | Descriptor.WRITABLE | Descriptor.LONG_MODE;
     return Descriptor{ .UserSegment = flags };
 }
 
 /// Creates a segment descriptor for a long mode ring 3 data segment.
-pub inline fn user_data_segment() Descriptor {
+pub fn user_data_segment() Descriptor {
     const flags: u64 = Descriptor.USER_SEGMENT | Descriptor.PRESENT | Descriptor.WRITABLE | Descriptor.DPL_RING_3;
     return Descriptor{ .UserSegment = flags };
 }
 
 /// Creates a segment descriptor for a long mode ring 3 code segment.
-pub inline fn user_code_segment() Descriptor {
+pub fn user_code_segment() Descriptor {
     const flags: u64 = Descriptor.USER_SEGMENT | Descriptor.PRESENT | Descriptor.EXECUTABLE | Descriptor.LONG_MODE | Descriptor.DPL_RING_3;
     return Descriptor{ .UserSegment = flags };
 }
 
 /// Creates a TSS system descriptor for the given TSS.
-pub inline fn tss_segment(tss: *structures.tss.TaskStateSegment) Descriptor {
+pub fn tss_segment(tss: *structures.tss.TaskStateSegment) Descriptor {
     const ptr = @ptrToInt(tss);
 
     var low = Descriptor.PRESENT;
