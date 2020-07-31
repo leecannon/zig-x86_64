@@ -1,4 +1,4 @@
-usingnamespace @import("../common.zig");
+usingnamespace @import("../../common.zig");
 
 /// A frame allocator interface. Page size 4 KiB
 pub const FrameAllocator4KiB = FrameAllocator(structures.paging.PageSize.Size4KiB);

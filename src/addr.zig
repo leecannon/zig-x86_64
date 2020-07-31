@@ -70,7 +70,7 @@ pub const VirtAddr = packed struct {
 
     /// Checks whether the virtual address has the given alignment.
     pub fn is_aligned(self: VirtAddr, alignment: u64) bool {
-        raw_align_down(self.value, alignment) == self.value;
+        return raw_align_down(self.value, alignment) == self.value;
     }
 
     /// Returns the 12-bit page offset of this virtual address.
