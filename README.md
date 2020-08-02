@@ -4,7 +4,12 @@ This repo is a [zig](https://github.com/ziglang) reimplementation of rust's [x86
 
 ## Page Size change from Rust crate
 
-The original rust crate uses a generic PageSize over 4KiB, 2MiB and 1 GiB heavily, in this package there are seperate versions of structs for each with the page size appended to the struct name. However as a page size of 4KiB is the defacto standard, it's structs have no postfix e.g. PageIterator (4KiB), PageIterator2MiB and PageIterator1GiB.
+The original rust crate uses a generic PageSize over 4KiB, 2MiB and 1 GiB heavily, in this package there are seperate versions of structs for each with the page size appended to the struct name. 
+
+However as a page size of 4KiB is the defacto standard, it's structs have no postfix, for example: 
+ - PageIterator (4KiB)
+ - PageIterator2MiB
+ - PageIterator1GiB
 
 ## How to use
 
