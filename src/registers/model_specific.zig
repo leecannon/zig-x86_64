@@ -69,7 +69,12 @@ pub const Efer = struct {
 
     /// Read the current EFER flags.
     pub fn read() EferFlags {
-        return EferFlags.from_u64(read_msr(register));
+        return EferFlags.from_u64(read_raw());
+    }
+
+    /// Read the current raw EFER flags.
+    pub fn read_raw() u64 {
+        return read_msr(register);
     }
 
     /// Write the EFER flags.
@@ -79,13 +84,14 @@ pub const Efer = struct {
         write_msr(register, flags);
     }
 
-    pub const UpdateEferFunc = fn (*EferFlags) void;
-
-    /// Update EFER flags.
-    pub fn update(func: UpdateEferFunc) void {
-        var flags = read();
-        func(&flags);
-        write_raw(flags.to_u64());
+    /// Write the EFER flags, preserving reserved values.
+    ///
+    /// Preserves the value of reserved fields.
+    pub fn write(flags: EferFlags) void {
+        const old_value = read_raw();
+        const reserved = old_value & ~EferFlags.NO_PADDING;
+        const new_value = reserved | flags.to_u64();
+        write_raw(new_value);
     }
 };
 

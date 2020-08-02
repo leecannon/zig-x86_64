@@ -96,23 +96,37 @@ pub const RFlags = packed struct {
         ._padding_b = 0,
     });
 
+    /// Returns the current value of the RFLAGS register.
+    ///
+    /// Drops any unknown bits.
+    pub fn read() RFlags {
+        return RFlags.from_u64(read_raw());
+    }
+
     /// Returns the raw current value of the RFLAGS register.
-    pub fn read_raw() RFlags {
-        const raw = asm ("pushfq; popq %[ret]"
+    pub fn read_raw() u64 {
+        return asm ("pushfq; popq %[ret]"
             : [ret] "=r" (-> u64)
             :
             : "memory"
         );
-        return from_u64(raw);
+    }
+
+    /// Writes the RFLAGS register, preserves reserved bits.
+    pub fn write(self: RFlags) void {
+        const old_value = read_raw();
+        const reserved = old_value & ~NO_PADDING;
+        const new_value = reserved | self.to_u64();
+        write_raw(new_value);
     }
 
     /// Writes the RFLAGS register.
     ///
     /// Does not preserve any bits, including reserved bits.
-    pub fn write_raw(self: RFlags) void {
+    pub fn write_raw(value: u64) void {
         asm volatile ("pushq %[val]; popfq"
             :
-            : [val] "r" (self.to_u64())
+            : [val] "r" (value)
             : "memory", "flags"
         );
     }

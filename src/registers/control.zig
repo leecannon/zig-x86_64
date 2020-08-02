@@ -63,21 +63,35 @@ pub const Cr0 = packed struct {
         ._padding_a = 0,
     });
 
+    /// Read the current set of CR0 flags.
+    pub fn read() Cr0 {
+        return Cr0.from_u64(read_raw());
+    }
+
     /// Read the current raw CR0 value.
-    pub fn read_raw() Cr0 {
-        const raw = asm ("mov %%cr0, %[ret]"
+    pub fn read_raw() u64 {
+        return asm ("mov %%cr0, %[ret]"
             : [ret] "=r" (-> u64)
         );
-        return from_u64(raw);
+    }
+
+    /// Write CR0 flags.
+    ///
+    /// Preserves the value of reserved fields.
+    pub fn write(self: Cr0) void {
+        const old_value = read_raw();
+        const reserved = old_value & ~NO_PADDING;
+        const new_value = reserved | self.to_u64();
+        write_raw(new_value);
     }
 
     /// Write raw CR0 flags.
     ///
     /// Does _not_ preserve any values, including reserved fields.
-    pub fn write_raw(self: Cr0) void {
+    pub fn write_raw(value: u64) void {
         asm volatile ("mov %[val], %%cr0"
             :
-            : [val] "r" (self.to_u64())
+            : [val] "r" (value)
             : "memory"
         );
     }
@@ -256,21 +270,35 @@ pub const Cr4 = packed struct {
         ._padding_b = 0,
     });
 
-    /// Read the current raw CR4 value.
-    pub fn read_raw() Cr4 {
-        const raw = asm ("mov %%cr4, %[ret]"
-            : [ret] "=r" (-> u64)
-        );
-        return from_u64(raw);
+    /// Read the current set of Cr4 flags.
+    pub fn read() Cr4 {
+        return Cr4.from_u64(read_raw());
     }
 
-    /// Write raw CR4 flags.
+    /// Read the current raw Cr4 value.
+    pub fn read_raw() u64 {
+        return asm ("mov %%cr4, %[ret]"
+            : [ret] "=r" (-> u64)
+        );
+    }
+
+    /// Write Cr4 flags.
+    ///
+    /// Preserves the value of reserved fields.
+    pub fn write(self: Cr4) void {
+        const old_value = read_raw();
+        const reserved = old_value & ~NO_PADDING;
+        const new_value = reserved | self.to_u64();
+        write_raw(new_value);
+    }
+
+    /// Write raw Cr4 flags.
     ///
     /// Does _not_ preserve any values, including reserved fields.
-    pub fn write_raw(self: Cr4) void {
+    pub fn write_raw(value: u64) void {
         asm volatile ("mov %[val], %%cr4"
             :
-            : [val] "r" (self.to_u64())
+            : [val] "r" (value)
             : "memory"
         );
     }

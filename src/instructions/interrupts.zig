@@ -2,7 +2,7 @@ usingnamespace @import("../common.zig");
 
 /// Returns whether interrupts are enabled.
 pub fn are_enabled() bool {
-    return registers.rflags.RFlags.read_raw().INTERRUPT_FLAG;
+    return registers.rflags.RFlags.read().INTERRUPT_FLAG;
 }
 
 /// Enable interrupts.
@@ -36,6 +36,23 @@ pub fn without_interrupts(comptime func: fn () void) void {
     func();
 }
 
+/// Run a function with disabled interrupts.
+///
+/// Run the given function, disabling interrupts before running it (if they aren't already disabled).
+/// Afterwards, interrupts are enabling again if they were enabled before.
+///
+/// If you have other `enable` and `disable` calls _within_ the function, things may not work as expected.
+pub fn without_interrupts_argument(comptime func: fn (anytype) void, argument: anytype) void {
+    const enabled = are_enabled();
+
+    if (enabled) disable();
+    defer {
+        if (enabled) enable();
+    }
+
+    func(argument);
+}
+
 /// Run a function with disabled interrupts and return its result.
 ///
 /// Run the given function and return its result, disabling interrupts before running it (if they aren't already disabled).
@@ -51,6 +68,23 @@ pub fn without_interrupts_return(comptime ret_type: type, comptime func: fn () r
     }
 
     return func();
+}
+
+/// Run a function with disabled interrupts and return its result.
+///
+/// Run the given function and return its result, disabling interrupts before running it (if they aren't already disabled).
+/// Afterwards, interrupts are enabling again if they were enabled before.
+///
+/// If you have other `enable` and `disable` calls _within_ the function, things may not work as expected.
+pub fn without_interrupts_argument_return(comptime ret_type: type, comptime func: fn (anytype) ret_type, argument: anytype) ret_type {
+    const enabled = are_enabled();
+
+    if (enabled) disable();
+    defer {
+        if (enabled) enable();
+    }
+
+    return func(argument);
 }
 
 /// Atomically enable interrupts and put the CPU to sleep
