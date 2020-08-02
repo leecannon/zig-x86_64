@@ -10,6 +10,9 @@ pub const instructions = @import("instructions/instructions.zig");
 /// Access to various system and model specific registers.
 pub const registers = @import("registers/registers.zig");
 
+/// Various additional functionality in addition to the rust x86_64 crate
+pub const additional = @import("additional/additional.zig");
+
 pub const PrivilegeLevel = packed enum(u8) {
     /// Privilege-level 0 (most privilege): This level is used by critical system-software
     /// components that require direct access to, and control over, all processor and system

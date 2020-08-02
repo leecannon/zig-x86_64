@@ -84,7 +84,7 @@ test "SegmentSelector" {
 /// const user_data_segment = gdt.add_entry(user_data_segment());
 /// const tss_segment = gdt.add_entry(tss_segment(&tss)); // Pointer to structures.tss.TaskStateSegment
 /// gdt.load()
-/// 
+///
 /// instructions.segmentation.set_cs(kernel_code_segment);
 /// instructions.segmentation.load_ds(kernel_data_segment);
 /// instructions.segmentation.load_es(kernel_data_segment);
