@@ -3,47 +3,47 @@ usingnamespace @import("../../../common.zig");
 const paging = structures.paging;
 
 /// A page mapper interface. Page size 4 KiB
-pub const Mapper4KiB = Mapper(paging.PageSize.Size4KiB);
+pub const Mapper = CreateMapper(paging.PageSize.Size4KiB);
 
 /// A page mapper interface. Page size 2 MiB
-pub const Mapper2MiB = Mapper(paging.PageSize.Size2MiB);
+pub const Mapper2MiB = CreateMapper(paging.PageSize.Size2MiB);
 
 /// A page mapper interface. Page size 1 GiB
-pub const Mapper1GiB = Mapper(paging.PageSize.Size1GiB);
+pub const Mapper1GiB = CreateMapper(paging.PageSize.Size1GiB);
 
-fn Mapper(comptime page_size: paging.PageSize) type {
+fn CreateMapper(comptime page_size: paging.PageSize) type {
     const pageType = switch (page_size) {
-        .Size4KiB => paging.Page4KiB,
+        .Size4KiB => paging.Page,
         .Size2MiB => paging.Page2MiB,
         .Size1GiB => paging.Page1GiB,
     };
 
     const frameType = switch (page_size) {
-        .Size4KiB => paging.PhysFrame4KiB,
+        .Size4KiB => paging.PhysFrame,
         .Size2MiB => paging.PhysFrame2MiB,
         .Size1GiB => paging.PhysFrame1GiB,
     };
 
     const frameAllocatorType = switch (page_size) {
-        .Size4KiB => paging.FrameAllocator4KiB,
+        .Size4KiB => paging.FrameAllocator,
         .Size2MiB => paging.FrameAllocator2MiB,
         .Size1GiB => paging.FrameAllocator1GiB,
     };
 
     const flushType = switch (page_size) {
-        .Size4KiB => MapperFlush4KiB,
+        .Size4KiB => MapperFlush,
         .Size2MiB => MapperFlush2MiB,
         .Size1GiB => MapperFlush1GiB,
     };
 
     const unmapResultType = switch (page_size) {
-        .Size4KiB => UnmapResult4KiB,
+        .Size4KiB => UnmapResult,
         .Size2MiB => UnmapResult2MiB,
         .Size1GiB => UnmapResult1GiB,
     };
 
     const translateType = switch (page_size) {
-        .Size4KiB => TranslateResult4KiB,
+        .Size4KiB => TranslateResult,
         .Size2MiB => TranslateResult2MiB,
         .Size1GiB => TranslateResult1GiB,
     };
@@ -135,23 +135,23 @@ fn Mapper(comptime page_size: paging.PageSize) type {
 }
 
 /// Unmap result. Page size 4 KiB
-pub const UnmapResult4KiB = UnmapResult(paging.PageSize.Size4KiB);
+pub const UnmapResult = CreateUnmapResult(paging.PageSize.Size4KiB);
 
 /// Unmap result. Page size 2 MiB
-pub const UnmapResult2MiB = UnmapResult(paging.PageSize.Size2MiB);
+pub const UnmapResult2MiB = CreateUnmapResult(paging.PageSize.Size2MiB);
 
 /// Unmap result. Page size 1 GiB
-pub const UnmapResult1GiB = UnmapResult(paging.PageSize.Size1GiB);
+pub const UnmapResult1GiB = CreateUnmapResult(paging.PageSize.Size1GiB);
 
-fn UnmapResult(comptime page_size: paging.PageSize) type {
+fn CreateUnmapResult(comptime page_size: paging.PageSize) type {
     const frameType = switch (page_size) {
-        .Size4KiB => paging.PhysFrame4KiB,
+        .Size4KiB => paging.PhysFrame,
         .Size2MiB => paging.PhysFrame2MiB,
         .Size1GiB => paging.PhysFrame1GiB,
     };
 
     const flushType = switch (page_size) {
-        .Size4KiB => MapperFlush4KiB,
+        .Size4KiB => MapperFlush,
         .Size2MiB => MapperFlush2MiB,
         .Size1GiB => MapperFlush1GiB,
     };
@@ -162,17 +162,17 @@ fn UnmapResult(comptime page_size: paging.PageSize) type {
 }
 
 /// The return value of the `translate` function. Page size 4 KiB
-pub const TranslateResult4KiB = TranslateResult(paging.PageSize.Size4KiB);
+pub const TranslateResult = CreateTranslateResult(paging.PageSize.Size4KiB);
 
 /// The return value of the `translate` function. Page size 2 MiB
-pub const TranslateResult2MiB = TranslateResult(paging.PageSize.Size2MiB);
+pub const TranslateResult2MiB = CreateTranslateResult(paging.PageSize.Size2MiB);
 
 /// The return value of the `translate` function. Page size 1 GiB
-pub const TranslateResult1GiB = TranslateResult(paging.PageSize.Size1GiB);
+pub const TranslateResult1GiB = CreateTranslateResult(paging.PageSize.Size1GiB);
 
-fn TranslateResult(comptime page_size: paging.PageSize) type {
+fn CreateTranslateResult(comptime page_size: paging.PageSize) type {
     const frameType = switch (page_size) {
-        .Size4KiB => paging.PhysFrame4KiB,
+        .Size4KiB => paging.PhysFrame,
         .Size2MiB => paging.PhysFrame2MiB,
         .Size1GiB => paging.PhysFrame1GiB,
     };
@@ -208,25 +208,25 @@ pub const MapperFlushAll = struct {
 /// The old mapping might be still cached in the translation lookaside buffer (TLB), so it needs
 /// to be flushed from the TLB before it's accessed. This type is returned from function that
 /// change the mapping of a page to ensure that the TLB flush is not forgotten.
-pub const MapperFlush4KiB = MapperFlush(paging.PageSize.Size4KiB);
+pub const MapperFlush = CreateMapperFlush(paging.PageSize.Size4KiB);
 
 /// This type represents a page whose mapping has changed in the page table. Page size 2 MiB
 ///
 /// The old mapping might be still cached in the translation lookaside buffer (TLB), so it needs
 /// to be flushed from the TLB before it's accessed. This type is returned from function that
 /// change the mapping of a page to ensure that the TLB flush is not forgotten.
-pub const MapperFlush2MiB = MapperFlush(paging.PageSize.Size2MiB);
+pub const MapperFlush2MiB = CreateMapperFlush(paging.PageSize.Size2MiB);
 
 /// This type represents a page whose mapping has changed in the page table. Page size 1 GiB
 ///
 /// The old mapping might be still cached in the translation lookaside buffer (TLB), so it needs
 /// to be flushed from the TLB before it's accessed. This type is returned from function that
 /// change the mapping of a page to ensure that the TLB flush is not forgotten.
-pub const MapperFlush1GiB = MapperFlush(paging.PageSize.Size1GiB);
+pub const MapperFlush1GiB = CreateMapperFlush(paging.PageSize.Size1GiB);
 
-fn MapperFlush(comptime page_size: paging.PageSize) type {
+fn CreateMapperFlush(comptime page_size: paging.PageSize) type {
     const pageType = switch (page_size) {
-        .Size4KiB => paging.Page4KiB,
+        .Size4KiB => paging.Page,
         .Size2MiB => paging.Page2MiB,
         .Size1GiB => paging.Page1GiB,
     };

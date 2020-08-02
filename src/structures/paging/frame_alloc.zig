@@ -1,17 +1,17 @@
 usingnamespace @import("../../common.zig");
 
 /// A frame allocator interface. Page size 4 KiB
-pub const FrameAllocator4KiB = FrameAllocator(structures.paging.PageSize.Size4KiB);
+pub const FrameAllocator = CreateFrameAllocator(structures.paging.PageSize.Size4KiB);
 
 /// A frame allocator interface. Page size 2 MiB
-pub const FrameAllocator2MiB = FrameAllocator(structures.paging.PageSize.Size2MiB);
+pub const FrameAllocator2MiB = CreateFrameAllocator(structures.paging.PageSize.Size2MiB);
 
 /// A frame allocator interface. Page size 1 GiB
-pub const FrameAllocator1GiB = FrameAllocator(structures.paging.PageSize.Size1GiB);
+pub const FrameAllocator1GiB = CreateFrameAllocator(structures.paging.PageSize.Size1GiB);
 
-fn FrameAllocator(comptime page_size: structures.paging.PageSize) type {
+fn CreateFrameAllocator(comptime page_size: structures.paging.PageSize) type {
     const physFrameType = switch (page_size) {
-        .Size4KiB => structures.paging.PhysFrame4KiB,
+        .Size4KiB => structures.paging.PhysFrame,
         .Size2MiB => structures.paging.PhysFrame2MiB,
         .Size1GiB => structures.paging.PhysFrame1GiB,
     };

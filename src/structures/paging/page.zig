@@ -33,19 +33,19 @@ pub const PageSize = enum {
 };
 
 /// A virtual memory page. Page size 4 KiB
-pub const Page4KiB = Page(structures.paging.PageSize.Size4KiB);
+pub const Page = CreatePage(structures.paging.PageSize.Size4KiB);
 
 /// A virtual memory page. Page size 2 MiB
-pub const Page2MiB = Page(structures.paging.PageSize.Size2MiB);
+pub const Page2MiB = CreatePage(structures.paging.PageSize.Size2MiB);
 
 /// A virtual memory page. Page size 1 GiB
-pub const Page1GiB = Page(structures.paging.PageSize.Size1GiB);
+pub const Page1GiB = CreatePage(structures.paging.PageSize.Size1GiB);
 
 pub const PageError = error{AddressNotAligned};
 
-fn Page(comptime page_size: PageSize) type {
+fn CreatePage(comptime page_size: PageSize) type {
     const physFrameType = switch (page_size) {
-        .Size4KiB => structures.paging.PhysFrame4KiB,
+        .Size4KiB => structures.paging.PhysFrame,
         .Size2MiB => structures.paging.PhysFrame2MiB,
         .Size1GiB => structures.paging.PhysFrame1GiB,
     };
@@ -142,34 +142,34 @@ pub fn page_from_table_indices_2mib(p4_index: PageTableIndex, p3_index: PageTabl
 }
 
 /// Returns the 4KiB memory page with the specified page table indices.
-pub fn page_from_table_indices_4kib(p4_index: PageTableIndex, p3_index: PageTableIndex, p2_index: PageTableIndex, p1_index: PageTableIndex) Page4KiB {
+pub fn page_from_table_indices_4kib(p4_index: PageTableIndex, p3_index: PageTableIndex, p2_index: PageTableIndex, p1_index: PageTableIndex) Page {
     var addr: u64 = 0;
     set_bits(&addr, 39, 9, @as(u64, p4_index.value));
     set_bits(&addr, 30, 9, @as(u64, p3_index.value));
     set_bits(&addr, 21, 9, @as(u64, p2_index.value));
     set_bits(&addr, 12, 9, @as(u64, p1_index.value));
-    return Page4KiB.containing_address(VirtAddr.init(addr));
+    return Page.containing_address(VirtAddr.init(addr));
 }
 
 /// Generates iterators for ranges of physical memory frame. Page size 4 KiB
-pub const PageIterator4KiB = PageIteratorGenerator(Page4KiB);
+pub const PageIterator = CreatePageIterator(Page);
 
 /// Generates iterators for ranges of physical memory frame. Page size 2 MiB
-pub const PageIterator2MiB = PageIteratorGenerator(Page2MiB);
+pub const PageIterator2MiB = CreatePageIterator(Page2MiB);
 
 /// Generates iterators for ranges of physical memory frame. Page size 1 GiB
-pub const PageIterator1GiB = PageIteratorGenerator(Page1GiB);
+pub const PageIterator1GiB = CreatePageIterator(Page1GiB);
 
-fn PageIteratorGenerator(comptime page_type: type) type {
+fn CreatePageIterator(comptime page_type: type) type {
     const pageRangeType = switch (page_type) {
-        Page4KiB => PageRange4KiB,
+        Page => PageRange,
         Page2MiB => PageRange2MiB,
         Page1GiB => PageRange1GiB,
         else => @compileError("Non-Page type given"),
     };
 
     const pageRangeInclusiveType = switch (page_type) {
-        Page4KiB => PageRange4KiBInclusive,
+        Page => PageRangeInclusive,
         Page2MiB => PageRange2MiBInclusive,
         Page1GiB => PageRange1GiBInclusive,
         else => @compileError("Non-Page type given"),
@@ -189,17 +189,17 @@ fn PageIteratorGenerator(comptime page_type: type) type {
 }
 
 /// An range of pages, exclusive the upper bound. Page size 4 KiB
-pub const PageRange4KiB = PageRange(Page4KiB);
+pub const PageRange = CreatePageRange(Page);
 
 /// An range of pages, exclusive the upper bound. Page size 2 MiB
-pub const PageRange2MiB = PageRange(Page2MiB);
+pub const PageRange2MiB = CreatePageRange(Page2MiB);
 
 /// An range of pages, exclusive the upper bound. Page size 1 GiB
-pub const PageRange1GiB = PageRange(Page1GiB);
+pub const PageRange1GiB = CreatePageRange(Page1GiB);
 
-fn PageRange(comptime page_type: type) type {
+fn CreatePageRange(comptime page_type: type) type {
     comptime {
-        if (page_type != Page4KiB and page_type != Page2MiB and page_type != Page1GiB) {
+        if (page_type != Page and page_type != Page2MiB and page_type != Page1GiB) {
             @compileError("Non-Page type given");
         }
     }
@@ -229,17 +229,17 @@ fn PageRange(comptime page_type: type) type {
 }
 
 /// An range of pages, inclusive the upper bound. Page size 4 KiB
-pub const PageRange4KiBInclusive = PageRangeInclusive(Page4KiB);
+pub const PageRangeInclusive = CreatePageRangeInclusive(Page);
 
 /// An range of pages, inclusive the upper bound. Page size 2 MiB
-pub const PageRange2MiBInclusive = PageRangeInclusive(Page2MiB);
+pub const PageRange2MiBInclusive = CreatePageRangeInclusive(Page2MiB);
 
 /// An range of pages, inclusive the upper bound. Page size 1 GiB
-pub const PageRange1GiBInclusive = PageRangeInclusive(Page1GiB);
+pub const PageRange1GiBInclusive = CreatePageRangeInclusive(Page1GiB);
 
-fn PageRangeInclusive(comptime page_type: type) type {
+fn CreatePageRangeInclusive(comptime page_type: type) type {
     comptime {
-        if (page_type != Page4KiB and page_type != Page2MiB and page_type != Page1GiB) {
+        if (page_type != Page and page_type != Page2MiB and page_type != Page1GiB) {
             @compileError("Non-Page type given");
         }
     }
@@ -275,11 +275,11 @@ test "PageIterator" {
     var virtAddrB = VirtAddr.init(0x00000FFFFFFFFFFF);
     virtAddrB = virtAddrB.align_down(structures.paging.PageSize.Size4KiB.Size());
 
-    const a = try Page4KiB.from_start_address(virtAddrA);
-    const b = try Page4KiB.from_start_address(virtAddrB);
+    const a = try Page.from_start_address(virtAddrA);
+    const b = try Page.from_start_address(virtAddrB);
 
-    var iterator = PageIterator4KiB.range(a, b);
-    var inclusive_iterator = PageIterator4KiB.range_inclusive(a, b);
+    var iterator = PageIterator.range(a, b);
+    var inclusive_iterator = PageIterator.range_inclusive(a, b);
 
     std.testing.expect(!iterator.is_empty());
     std.testing.expect(!inclusive_iterator.is_empty());

@@ -1,17 +1,17 @@
 usingnamespace @import("../../common.zig");
 
 /// A physical memory frame. Page size 4 KiB
-pub const PhysFrame4KiB = PhysFrame(structures.paging.PageSize.Size4KiB);
+pub const PhysFrame = CreatePhysFrame(structures.paging.PageSize.Size4KiB);
 
 /// A physical memory frame. Page size 2 MiB
-pub const PhysFrame2MiB = PhysFrame(structures.paging.PageSize.Size2MiB);
+pub const PhysFrame2MiB = CreatePhysFrame(structures.paging.PageSize.Size2MiB);
 
 /// A physical memory frame. Page size 1 GiB
-pub const PhysFrame1GiB = PhysFrame(structures.paging.PageSize.Size1GiB);
+pub const PhysFrame1GiB = CreatePhysFrame(structures.paging.PageSize.Size1GiB);
 
 pub const PhysFrameError = error{AddressNotAligned};
 
-fn PhysFrame(comptime page_size: structures.paging.PageSize) type {
+fn CreatePhysFrame(comptime page_size: structures.paging.PageSize) type {
     return struct {
         const Self = @This();
         const size: structures.paging.PageSize = page_size;
@@ -63,24 +63,24 @@ fn PhysFrame(comptime page_size: structures.paging.PageSize) type {
 }
 
 /// Generates iterators for ranges of physical memory frame. Page size 4 KiB
-pub const PhysFrameIterator4KiB = PhysFrameIteratorGenerator(PhysFrame4KiB);
+pub const PhysFrameIterator = CreatePhysFrameIterator(PhysFrame);
 
 /// Generates iterators for ranges of physical memory frame. Page size 2 MiB
-pub const PhysFrameIterator2MiB = PhysFrameIteratorGenerator(PhysFrame2MiB);
+pub const PhysFrameIterator2MiB = CreatePhysFrameIterator(PhysFrame2MiB);
 
 /// Generates iterators for ranges of physical memory frame. Page size 1 GiB
-pub const PhysFrameIterator1GiB = PhysFrameIteratorGenerator(PhysFrame1GiB);
+pub const PhysFrameIterator1GiB = CreatePhysFrameIterator(PhysFrame1GiB);
 
-fn PhysFrameIteratorGenerator(comptime phys_frame_type: type) type {
+fn CreatePhysFrameIterator(comptime phys_frame_type: type) type {
     const physFrameRangeType = switch (phys_frame_type) {
-        PhysFrame4KiB => PhysFrameRange4KiB,
+        PhysFrame => PhysFrameRange,
         PhysFrame2MiB => PhysFrameRange2MiB,
         PhysFrame1GiB => PhysFrameRange1GiB,
         else => @compileError("Non-PhysFrame type given"),
     };
 
     const physFrameRangeInclusiveType = switch (phys_frame_type) {
-        PhysFrame4KiB => PhysFrameRange4KiBInclusive,
+        PhysFrame => PhysFrameRangeInclusive,
         PhysFrame2MiB => PhysFrameRange2MiBInclusive,
         PhysFrame1GiB => PhysFrameRange1GiBInclusive,
         else => @compileError("Non-PhysFrame type given"),
@@ -100,17 +100,17 @@ fn PhysFrameIteratorGenerator(comptime phys_frame_type: type) type {
 }
 
 /// An range of physical memory frames, exclusive the upper bound. Page size 4 KiB
-pub const PhysFrameRange4KiB = PhysFrameRange(PhysFrame4KiB);
+pub const PhysFrameRange = CreatePhysFrameRange(PhysFrame);
 
 /// An range of physical memory frames, exclusive the upper bound. Page size 2 MiB
-pub const PhysFrameRange2MiB = PhysFrameRange(PhysFrame2MiB);
+pub const PhysFrameRange2MiB = CreatePhysFrameRange(PhysFrame2MiB);
 
 /// An range of physical memory frames, exclusive the upper bound. Page size 1 GiB
-pub const PhysFrameRange1GiB = PhysFrameRange(PhysFrame1GiB);
+pub const PhysFrameRange1GiB = CreatePhysFrameRange(PhysFrame1GiB);
 
-fn PhysFrameRange(comptime phys_frame_type: type) type {
+fn CreatePhysFrameRange(comptime phys_frame_type: type) type {
     comptime {
-        if (phys_frame_type != PhysFrame4KiB and phys_frame_type != PhysFrame2MiB and phys_frame_type != PhysFrame1GiB) {
+        if (phys_frame_type != PhysFrame and phys_frame_type != PhysFrame2MiB and phys_frame_type != PhysFrame1GiB) {
             @compileError("Non-PhysFrame type given");
         }
     }
@@ -153,17 +153,17 @@ fn PhysFrameRange(comptime phys_frame_type: type) type {
 }
 
 /// An range of physical memory frames, inclusive the upper bound. Page size 4 KiB
-pub const PhysFrameRange4KiBInclusive = PhysFrameRangeInclusive(PhysFrame4KiB);
+pub const PhysFrameRangeInclusive = CreatePhysFrameRangeInclusive(PhysFrame);
 
 /// An range of physical memory frames, inclusive the upper bound. Page size 2 MiB
-pub const PhysFrameRange2MiBInclusive = PhysFrameRangeInclusive(PhysFrame2MiB);
+pub const PhysFrameRange2MiBInclusive = CreatePhysFrameRangeInclusive(PhysFrame2MiB);
 
 /// An range of physical memory frames, inclusive the upper bound. Page size 1 GiB
-pub const PhysFrameRange1GiBInclusive = PhysFrameRangeInclusive(PhysFrame1GiB);
+pub const PhysFrameRange1GiBInclusive = CreatePhysFrameRangeInclusive(PhysFrame1GiB);
 
-fn PhysFrameRangeInclusive(comptime phys_frame_type: type) type {
+fn CreatePhysFrameRangeInclusive(comptime phys_frame_type: type) type {
     comptime {
-        if (phys_frame_type != PhysFrame4KiB and phys_frame_type != PhysFrame2MiB and phys_frame_type != PhysFrame1GiB) {
+        if (phys_frame_type != PhysFrame and phys_frame_type != PhysFrame2MiB and phys_frame_type != PhysFrame1GiB) {
             @compileError("Non-PhysFrame type given");
         }
     }
@@ -212,11 +212,11 @@ test "PhysFrameIterator" {
     var physAddrB = PhysAddr.init(0x000FFFFFFFFFFFFF);
     physAddrB = physAddrB.align_down(structures.paging.PageSize.Size4KiB.Size());
 
-    const a = try PhysFrame4KiB.from_start_address(physAddrA);
-    const b = try PhysFrame4KiB.from_start_address(physAddrB);
+    const a = try PhysFrame.from_start_address(physAddrA);
+    const b = try PhysFrame.from_start_address(physAddrB);
 
-    var iterator = PhysFrameIterator4KiB.range(a, b);
-    var inclusive_iterator = PhysFrameIterator4KiB.range_inclusive(a, b);
+    var iterator = PhysFrameIterator.range(a, b);
+    var inclusive_iterator = PhysFrameIterator.range_inclusive(a, b);
 
     std.testing.expect(!iterator.is_empty());
     std.testing.expect(!inclusive_iterator.is_empty());

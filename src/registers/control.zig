@@ -143,7 +143,7 @@ pub const Cr3 = packed struct {
     }
 
     pub const FrameAndCr3 = struct {
-        frame: structures.paging.PhysFrame4KiB,
+        frame: structures.paging.PhysFrame,
         cr3: Cr3,
     };
 
@@ -156,7 +156,7 @@ pub const Cr3 = packed struct {
         const flags = from_u64(value);
 
         const addr = PhysAddr.init(value & 0x000ffffffffff000);
-        const frame = structures.paging.PhysFrame4KiB.containing_address(addr);
+        const frame = structures.paging.PhysFrame.containing_address(addr);
         return FrameAndCr3{ .frame = frame, .cr3 = flags };
     }
 
