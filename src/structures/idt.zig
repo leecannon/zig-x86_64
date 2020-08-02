@@ -424,7 +424,7 @@ pub const HandlerFuncEntry = Entry(HandlerFunc);
 pub const HandlerWithErrorCodeFunc = fn (interruptStackFrame: *InterruptStackFrame, error_code: u64) callconv(.Interrupt) void;
 pub const HandlerWithErrorCodeFuncEntry = Entry(HandlerWithErrorCodeFunc);
 
-pub const PageFaultHandlerFunc = fn (interruptStackFrame: *InterruptStackFrame, error_code: PageFaultErrorCode) callconv(.Interrupt) void;
+pub const PageFaultHandlerFunc = fn (interruptStackFrame: *InterruptStackFrame, page_fault_error_code: u64) callconv(.Interrupt) void;
 pub const PageFaultHandlerFuncEntry = Entry(PageFaultHandlerFunc);
 
 pub const HandlerDivergingFunc = fn (interruptStackFrame: *InterruptStackFrame) callconv(.Interrupt) noreturn;
@@ -555,39 +555,59 @@ test "InterruptStackFrame" {
     std.testing.expectEqual(@sizeOf(u64) * 5, @sizeOf(InterruptStackFrame));
 }
 
-/// Describes an page fault error code.
-pub const PageFaultErrorCode = packed struct {
-    /// If this flag is set, the page fault was caused by a page-protection violation,
-    /// else the page fault was caused by a not-present page.
-    PROTECTION_VIOLATION: bool,
-    /// If this flag is set, the memory access that caused the page fault was a write.
-    /// Else the access that caused the page fault is a memory read. This bit does not
-    /// necessarily indicate the cause of the page fault was a read or write violation.
-    CAUSED_BY_WRITE: bool,
-    /// If this flag is set, an access in user mode (CPL=3) caused the page fault. Else
-    /// an access in supervisor mode (CPL=0, 1, or 2) caused the page fault. This bit
-    /// does not necessarily indicate the cause of the page fault was a privilege violation.
-    USER_MODE: bool,
-    /// If this flag is set, the page fault is a result of the processor reading a 1 from
-    /// a reserved field within a page-translation-table entry.
-    MALFORMED_TABLE: bool,
-    /// If this flag is set, it indicates that the access that caused the page fault was an
-    /// instruction fetch.
-    INSTRUCTION_FETCH: bool,
+// Commented out is a packed struct representing a Page Fault error code, however due to https://github.com/ziglang/zig/issues/1481 it cannot be used
 
-    _padding1: bool,
-    _padding2: bool,
-    _padding3: bool,
+// /// Describes an page fault error code.
+// pub const PageFaultErrorCode = packed struct {
+//     /// If this flag is set, the page fault was caused by a page-protection violation,
+//     /// else the page fault was caused by a not-present page.
+//     PROTECTION_VIOLATION: bool,
+//     /// If this flag is set, the memory access that caused the page fault was a write.
+//     /// Else the access that caused the page fault is a memory read. This bit does not
+//     /// necessarily indicate the cause of the page fault was a read or write violation.
+//     CAUSED_BY_WRITE: bool,
+//     /// If this flag is set, an access in user mode (CPL=3) caused the page fault. Else
+//     /// an access in supervisor mode (CPL=0, 1, or 2) caused the page fault. This bit
+//     /// does not necessarily indicate the cause of the page fault was a privilege violation.
+//     USER_MODE: bool,
+//     /// If this flag is set, the page fault is a result of the processor reading a 1 from
+//     /// a reserved field within a page-translation-table entry.
+//     MALFORMED_TABLE: bool,
+//     /// If this flag is set, it indicates that the access that caused the page fault was an
+//     /// instruction fetch.
+//     INSTRUCTION_FETCH: bool,
 
-    _padding_a: u8,
-    _padding_b: u16,
-    _padding_c: u32,
-};
+//     _padding1: bool,
+//     _padding2: bool,
+//     _padding3: bool,
 
-test "PageFaultErrorCode" {
-    std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageFaultErrorCode));
-    std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageFaultErrorCode));
-}
+//     _padding_a: u8,
+//     _padding_b: u16,
+//     _padding_c: u32,
+// };
+
+// test "PageFaultErrorCode" {
+//     std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageFaultErrorCode));
+//     std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageFaultErrorCode));
+// }
+
+/// If this flag is set, the page fault was caused by a page-protection violation,
+/// else the page fault was caused by a not-present page.
+pub const PAGE_FAULT_PROTECTION_VIOLATION: u64 = 1;
+/// If this flag is set, the memory access that caused the page fault was a write.
+/// Else the access that caused the page fault is a memory read. This bit does not
+/// necessarily indicate the cause of the page fault was a read or write violation.
+pub const PAGE_FAULT_CAUSED_BY_WRITE: u64 = 1 << 1;
+/// If this flag is set, an access in user mode (CPL=3) caused the page fault. Else
+/// an access in supervisor mode (CPL=0, 1, or 2) caused the page fault. This bit
+/// does not necessarily indicate the cause of the page fault was a privilege violation.
+pub const PAGE_FAULT_USER_MODE: u64 = 1 << 2;
+/// If this flag is set, the page fault is a result of the processor reading a 1 from
+/// a reserved field within a page-translation-table entry.
+pub const PAGE_FAULT_MALFORMED_TABLE: u64 = 1 << 3;
+/// If this flag is set, it indicates that the access that caused the page fault was an
+/// instruction fetch.
+pub const PAGE_FAULT_INSTRUCTION_FETCH: u64 = 1 << 4;
 
 test "" {
     std.meta.refAllDecls(@This());
