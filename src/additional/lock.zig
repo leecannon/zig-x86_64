@@ -14,7 +14,7 @@ pub const SpinLock = struct {
         lock: *SpinLock,
 
         // Unlocks the lock
-        pub inline fn unlock(self: *LockToken) void {
+        pub inline fn unlock(self: *const LockToken) void {
             self.lock.locked = false;
             if (self.interrupts_enabled) instructions.interrupts.enable();
         }
@@ -33,7 +33,7 @@ pub const SpinLock = struct {
 
         if (interrupts_enabled) instructions.interrupts.disable();
 
-        while (@cmpxchgStrong(bool, self.locked, false, true, std.builtin.AtomicOrder.SeqCst, std.builtin.AtomicOrder.SeqCst) != null) {
+        while (@cmpxchgStrong(bool, &self.locked, false, true, std.builtin.AtomicOrder.SeqCst, std.builtin.AtomicOrder.SeqCst) != null) {
             instructions.interrupts.enable();
 
             spin_pause();
@@ -57,7 +57,7 @@ pub const SpinLock = struct {
 
         if (interrupts_enabled) instructions.interrupts.disable();
 
-        if (@cmpxchgStrong(bool, self.locked, false, true, std.builtin.AtomicOrder.SeqCst, std.builtin.AtomicOrder.SeqCst) == null) {
+        if (@cmpxchgStrong(bool, &self.locked, false, true, std.builtin.AtomicOrder.SeqCst, std.builtin.AtomicOrder.SeqCst) == null) {
             return LockToken{
                 .interrupts_enabled = interrupts_enabled,
                 .lock = self,
@@ -78,23 +78,23 @@ pub const UnsafeSpinLock = struct {
 
     /// A token representing a locked lock
     pub const LockToken = struct {
-        lock: *SpinLock,
+        lock: *UnsafeSpinLock,
 
         // Unlocks the lock
-        pub inline fn unlock(self: *LockToken) void {
+        pub inline fn unlock(self: *const LockToken) void {
             self.lock.locked = false;
         }
     };
 
     /// Create a new SpinLock
-    pub fn init() SpinLock {
-        return SpinLock{ .locked = false };
+    pub fn init() UnsafeSpinLock {
+        return UnsafeSpinLock{ .locked = false };
     }
 
     /// Acquire the lock.
     /// If the lock is not acquired immediately then a weak spin on the lock bit occurs
-    pub fn lock(self: *SpinLock) LockToken {
-        while (@cmpxchgStrong(bool, self.locked, false, true, std.builtin.AtomicOrder.SeqCst, std.builtin.AtomicOrder.SeqCst) != null) {
+    pub fn lock(self: *UnsafeSpinLock) LockToken {
+        while (@cmpxchgStrong(bool, &self.locked, false, true, std.builtin.AtomicOrder.SeqCst, std.builtin.AtomicOrder.SeqCst) != null) {
             spin_pause();
             while (self.locked) {
                 spin_pause();
@@ -107,8 +107,8 @@ pub const UnsafeSpinLock = struct {
     }
 
     /// Try to acquire the lock, returns a LockToken if acquired null otherwise
-    pub fn try_lock(self: *SpinLock) ?LockToken {
-        if (@cmpxchgStrong(bool, self.locked, false, true, std.builtin.AtomicOrder.SeqCst, std.builtin.AtomicOrder.SeqCst) == null) {
+    pub fn try_lock(self: *UnsafeSpinLock) ?LockToken {
+        if (@cmpxchgStrong(bool, &self.locked, false, true, std.builtin.AtomicOrder.SeqCst, std.builtin.AtomicOrder.SeqCst) == null) {
             return LockToken{
                 .lock = self,
             };

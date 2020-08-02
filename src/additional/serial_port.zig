@@ -78,27 +78,27 @@ pub const LockedSerialPort = struct {
     }
 
     /// Write a string
-    pub fn write_str(self: LockedSerialPort, str: []const u8) void {
+    pub fn write_str(self: *LockedSerialPort, str: []const u8) void {
         const token = self.lock.lock();
         defer token.unlock();
-        for (str) |char| self.writeChar(char);
+        for (str) |char| self.write_char(char);
     }
 
     /// Write formated output
-    pub inline fn write_format(self: LockedSerialPort, comptime fmt: []const u8, args: anytype) void {
-        writer().print(fmt, args) catch return;
+    pub inline fn write_format(self: *LockedSerialPort, comptime fmt: []const u8, args: anytype) void {
+        self.writer().print(fmt, args) catch return;
     }
 
-    pub const Writer = std.io.Writer(LockedSerialPort, error{}, writer_impl);
+    pub const Writer = std.io.Writer(*LockedSerialPort, error{}, writer_impl);
 
     /// The impl function driving the `std.io.Writer`
-    fn writer_impl(self: LockedSerialPort, bytes: []const u8) error{}!usize {
+    fn writer_impl(self: *LockedSerialPort, bytes: []const u8) error{}!usize {
         self.write_str(bytes);
         return bytes.len;
     }
 
     /// Create a `std.io.Writer` for this serial port
-    pub inline fn writer(self: LockedSerialPort) Writer {
+    pub inline fn writer(self: *LockedSerialPort) Writer {
         return .{ .context = self };
     }
 };
@@ -110,14 +110,14 @@ pub const SerialPort = struct {
     line_status_port: Port_u8,
 
     pub fn init(com_port: COMPort, baud_rate: BaudRate) SerialPort {
-        const data_port = @as(u16, @enumToInt(com_port));
+        const data_port = com_port_to_port(com_port);
 
         // Disable interupts
         write_u8(data_port + 1, 0x00);
 
         // Set Baudrate
         write_u8(data_port + 3, 0x80);
-        write_u8(data_port, @as(u8, @enumToInt(baud_rate)));
+        write_u8(data_port, baud_rate_to_divisor(baud_rate));
         write_u8(data_port + 1, 0x00);
 
         // 8 bits, no parity, one stop bit
@@ -146,12 +146,12 @@ pub const SerialPort = struct {
 
     /// Write a string
     pub fn write_str(self: SerialPort, str: []const u8) void {
-        for (str) |char| self.writeChar(char);
+        for (str) |char| self.write_char(char);
     }
 
     /// Write formated output
     pub inline fn write_format(self: SerialPort, comptime fmt: []const u8, args: anytype) void {
-        writer().print(fmt, args) catch return;
+        self.writer().print(fmt, args) catch return;
     }
 
     pub const Writer = std.io.Writer(SerialPort, error{}, writer_impl);
