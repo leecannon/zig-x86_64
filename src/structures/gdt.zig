@@ -73,12 +73,27 @@ test "SegmentSelector" {
 /// # Example
 /// ```zig
 ///
-/// var gdt = GlobalDescriptorTable.init();
-/// gdt.add_entry(kernel_code_segment());
-/// gdt.add_entry(user_code_segment());
-/// gdt.add_entry(user_data_segment());
+/// // Construct a structures.tss.TaskStateSegment
+/// // Fill it with the stacks, etc you want
+/// var tss: structures.tss.TaskStateSegment = SOMETHING_HERE
 ///
-/// // Add entry for TSS, call gdt.load() then update segment registers
+/// var gdt = GlobalDescriptorTable.init();
+/// const kernel_code_segment = gdt.add_entry(kernel_code_segment());
+/// const kernel_data_segment = gdt.add_entry(kernel_data_segment());
+/// const user_code_segment = gdt.add_entry(user_code_segment());
+/// const user_data_segment = gdt.add_entry(user_data_segment());
+/// const tss_segment = gdt.add_entry(tss_segment(&tss)); // Pointer to structures.tss.TaskStateSegment
+/// gdt.load()
+/// 
+/// instructions.segmentation.set_cs(kernel_code_segment);
+/// instructions.segmentation.load_ds(kernel_data_segment);
+/// instructions.segmentation.load_es(kernel_data_segment);
+/// instructions.segmentation.load_fs(kernel_data_segment);
+/// instructions.segmentation.load_gs(kernel_data_segment);
+/// instructions.segmentation.load_ss(kernel_data_segment);
+///
+/// instructions.tables.load_tss(tss_segment);
+///
 /// ```
 pub const GlobalDescriptorTable = struct {
     table: [8]u64,
@@ -154,7 +169,7 @@ pub fn kernel_data_segment() Descriptor {
 
 /// Creates a segment descriptor for a long mode ring 3 data segment.
 pub fn user_data_segment() Descriptor {
-    const flags: u64 = Descriptor.USER_SEGMENT | Descriptor.PRESENT | Descriptor.WRITABLE | Descriptor.DPL_RING_3;
+    const flags: u64 = Descriptor.USER_SEGMENT | Descriptor.PRESENT | Descriptor.WRITABLE | Descriptor.LONG_MODE | Descriptor.DPL_RING_3;
     return Descriptor{ .UserSegment = flags };
 }
 
