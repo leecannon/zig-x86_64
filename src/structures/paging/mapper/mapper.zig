@@ -178,9 +178,8 @@ fn TranslateResult(comptime page_size: paging.PageSize) type {
     };
 
     return struct {
-        /// The mapped frame.
-        frame: frameType, /// The offset whithin the mapped frame.
-        offset: u64
+        /// The offset whithin the mapped frame.
+        frame: frameType, offset: u64
     };
 }
 

@@ -35,27 +35,27 @@ pub const EferFlags = packed struct {
     _padding_b: u32,
 
     pub fn from_u64(value: u64) EferFlags {
-        return @bitCast(EferFlags, value).zero_padding();
+        return @bitCast(EferFlags, value & NO_PADDING);
     }
 
     pub fn to_u64(self: EferFlags) u64 {
-        return @bitCast(u64, self.zero_padding());
+        return @bitCast(u64, self) & NO_PADDING;
     }
 
-    pub fn zero_padding(self: EferFlags) EferFlags {
-        var result: EferFlags = @bitCast(EferFlags, @as(u64, 0));
-
-        result.SYSTEM_CALL_EXTENSIONS = self.SYSTEM_CALL_EXTENSIONS;
-        result.LONG_MODE_ENABLE = self.LONG_MODE_ENABLE;
-        result.LONG_MODE_ACTIVE = self.LONG_MODE_ACTIVE;
-        result.NO_EXECUTE_ENABLE = self.NO_EXECUTE_ENABLE;
-        result.SECURE_VIRTUAL_MACHINE_ENABLE = self.SECURE_VIRTUAL_MACHINE_ENABLE;
-        result.LONG_MODE_SEGMENT_LIMIT_ENABLE = self.LONG_MODE_SEGMENT_LIMIT_ENABLE;
-        result.FAST_FXSAVE_FXRSTOR = self.FAST_FXSAVE_FXRSTOR;
-        result.TRANSLATION_CACHE_EXTENSION = self.TRANSLATION_CACHE_EXTENSION;
-
-        return result;
-    }
+    const NO_PADDING: u64 = @bitCast(u64, EferFlags{
+        .SYSTEM_CALL_EXTENSIONS = true,
+        ._padding1_7 = 0,
+        .LONG_MODE_ENABLE = true,
+        ._padding9 = false,
+        .LONG_MODE_ACTIVE = true,
+        .NO_EXECUTE_ENABLE = true,
+        .SECURE_VIRTUAL_MACHINE_ENABLE = true,
+        .LONG_MODE_SEGMENT_LIMIT_ENABLE = true,
+        .FAST_FXSAVE_FXRSTOR = true,
+        .TRANSLATION_CACHE_EXTENSION = true,
+        ._padding_a = 0,
+        ._padding_b = 0,
+    });
 };
 
 test "EferFlags" {

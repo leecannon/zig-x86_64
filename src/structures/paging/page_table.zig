@@ -222,43 +222,57 @@ pub const PageTableFlags = packed struct {
     }
 
     pub fn from_u64(value: u64) PageTableFlags {
-        return @bitCast(PageTableFlags, value).zero_padding();
+        return @bitCast(PageTableFlags, value & NO_PADDING);
     }
 
     pub fn to_u64(self: PageTableFlags) u64 {
-        return @bitCast(u64, self.zero_padding());
+        return @bitCast(u64, self) & NO_PADDING;
     }
 
-    pub fn zero_padding(self: PageTableFlags) PageTableFlags {
-        var result: PageTableFlags = @bitCast(PageTableFlags, @as(u64, 0));
-
-        result.PRESENT = self.PRESENT;
-        result.WRITABLE = self.WRITABLE;
-        result.USER_ACCESSIBLE = self.USER_ACCESSIBLE;
-        result.WRITE_THROUGH = self.WRITE_THROUGH;
-        result.NO_CACHE = self.NO_CACHE;
-        result.ACCESSED = self.ACCESSED;
-        result.DIRTY = self.DIRTY;
-        result.HUGE_PAGE = self.HUGE_PAGE;
-        result.GLOBAL = self.GLOBAL;
-        result.BIT_9 = self.BIT_9;
-        result.BIT_10 = self.BIT_10;
-        result.BIT_11 = self.BIT_11;
-        result.BIT_52 = self.BIT_52;
-        result.BIT_53 = self.BIT_53;
-        result.BIT_54 = self.BIT_54;
-        result.BIT_55 = self.BIT_55;
-        result.BIT_56 = self.BIT_56;
-        result.BIT_57 = self.BIT_57;
-        result.BIT_58 = self.BIT_58;
-        result.BIT_59 = self.BIT_59;
-        result.BIT_60 = self.BIT_60;
-        result.BIT_61 = self.BIT_61;
-        result.BIT_62 = self.BIT_62;
-        result.NO_EXECUTE = self.NO_EXECUTE;
-
-        return result;
-    }
+    const NO_PADDING: u64 = @bitCast(u64, PageTableFlags{
+        .PRESENT = true,
+        .WRITABLE = true,
+        .USER_ACCESSIBLE = true,
+        .WRITE_THROUGH = true,
+        .NO_CACHE = true,
+        .ACCESSED = true,
+        .DIRTY = true,
+        .HUGE_PAGE = true,
+        .GLOBAL = true,
+        .BIT_9 = true,
+        .BIT_10 = true,
+        .BIT_11 = true,
+        ._padding_1 = 0,
+        ._padding_2 = 0,
+        ._padding_31 = false,
+        ._padding_32 = false,
+        ._padding_33 = false,
+        ._padding_34 = false,
+        ._padding_35 = false,
+        ._padding_36 = false,
+        ._padding_37 = false,
+        ._padding_38 = false,
+        ._padding_41 = false,
+        ._padding_42 = false,
+        ._padding_43 = false,
+        ._padding_44 = false,
+        ._padding_45 = false,
+        ._padding_46 = false,
+        ._padding_47 = false,
+        ._padding_48 = false,
+        .BIT_52 = true,
+        .BIT_53 = true,
+        .BIT_54 = true,
+        .BIT_55 = true,
+        .BIT_56 = true,
+        .BIT_57 = true,
+        .BIT_58 = true,
+        .BIT_59 = true,
+        .BIT_60 = true,
+        .BIT_61 = true,
+        .BIT_62 = true,
+        .NO_EXECUTE = true,
+    });
 };
 
 test "PageTableFlags" {

@@ -15,7 +15,7 @@ pub const Cr0 = packed struct {
     ///
     /// This flags allows lazily saving x87/MMX/SSE instructions on hardware context switches.
     TASK_SWITCHED: bool,
-    _padding4: u1,
+    _padding4: bool,
     /// Enables the native error reporting mechanism for x87 FPU errors.
     NUMERIC_ERROR: bool,
     _padding6_15: u16,
@@ -23,7 +23,7 @@ pub const Cr0 = packed struct {
     ///
     /// When set, it is not possible to write to read-only pages from ring 0.
     WRITE_PROTECT: bool,
-    _padding17: u1,
+    _padding17: bool,
     /// Enables automatic alignment checking.
     ALIGNMENT_MASK: bool,
     _padding19_28: u10,
@@ -38,29 +38,30 @@ pub const Cr0 = packed struct {
     _padding_a: u26,
 
     pub fn from_u64(value: u64) Cr0 {
-        return @bitCast(Cr0, value).zero_padding();
+        return @bitCast(Cr0, value & NO_PADDING);
     }
 
     pub fn to_u64(self: Cr0) u64 {
-        return @bitCast(u64, self.zero_padding());
+        return @bitCast(u64, self) & NO_PADDING;
     }
 
-    pub fn zero_padding(self: Cr0) Cr0 {
-        var result: Cr0 = @bitCast(Cr0, @as(u64, 0));
-
-        result.PROTECTED_MODE_ENABLE = self.PROTECTED_MODE_ENABLE;
-        result.MONITOR_COPROCESSOR = self.MONITOR_COPROCESSOR;
-        result.EMULATE_COPROCESSOR = self.EMULATE_COPROCESSOR;
-        result.TASK_SWITCHED = self.TASK_SWITCHED;
-        result.NUMERIC_ERROR = self.NUMERIC_ERROR;
-        result.WRITE_PROTECT = self.WRITE_PROTECT;
-        result.ALIGNMENT_MASK = self.ALIGNMENT_MASK;
-        result.NOT_WRITE_THROUGH = self.NOT_WRITE_THROUGH;
-        result.CACHE_DISABLE = self.CACHE_DISABLE;
-        result.PAGING = self.PAGING;
-
-        return result;
-    }
+    const NO_PADDING: u64 = @bitCast(u64, Cr0{
+        .PROTECTED_MODE_ENABLE = true,
+        .MONITOR_COPROCESSOR = true,
+        .EMULATE_COPROCESSOR = true,
+        .TASK_SWITCHED = true,
+        .NUMERIC_ERROR = true,
+        .WRITE_PROTECT = true,
+        .ALIGNMENT_MASK = true,
+        .NOT_WRITE_THROUGH = true,
+        .CACHE_DISABLE = true,
+        .PAGING = true,
+        ._padding4 = false,
+        ._padding6_15 = 0,
+        ._padding17 = false,
+        ._padding19_28 = 0,
+        ._padding_a = 0,
+    });
 
     /// Read the current raw CR0 value.
     pub fn read_raw() Cr0 {
@@ -85,6 +86,9 @@ pub const Cr0 = packed struct {
 test "Cr0" {
     std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(Cr0));
     std.testing.expectEqual(@sizeOf(u64), @sizeOf(Cr0));
+
+    const cr0 = Cr0.from_u64(1);
+    testing.expectEqual(@as(u64, 1), cr0.to_u64());
 }
 
 /// Contains the Page Fault Linear Address (PFLA).
@@ -114,21 +118,14 @@ pub const Cr3 = packed struct {
     _padding_c: u16,
     _padding_d: u32,
 
+    // The padding in this struct is actually required for the struct to be valid.
+    // The padding contains the PhysFrame
     pub fn from_u64(value: u64) Cr3 {
-        return @bitCast(Cr3, value).zero_padding();
+        return @bitCast(Cr3, value);
     }
 
     pub fn to_u64(self: Cr3) u64 {
-        return @bitCast(u64, self.zero_padding());
-    }
-
-    pub fn zero_padding(self: Cr3) Cr3 {
-        var result: Cr3 = @bitCast(Cr3, @as(u64, 0));
-
-        result.PAGE_LEVEL_WRITETHROUGH = self.PAGE_LEVEL_WRITETHROUGH;
-        result.PAGE_LEVEL_CACHE_DISABLE = self.PAGE_LEVEL_CACHE_DISABLE;
-
-        return result;
+        return @bitCast(u64, self);
     }
 
     pub const FrameAndCr3 = struct {
@@ -226,40 +223,38 @@ pub const Cr4 = packed struct {
     _padding_b: u32,
 
     pub fn from_u64(value: u64) Cr4 {
-        return @bitCast(Cr4, value).zero_padding();
+        return @bitCast(Cr4, value & NO_PADDING);
     }
 
     pub fn to_u64(self: Cr4) u64 {
-        return @bitCast(u64, self.zero_padding());
+        return @bitCast(u64, self) & NO_PADDING;
     }
 
-    pub fn zero_padding(self: Cr4) Cr4 {
-        var result: Cr4 = @bitCast(Cr4, @as(u64, 0));
-
-        result.VIRTUAL_8086_MODE_EXTENSIONS = self.VIRTUAL_8086_MODE_EXTENSIONS;
-        result.PROTECTED_MODE_VIRTUAL_INTERRUPTS = self.PROTECTED_MODE_VIRTUAL_INTERRUPTS;
-        result.TIMESTAMP_DISABLE = self.TIMESTAMP_DISABLE;
-        result.DEBUGGING_EXTENSIONS = self.DEBUGGING_EXTENSIONS;
-        result.PAGE_SIZE_EXTENSION = self.PAGE_SIZE_EXTENSION;
-        result.PHYSICAL_ADDRESS_EXTENSION = self.PHYSICAL_ADDRESS_EXTENSION;
-        result.MACHINE_CHECK_EXCEPTION = self.MACHINE_CHECK_EXCEPTION;
-        result.PAGE_GLOBAL = self.PAGE_GLOBAL;
-        result.PERFORMANCE_MONITOR_COUNTER = self.PERFORMANCE_MONITOR_COUNTER;
-        result.OSFXSR = self.OSFXSR;
-        result.OSXMMEXCPT_ENABLE = self.OSXMMEXCPT_ENABLE;
-        result.USER_MODE_INSTRUCTION_PREVENTION = self.USER_MODE_INSTRUCTION_PREVENTION;
-        result.L5_PAGING = self.L5_PAGING;
-        result.VIRTUAL_MACHINE_EXTENSIONS = self.VIRTUAL_MACHINE_EXTENSIONS;
-        result.SAFER_MODE_EXTENSIONS = self.SAFER_MODE_EXTENSIONS;
-        result.FSGSBASE = self.FSGSBASE;
-        result.PCID = self.PCID;
-        result.OSXSAVE = self.OSXSAVE;
-        result.SUPERVISOR_MODE_EXECUTION_PROTECTION = self.SUPERVISOR_MODE_EXECUTION_PROTECTION;
-        result.SUPERVISOR_MODE_ACCESS_PREVENTION = self.SUPERVISOR_MODE_ACCESS_PREVENTION;
-        result.PROTECTION_KEY = self.PROTECTION_KEY;
-
-        return result;
-    }
+    const NO_PADDING: u64 = @bitCast(u64, Cr4{
+        .VIRTUAL_8086_MODE_EXTENSIONS = true,
+        .PROTECTED_MODE_VIRTUAL_INTERRUPTS = true,
+        .TIMESTAMP_DISABLE = true,
+        .DEBUGGING_EXTENSIONS = true,
+        .PAGE_SIZE_EXTENSION = true,
+        .PHYSICAL_ADDRESS_EXTENSION = true,
+        .MACHINE_CHECK_EXCEPTION = true,
+        .PAGE_GLOBAL = true,
+        .PERFORMANCE_MONITOR_COUNTER = true,
+        .OSFXSR = true,
+        .OSXMMEXCPT_ENABLE = true,
+        .USER_MODE_INSTRUCTION_PREVENTION = true,
+        .L5_PAGING = true,
+        .VIRTUAL_MACHINE_EXTENSIONS = true,
+        .SAFER_MODE_EXTENSIONS = true,
+        .FSGSBASE = true,
+        .PCID = true,
+        .OSXSAVE = true,
+        .SUPERVISOR_MODE_EXECUTION_PROTECTION = true,
+        .SUPERVISOR_MODE_ACCESS_PREVENTION = true,
+        .PROTECTION_KEY = true,
+        ._padding_a = 0,
+        ._padding_b = 0,
+    });
 
     /// Read the current raw CR4 value.
     pub fn read_raw() Cr4 {
