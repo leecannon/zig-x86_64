@@ -39,7 +39,7 @@ fn baud_rate_to_divisor(baud_rate: BaudRate) u8 {
 pub const LockedSerialPort = struct {
     data_port: Port_u8,
     line_status_port: Port_u8,
-    lock: additional.lock.SpinLock,
+    lock: additional.lock.KernelSpinLock,
 
     pub fn init(com_port: COMPort, baud_rate: BaudRate) LockedSerialPort {
         const data_port = com_port_to_port(com_port);
@@ -67,7 +67,7 @@ pub const LockedSerialPort = struct {
         return LockedSerialPort{
             .data_port = Port_u8.init(data_port),
             .line_status_port = Port_u8.init(data_port + 5),
-            .lock = additional.lock.SpinLock.init(),
+            .lock = additional.lock.KernelSpinLock.init(),
         };
     }
 
