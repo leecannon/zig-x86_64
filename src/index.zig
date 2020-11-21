@@ -1,5 +1,4 @@
 pub usingnamespace @import("addr.zig");
-pub usingnamespace @import("bits.zig");
 
 /// Representations of various x86 specific structures and descriptor tables.
 pub const structures = @import("structures/structures.zig");
