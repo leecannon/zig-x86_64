@@ -61,9 +61,9 @@ pub const KernelSpinLock = struct {
 
             if (interrupts_enabled) instructions.interrupts.enable();
 
-            spin_pause();
+            instructions.pause();
             while (self.locked) {
-                spin_pause();
+                instructions.pause();
             }
 
             if (interrupts_enabled) instructions.interrupts.disable();
@@ -74,14 +74,6 @@ pub const KernelSpinLock = struct {
         std.testing.refAllDecls(@This());
     }
 };
-
-inline fn spin_pause() void {
-    asm volatile ("pause"
-        :
-        :
-        : "memory"
-    );
-}
 
 test "" {
     std.testing.refAllDecls(@This());

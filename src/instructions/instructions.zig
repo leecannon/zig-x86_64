@@ -37,6 +37,14 @@ pub fn bochs_breakpoint() void {
     asm volatile ("xchgw %%bx, %%bx");
 }
 
+pub inline fn pause() void {
+    asm volatile ("pause"
+        :
+        :
+        : "memory"
+    );
+}
+
 test "" {
     const std = @import("std");
     std.testing.refAllDecls(@This());
