@@ -375,31 +375,7 @@ pub const InterruptDescriptorTable = packed struct {
 
     /// Resets all entries of this IDT in place.
     pub fn reset(self: *InterruptDescriptorTable) void {
-        self.divide_error = HandlerFuncEntry.missing();
-        self.debug = HandlerFuncEntry.missing();
-        self.non_maskable_interrupt = HandlerFuncEntry.missing();
-        self.breakpoint = HandlerFuncEntry.missing();
-        self.overflow = HandlerFuncEntry.missing();
-        self.bound_range_exceeded = HandlerFuncEntry.missing();
-        self.invalid_opcode = HandlerFuncEntry.missing();
-        self.device_not_available = HandlerFuncEntry.missing();
-        self.double_fault = HandlerDivergingWithErrorCodeFuncEntry.missing();
-        self.coprocessor_segment_overrun = HandlerFuncEntry.missing();
-        self.invalid_tss = HandlerWithErrorCodeFuncEntry.missing();
-        self.segment_not_present = HandlerWithErrorCodeFuncEntry.missing();
-        self.stack_segment_fault = HandlerWithErrorCodeFuncEntry.missing();
-        self.general_protection_fault = HandlerWithErrorCodeFuncEntry.missing();
-        self.page_fault = PageFaultHandlerFuncEntry.missing();
-        self.reserved_1 = HandlerFuncEntry.missing();
-        self.x87_floating_point = HandlerFuncEntry.missing();
-        self.alignment_check = HandlerWithErrorCodeFuncEntry.missing();
-        self.machine_check = HandlerDivergingFuncEntry.missing();
-        self.simd_floating_point = HandlerFuncEntry.missing();
-        self.virtualization = HandlerFuncEntry.missing();
-        self.reserved_2 = [_]HandlerFuncEntry{HandlerFuncEntry.missing()} ** 9;
-        self.security_exception = HandlerWithErrorCodeFuncEntry.missing();
-        self.reserved_3 = HandlerFuncEntry.missing();
-        self.interrupts = [_]HandlerFuncEntry{HandlerFuncEntry.missing()} ** (256 - 32);
+        self.* = InterruptDescriptorTable.init();
     }
 
     /// Loads the IDT in the CPU using the `lidt` command.
@@ -410,6 +386,10 @@ pub const InterruptDescriptorTable = packed struct {
         };
 
         instructions.tables.lidt(&ptr);
+    }
+
+    test "" {
+        std.testing.refAllDecls(@This());
     }
 };
 
@@ -472,6 +452,10 @@ fn Entry(comptime handler_type: type) type {
             self.gdt_selector = instructions.segmentation.get_cs().selector;
 
             self.options.set_present(true);
+        }
+
+        test "" {
+            std.testing.refAllDecls(@This());
         }
     };
 }
@@ -536,6 +520,10 @@ pub const EntryOptions = packed struct {
         // The hardware IST index starts at 1, but our software IST index
         // starts at 0. Therefore we need to add 1 here.
         set_bits(&self.value, 0, 3, index + 1);
+    }
+
+    test "" {
+        std.testing.refAllDecls(@This());
     }
 };
 

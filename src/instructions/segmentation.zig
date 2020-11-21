@@ -76,6 +76,59 @@ pub fn get_cs() structures.gdt.SegmentSelector {
     return structures.gdt.SegmentSelector{ .selector = cs };
 }
 
+/// Writes the FS segment base address
+///
+/// ## Safety
+///
+/// If `CR4.FSGSBASE` is not set, this instruction will throw an `#UD`.
+///
+/// The caller must ensure that this write operation has no unsafe side
+/// effects, as the FS segment base address is often used for thread
+/// local storage.
+pub fn wrfsbase(value: u64) void {
+    asm volatile ("wrfsbase %[val]"
+        :
+        : [val] "r" (value)
+    );
+}
+
+/// Reads the FS segment base address
+///
+/// ## Safety
+///
+/// If `CR4.FSGSBASE` is not set, this instruction will throw an `#UD`.
+pub fn rdfsbase() u64 {
+    return asm volatile ("rdfsbase %[ret]"
+        : [ret] "=r" (-> u64)
+    );
+}
+
+/// Writes the GS segment base address
+///
+/// ## Safety
+///
+/// If `CR4.FSGSBASE` is not set, this instruction will throw an `#UD`.
+///
+/// The caller must ensure that this write operation has no unsafe side
+/// effects, as the GS segment base address might be in use.
+pub fn wrgsbase(value: u64) void {
+    asm volatile ("wrgsbase %[val]"
+        :
+        : [val] "r" (value)
+    );
+}
+
+/// Reads the GS segment base address
+///
+/// ## Safety
+///
+/// If `CR4.FSGSBASE` is not set, this instruction will throw an `#UD`.
+pub fn rdgsbase() u64 {
+    return asm volatile ("rdgsbase %[ret]"
+        : [ret] "=r" (-> u64)
+    );
+}
+
 test "" {
     std.testing.refAllDecls(@This());
 }

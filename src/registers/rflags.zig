@@ -130,6 +130,10 @@ pub const RFlags = packed struct {
             : "memory", "flags"
         );
     }
+
+    test "" {
+        std.testing.refAllDecls(@This());
+    }
 };
 
 test "RFlags" {

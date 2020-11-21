@@ -1,16 +1,11 @@
 usingnamespace @import("../common.zig");
 
-const State = enum(u8) {
-    Unlocked,
-    Locked,
-};
-
 /// A spinlock that disables interrupts (if they are enabled) when the lock is taken
 /// and enables them again when it is released if they were previously enabled.
 /// ### Remarks:
 /// If the lock is not acquired immediately then a weak spin on the lock bit occurs with interrupts enabled
 pub const KernelSpinLock = struct {
-    state: State,
+    locked: bool,
 
     /// A token representing a locked lock
     pub const LockToken = struct {
@@ -20,14 +15,14 @@ pub const KernelSpinLock = struct {
 
         // Unlocks the lock
         pub inline fn unlock(self: *const LockToken) void {
-            @atomicStore(State, &self.lock.state, .Unlocked, .Release);
+            @atomicStore(bool, &self.lock.locked, false, .Release);
             if (self.interrupts_enabled) instructions.interrupts.enable();
         }
     };
 
     /// Create a new SpinLock
     pub fn init() KernelSpinLock {
-        return KernelSpinLock{ .state = .Unlocked };
+        return KernelSpinLock{ .locked = false };
     }
 
     /// Try to acquire the lock, returns a LockToken if acquired null otherwise
@@ -37,16 +32,15 @@ pub const KernelSpinLock = struct {
 
         if (interrupts_enabled) instructions.interrupts.disable();
 
-        switch (@atomicRmw(State, &self.state, .Xchg, .Locked, .Acquire)) {
-            .Unlocked => return LockToken{
+        if (@cmpxchgWeak(bool, &self.locked, false, true, .Acquire, .Acquire) == null) {
+            return LockToken{
                 .interrupts_enabled = interrupts_enabled,
                 .lock = self,
-            },
-            .Locked => {
-                if (interrupts_enabled) instructions.interrupts.enable();
-                return null;
-            },
+            };
         }
+
+        if (interrupts_enabled) instructions.interrupts.enable();
+        return null;
     }
 
     /// Acquire the lock.
@@ -58,7 +52,7 @@ pub const KernelSpinLock = struct {
         if (interrupts_enabled) instructions.interrupts.disable();
 
         while (true) {
-            if (@atomicRmw(State, &self.state, .Xchg, .Locked, .Acquire) == .Unlocked) {
+            if (@cmpxchgWeak(bool, &self.locked, false, true, .Acquire, .Acquire) == null) {
                 return LockToken{
                     .interrupts_enabled = interrupts_enabled,
                     .lock = self,
@@ -68,12 +62,16 @@ pub const KernelSpinLock = struct {
             if (interrupts_enabled) instructions.interrupts.enable();
 
             spin_pause();
-            while (self.state == .Locked) {
+            while (self.locked) {
                 spin_pause();
             }
 
             if (interrupts_enabled) instructions.interrupts.disable();
         }
+    }
+
+    test "" {
+        std.testing.refAllDecls(@This());
     }
 };
 

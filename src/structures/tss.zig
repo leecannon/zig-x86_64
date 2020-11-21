@@ -29,6 +29,10 @@ pub const TaskStateSegment = packed struct {
             .iomap_base = 0,
         };
     }
+
+    test "" {
+        std.testing.refAllDecls(@This());
+    }
 };
 
 test "TaskStateSegment" {

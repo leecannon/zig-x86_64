@@ -39,6 +39,10 @@ pub const SegmentSelector = packed struct {
         };
         try std.fmt.formatType(SegmentSelectorFormat{ .index = value.gdt_index(), .rpl = value.get_rpl() }, fmt, options, writer, 1);
     }
+
+    test "" {
+        std.testing.refAllDecls(@This());
+    }
 };
 
 test "SegmentSelector" {
@@ -146,6 +150,10 @@ pub const GlobalDescriptorTable = struct {
 
         @panic("GDT full");
     }
+
+    test "" {
+        std.testing.refAllDecls(@This());
+    }
 };
 
 test "GlobalDescriptorTable" {
@@ -155,28 +163,22 @@ test "GlobalDescriptorTable" {
     _ = gdt.add_entry(user_data_segment());
 }
 
-/// Creates a segment descriptor for a long mode kernel code segment.
+/// Creates a segment descriptor for a 64-bit kernel code segment. Suitable
+/// for use with `syscall` or 64-bit `sysenter`.
 pub fn kernel_code_segment() Descriptor {
-    const flags: u64 = Descriptor.USER_SEGMENT | Descriptor.PRESENT | Descriptor.EXECUTABLE | Descriptor.LONG_MODE;
-    return Descriptor{ .UserSegment = flags };
+    return Descriptor{ .UserSegment = Descriptor.KERNEL_CODE64 };
 }
 
-/// Creates a segment descriptor for a long mode kernel data segment.
-pub fn kernel_data_segment() Descriptor {
-    const flags: u64 = Descriptor.USER_SEGMENT | Descriptor.PRESENT | Descriptor.WRITABLE | Descriptor.LONG_MODE;
-    return Descriptor{ .UserSegment = flags };
-}
-
-/// Creates a segment descriptor for a long mode ring 3 data segment.
+/// Creates a segment descriptor for a ring 3 data segment (32-bit or
+/// 64-bit). Suitable for use with `sysret` or `sysexit`.
 pub fn user_data_segment() Descriptor {
-    const flags: u64 = Descriptor.USER_SEGMENT | Descriptor.PRESENT | Descriptor.WRITABLE | Descriptor.LONG_MODE | Descriptor.DPL_RING_3;
-    return Descriptor{ .UserSegment = flags };
+    return Descriptor{ .UserSegment = Descriptor.USER_DATA };
 }
 
-/// Creates a segment descriptor for a long mode ring 3 code segment.
+/// Creates a segment descriptor for a 64-bit ring 3 code segment. Suitable
+/// for use with `sysret` or `sysexit`.
 pub fn user_code_segment() Descriptor {
-    const flags: u64 = Descriptor.USER_SEGMENT | Descriptor.PRESENT | Descriptor.EXECUTABLE | Descriptor.LONG_MODE | Descriptor.DPL_RING_3;
-    return Descriptor{ .UserSegment = flags };
+    return Descriptor{ .UserSegment = Descriptor.USER_CODE64 };
 }
 
 /// Creates a TSS system descriptor for the given TSS.
@@ -208,21 +210,68 @@ pub fn tss_segment(tss: *structures.tss.TaskStateSegment) Descriptor {
 /// Segmentation is no longer supported in 64-bit mode, so most of the descriptor
 /// contents are ignored.
 pub const Descriptor = union(enum) {
-    /// For data segments, this flag sets the segment as writable. Ignored for code segments.
+    /// Set by the processor if this segment has been accessed. Only cleared by software.
+    pub const ACCESSED: u64 = 1 << 40;
+
+    /// For 32-bit data segments, sets the segment as writable. For 32-bit code segments,
+    /// sets the segment as _readable_. In 64-bit mode, ignored for all segments.
     pub const WRITABLE: u64 = 1 << 41;
-    /// Marks a code segment as “conforming”. This influences the privilege checks that
-    /// occur on control transfers.
+
+    /// For code segments, sets the segment as “conforming”, influencing the
+    /// privilege checks that occur on control transfers. For 32-bit data segments,
+    /// sets the segment as "expand down". In 64-bit mode, ignored for data segments.
     pub const CONFORMING: u64 = 1 << 42;
-    /// This flag must be set for code segments.
+
+    /// This flag must be set for code segments and unset for data segments.
     pub const EXECUTABLE: u64 = 1 << 43;
+
     /// This flag must be set for user segments (in contrast to system segments).
     pub const USER_SEGMENT: u64 = 1 << 44;
+
+    /// The DPL for this descriptor is Ring 3. In 64-bit mode, ignored for data segments.
+    pub const DPL_RING_3: u64 = 3 << 45;
+
     /// Must be set for any segment, causes a segment not present exception if not set.
     pub const PRESENT: u64 = 1 << 47;
-    /// Must be set for long mode code segments.
+
+    /// Available for use by the Operating System
+    pub const AVAILABLE: u64 = 1 << 52;
+
+    /// Must be set for 64-bit code segments, unset otherwise.
     pub const LONG_MODE: u64 = 1 << 53;
-    /// The DPL for this descriptor is Ring 3
-    pub const DPL_RING_3: u64 = 1 << 45;
+
+    /// Use 32-bit (as opposed to 16-bit) operands. If [`LONG_MODE`] is set,
+    /// this must be unset. In 64-bit mode, ignored for data segments.
+    pub const DEFAULT_SIZE: u64 = 1 << 54;
+
+    /// Limit field is scaled by 4096 bytes. In 64-bit mode, ignored for all segments.
+    pub const GRANULARITY: u64 = 1 << 55;
+
+    /// Bits 0..=15 of the limit field (ignored in 64-bit mode)
+    pub const LIMIT_0_15: u64 = 0xFFFF;
+    /// Bits 16..=19 of the limit field (ignored in 64-bit mode)
+    pub const LIMIT_16_19: u64 = 0xF << 48;
+    /// Bits 0..=23 of the base field (ignored in 64-bit mode, except for fs and gs)
+    pub const BASE_0_23: u64 = 0xFF_FFFF << 16;
+    /// Bits 24..=31 of the base field (ignored in 64-bit mode, except for fs and gs)
+    pub const BASE_24_31: u64 = 0xFF << 56;
+
+    /// Flags that we set for all our default segments
+    pub const COMMON: u64 = USER_SEGMENT | PRESENT | WRITABLE | ACCESSED | LIMIT_0_15 | LIMIT_16_19 | GRANULARITY;
+
+    /// A kernel data segment (64-bit or flat 32-bit)
+    pub const KERNEL_DATA: u64 = COMMON | DEFAULT_SIZE;
+    /// A flat 32-bit kernel code segment
+    pub const KERNEL_CODE32: u64 = COMMON | EXECUTABLE | DEFAULT_SIZE;
+    /// A 64-bit kernel code segment
+    pub const KERNEL_CODE64: u64 = COMMON | EXECUTABLE | LONG_MODE;
+
+    /// A user data segment (64-bit or flat 32-bit)
+    pub const USER_DATA: u64 = KERNEL_DATA | DPL_RING_3;
+    /// A flat 32-bit user code segment
+    pub const USER_CODE32: u64 = KERNEL_CODE32 | DPL_RING_3;
+    /// A 64-bit user code segment
+    pub const USER_CODE64: u64 = KERNEL_CODE64 | DPL_RING_3;
 
     /// Descriptor for a code or data segment.
     ///
@@ -236,6 +285,21 @@ pub const Descriptor = union(enum) {
         low: u64,
         high: u64,
     };
+
+    test "Descriptors match linux" {
+        // Make sure our defaults match the ones used by the Linux kernel.
+        // Constants pulled from an old version of arch/x86/kernel/cpu/common.c
+        std.testing.expectEqual(0x00af9b000000ffff, Descriptor.KERNEL_CODE64);
+        std.testing.expectEqual(0x00cf9b000000ffff, Descriptor.KERNEL_CODE32);
+        std.testing.expectEqual(0x00cf93000000ffff, Descriptor.KERNEL_DATA);
+        std.testing.expectEqual(0x00affb000000ffff, Descriptor.USER_CODE64);
+        std.testing.expectEqual(0x00cffb000000ffff, Descriptor.USER_CODE32);
+        std.testing.expectEqual(0x00cff3000000ffff, Descriptor.USER_DATA);
+    }
+
+    test "" {
+        std.testing.refAllDecls(@This());
+    }
 };
 
 test "SystemSegmentData" {

@@ -112,7 +112,7 @@ pub fn without_interrupts_argument_return(comptime ret_type: type, comptime func
 ///
 /// See <http://lkml.iu.edu/hypermail/linux/kernel/1009.2/01406.html> for more
 /// information.
-pub fn enable_interrupts_and_hlt() void {
+pub fn enable_and_hlt() void {
     asm volatile ("sti; hlt");
 }
 

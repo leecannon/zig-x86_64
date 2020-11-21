@@ -305,6 +305,10 @@ pub const PageTable = extern struct {
     pub fn get_at_index(self: *PageTable, index: PageTableIndex) *PageTableEntry {
         return &self.entries[index.value];
     }
+
+    test "" {
+        std.testing.refAllDecls(@This());
+    }
 };
 
 test "" {
@@ -326,6 +330,10 @@ pub const PageOffset = packed struct {
     pub fn init_truncate(offset: u16) PageOffset {
         return PageOffset{ .value = offset % (1 << 12) };
     }
+
+    test "" {
+        std.testing.refAllDecls(@This());
+    }
 };
 
 /// A 9-bit index into a page table.
@@ -341,6 +349,10 @@ pub const PageTableIndex = packed struct {
     /// Creates a new index from the given `u16`. Throws away bits if the value is >=ENTRY_COUNT.
     pub fn init_truncate(index: u16) PageTableIndex {
         return PageTableIndex{ .value = index % @as(u16, ENTRY_COUNT) };
+    }
+
+    test "" {
+        std.testing.refAllDecls(@This());
     }
 };
 

@@ -48,6 +48,10 @@ pub const RdRand = struct {
         );
         return if (carry == 0) null else num;
     }
+
+    test "" {
+        std.testing.refAllDecls(@This());
+    }
 };
 
 /// Used to obtain seed numbers using x86_64's RDSEED opcode
@@ -97,6 +101,10 @@ pub const RdSeed = struct {
             : "cc"
         );
         return if (carry == 0) null else num;
+    }
+
+    test "" {
+        std.testing.refAllDecls(@This());
     }
 };
 

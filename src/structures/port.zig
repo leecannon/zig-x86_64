@@ -1,13 +1,13 @@
 usingnamespace @import("../common.zig");
 
 /// A u8 I/O port
-pub const Port_u8 = Port(.u8);
+pub const Portu8 = Port(.u8);
 
 /// A u16 I/O port
-pub const Port_u16 = Port(.u16);
+pub const Portu16 = Port(.u16);
 
 /// A u32 I/O port
-pub const Port_u32 = Port(.u32);
+pub const Portu32 = Port(.u32);
 
 const PortBitness = enum {
     u8,
@@ -47,6 +47,10 @@ fn Port(comptime bitness: PortBitness) type {
                 .u16 => instructions.port.write_u16(self.port, value),
                 .u32 => instructions.port.write_u32(self.port, value),
             }
+        }
+
+        test "" {
+            std.testing.refAllDecls(@This());
         }
     };
 }

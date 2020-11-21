@@ -23,6 +23,10 @@ fn CreateFrameAllocator(comptime page_size: structures.paging.PageSize) type {
         allocate_frame: fn (self: *Self) ?physFrameType,
         /// Deallocate the given unused frame.
         deallocate_frame: fn (self: *Self, frame: physFrameType) void,
+
+        test "" {
+            std.testing.refAllDecls(@This());
+        }
     };
 }
 

@@ -59,6 +59,10 @@ fn CreatePhysFrame(comptime page_size: structures.paging.PageSize) type {
 
             try writer.writeAll(")");
         }
+
+        test "" {
+            std.testing.refAllDecls(@This());
+        }
     };
 }
 
@@ -95,6 +99,10 @@ fn CreatePhysFrameIterator(comptime phys_frame_type: type) type {
         /// Returns a range of frames, inclusive `end`.
         pub fn range_inclusive(start: phys_frame_type, end: phys_frame_type) physFrameRangeInclusiveType {
             return physFrameRangeInclusiveType{ .start = start, .end = end };
+        }
+
+        test "" {
+            std.testing.refAllDecls(@This());
         }
     };
 }
@@ -149,6 +157,10 @@ fn CreatePhysFrameRange(comptime phys_frame_type: type) type {
             }
             return null;
         }
+
+        test "" {
+            std.testing.refAllDecls(@This());
+        }
     };
 }
 
@@ -201,6 +213,10 @@ fn CreatePhysFrameRangeInclusive(comptime phys_frame_type: type) type {
                 }
             }
             return null;
+        }
+
+        test "" {
+            std.testing.refAllDecls(@This());
         }
     };
 }

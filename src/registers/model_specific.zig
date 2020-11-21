@@ -56,6 +56,10 @@ pub const EferFlags = packed struct {
         ._padding_a = 0,
         ._padding_b = 0,
     });
+
+    test "" {
+        std.testing.refAllDecls(@This());
+    }
 };
 
 test "EferFlags" {
@@ -93,6 +97,10 @@ pub const Efer = struct {
         const new_value = reserved | flags.to_u64();
         write_raw(new_value);
     }
+
+    test "" {
+        std.testing.refAllDecls(@This());
+    }
 };
 
 /// Syscall Register: STAR
@@ -114,7 +122,7 @@ pub const Star = struct {
     /// The remaining fields are ignored because they are not valid for long mode
     pub fn read_raw() ReadRawStruct {
         const value = read_msr(register);
-        return StarHelper{ .sysret = get_bits(value, 48, 16), .syscall = get_bits(value, 32, 16) };
+        return ReadRawStruct{ .sysret = @intCast(u16, get_bits(value, 48, 16)), .syscall = @intCast(u16, get_bits(value, 32, 16)) };
     }
 
     pub const ReadStruct = struct {
@@ -184,15 +192,19 @@ pub const Star = struct {
             return WriteErrors.InvlaidSyscallOffset;
         }
 
-        if (ss_sysret.get_rpl() != .Ring3) {
+        if ((ss_sysret.get_rpl() catch return WriteErrors.SysretNotRing3) != .Ring3) {
             return WriteErrors.SysretNotRing3;
         }
 
-        if (ss_syscall.get_rpl() != .Ring0) {
+        if ((ss_syscall.get_rpl() catch return WriteErrors.SyscallNotRing0) != .Ring0) {
             return WriteErrors.SyscallNotRing0;
         }
 
         write_raw(ss_sysret.selector - 8, cs_syscall.selector);
+    }
+
+    test "" {
+        std.testing.refAllDecls(@This());
     }
 };
 
@@ -221,6 +233,10 @@ pub const SFMask = struct {
     pub fn write(value: registers.rflags.RFlags) void {
         write_msr(register, value.to_u64());
     }
+
+    test "" {
+        std.testing.refAllDecls(@This());
+    }
 };
 
 /// Syscall Register: LSTAR
@@ -248,6 +264,10 @@ fn construct_virtaddr_register(comptime reg: u32) type {
         /// Write a given virtual address to the register.
         pub fn write(addr: VirtAddr) void {
             write_msr(register, addr.value);
+        }
+
+        test "" {
+            std.testing.refAllDecls(@This());
         }
     };
 }

@@ -36,137 +36,92 @@ fn baud_rate_to_divisor(baud_rate: BaudRate) u8 {
 }
 
 /// Represents a UART SerialPort with support for formated output
-pub const LockedSerialPort = struct {
-    data_port: Port_u8,
-    line_status_port: Port_u8,
-    lock: additional.lock.KernelSpinLock,
-
-    pub fn init(com_port: COMPort, baud_rate: BaudRate) LockedSerialPort {
-        const data_port = com_port_to_port(com_port);
-
-        // Disable interupts
-        write_u8(data_port + 1, 0x00);
-
-        // Set Baudrate
-        write_u8(data_port + 3, 0x80);
-        write_u8(data_port, baud_rate_to_divisor(baud_rate));
-        write_u8(data_port + 1, 0x00);
-
-        // 8 bits, no parity, one stop bit
-        write_u8(data_port + 3, 0x03);
-
-        // Enable FIFO
-        write_u8(data_port + 2, 0xC7);
-
-        // Mark data terminal ready
-        write_u8(data_port + 4, 0x0B);
-
-        // Enable interupts
-        write_u8(data_port + 1, 0x01);
-
-        return LockedSerialPort{
-            .data_port = Port_u8.init(data_port),
-            .line_status_port = Port_u8.init(data_port + 5),
-            .lock = additional.lock.KernelSpinLock.init(),
-        };
-    }
-
-    /// Write a single char
-    inline fn write_char(self: LockedSerialPort, char: u8) void {
-        while (self.line_status_port.read() & 0x20 == 0) {}
-        self.data_port.write(char);
-    }
-
-    /// Write a string
-    pub fn write_str(self: *LockedSerialPort, str: []const u8) void {
-        const token = self.lock.lock();
-        defer token.unlock();
-        for (str) |char| self.write_char(char);
-    }
-
-    /// Write formated output
-    pub inline fn write_format(self: *LockedSerialPort, comptime fmt: []const u8, args: anytype) void {
-        self.writer().print(fmt, args) catch return;
-    }
-
-    pub const Writer = std.io.Writer(*LockedSerialPort, error{}, writer_impl);
-
-    /// The impl function driving the `std.io.Writer`
-    fn writer_impl(self: *LockedSerialPort, bytes: []const u8) error{}!usize {
-        self.write_str(bytes);
-        return bytes.len;
-    }
-
-    /// Create a `std.io.Writer` for this serial port
-    pub inline fn writer(self: *LockedSerialPort) Writer {
-        return .{ .context = self };
-    }
-};
+pub const LockedSerialPort = BuildSerialPort(true);
 
 /// Represents a UART SerialPort with support for formated output
 /// *** Warning - No locking version
-pub const SerialPort = struct {
-    data_port: Port_u8,
-    line_status_port: Port_u8,
+pub const SerialPort = BuildSerialPort(false);
 
-    pub fn init(com_port: COMPort, baud_rate: BaudRate) SerialPort {
-        const data_port = com_port_to_port(com_port);
+fn BuildSerialPort(comptime useLock: bool) type {
+    const lockType = if (comptime useLock) additional.lock.KernelSpinLock else void;
 
-        // Disable interupts
-        write_u8(data_port + 1, 0x00);
+    return struct {
+        const Self = @This();
 
-        // Set Baudrate
-        write_u8(data_port + 3, 0x80);
-        write_u8(data_port, baud_rate_to_divisor(baud_rate));
-        write_u8(data_port + 1, 0x00);
+        data_port: Portu8,
+        line_status_port: Portu8,
+        lock: lockType,
 
-        // 8 bits, no parity, one stop bit
-        write_u8(data_port + 3, 0x03);
+        pub fn init(com_port: COMPort, baud_rate: BaudRate) Self {
+            const data_port = com_port_to_port(com_port);
 
-        // Enable FIFO
-        write_u8(data_port + 2, 0xC7);
+            // Disable interupts
+            write_u8(data_port + 1, 0x00);
 
-        // Mark data terminal ready
-        write_u8(data_port + 4, 0x0B);
+            // Set Baudrate
+            write_u8(data_port + 3, 0x80);
+            write_u8(data_port, baud_rate_to_divisor(baud_rate));
+            write_u8(data_port + 1, 0x00);
 
-        // Enable interupts
-        write_u8(data_port + 1, 0x01);
+            // 8 bits, no parity, one stop bit
+            write_u8(data_port + 3, 0x03);
 
-        return SerialPort{
-            .data_port = Port_u8.init(data_port),
-            .line_status_port = Port_u8.init(data_port + 5),
-        };
-    }
+            // Enable FIFO
+            write_u8(data_port + 2, 0xC7);
 
-    /// Write a single char
-    inline fn write_char(self: SerialPort, char: u8) void {
-        while (self.line_status_port.read() & 0x20 == 0) {}
-        self.data_port.write(char);
-    }
+            // Mark data terminal ready
+            write_u8(data_port + 4, 0x0B);
 
-    /// Write a string
-    pub fn write_str(self: SerialPort, str: []const u8) void {
-        for (str) |char| self.write_char(char);
-    }
+            // Enable interupts
+            write_u8(data_port + 1, 0x01);
 
-    /// Write formated output
-    pub inline fn write_format(self: SerialPort, comptime fmt: []const u8, args: anytype) void {
-        self.writer().print(fmt, args) catch return;
-    }
+            return Self{
+                .data_port = Portu8.init(data_port),
+                .line_status_port = Portu8.init(data_port + 5),
+                .lock = if (comptime useLock) additional.lock.KernelSpinLock.init() else {},
+            };
+        }
 
-    pub const Writer = std.io.Writer(SerialPort, error{}, writer_impl);
+        /// Write a single char
+        inline fn write_char(self: LockedSerialPort, char: u8) void {
+            while (self.line_status_port.read() & 0x20 == 0) {}
+            self.data_port.write(char);
+        }
 
-    /// The impl function driving the `std.io.Writer`
-    fn writer_impl(self: SerialPort, bytes: []const u8) error{}!usize {
-        self.write_str(bytes);
-        return bytes.len;
-    }
+        /// Write a string
+        pub fn write_str(self: *LockedSerialPort, str: []const u8) void {
+            if (comptime useLock) {
+                const token = self.lock.lock();
+                defer token.unlock();
+                for (str) |char| self.write_char(char);
+            } else {
+                for (str) |char| self.write_char(char);
+            }
+        }
 
-    /// Create a `std.io.Writer` for this serial port
-    pub inline fn writer(self: SerialPort) Writer {
-        return .{ .context = self };
-    }
-};
+        /// Write formated output
+        pub inline fn write_format(self: *LockedSerialPort, comptime fmt: []const u8, args: anytype) void {
+            self.writer().print(fmt, args) catch return;
+        }
+
+        pub const Writer = std.io.Writer(*LockedSerialPort, error{}, writer_impl);
+
+        /// The impl function driving the `std.io.Writer`
+        fn writer_impl(self: *LockedSerialPort, bytes: []const u8) error{}!usize {
+            self.write_str(bytes);
+            return bytes.len;
+        }
+
+        /// Create a `std.io.Writer` for this serial port
+        pub inline fn writer(self: *LockedSerialPort) Writer {
+            return .{ .context = self };
+        }
+
+        test "" {
+            std.testing.refAllDecls(@This());
+        }
+    };
+}
 
 test "" {
     std.testing.refAllDecls(@This());

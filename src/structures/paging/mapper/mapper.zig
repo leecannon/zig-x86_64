@@ -110,13 +110,13 @@ fn CreateMapper(comptime page_size: paging.PageSize) type {
             parent_table_flags.WRITABLE = flags.WRITABLE;
             parent_table_flags.USER_ACCESSIBLE = flags.USER_ACCESSIBLE;
 
-            return self.map_to_with_table_flags(page, frame, parent_table_flags, frame_allocator);
+            return self.map_to_with_table_flags(self, page, frame, parent_table_flags, frame_allocator);
         }
 
         /// Maps the given frame to the virtual page with the same address.
         pub fn identity_map(self: *Self, frame: frameType, flags: paging.PageTableFlags, frame_allocator: *frameAllocatorType) MapToError!flushType {
             const page = pageType.containing_address(VirtAddr.init(frame.start_address.value));
-            return self.map_to(page, frame, flags, frame_allocator);
+            return Self.map_to(self, page, frame, flags, frame_allocator);
         }
 
         /// Translates the given virtual address to the physical address that it maps to.
@@ -126,10 +126,12 @@ fn CreateMapper(comptime page_size: paging.PageSize) type {
         /// This is a convenience method. For more information about a mapping see the
         /// `translate` function.
         pub fn translate_addr(self: *Self, addr: VirtAddr) ?PhysAddr {
-            if (self.translate(addr)) |result| {
-                return PhysAddr.init(result.frame.start_address.value + result.offset);
-            }
-            return null;
+            const result = self.translate(self, addr) catch return null;
+            return PhysAddr.init(result.frame.start_address.value + result.offset);
+        }
+
+        test "" {
+            std.testing.refAllDecls(@This());
         }
     };
 }
@@ -243,6 +245,10 @@ fn CreateMapperFlush(comptime page_size: paging.PageSize) type {
         /// Flush the page from the TLB to ensure that the newest mapping is used.
         pub fn flush(self: Self) void {
             instructions.tlb.flush(self.page.start_address);
+        }
+
+        test "" {
+            std.testing.refAllDecls(@This());
         }
     };
 }

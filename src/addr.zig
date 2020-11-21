@@ -8,8 +8,6 @@ pub const VirtAddrError = error{VirtAddrNotValid};
 /// to be copies of bit 47, i.e. the most significant bit. Addresses that fulfil this criterium
 /// are called “canonical”. This type guarantees that it always represents a canonical address.
 pub const VirtAddr = packed struct {
-    const Zero = VirtAddr{ .value = 0 };
-
     value: u64,
 
     /// Creates a new canonical virtual address.
@@ -34,6 +32,18 @@ pub const VirtAddr = packed struct {
             1 => init_truncate(addr),
             else => return VirtAddrError.VirtAddrNotValid,
         };
+    }
+
+    /// Creates new virtual address, without any checks.
+    ///
+    /// You must make sure bits 48..64 are equal to bit 47.
+    pub fn init_unchecked(addr: u64) VirtAddr {
+        return .{ .value = addr };
+    }
+
+    /// Creates a virtual address that points to `0`
+    pub fn zero() VirtAddr {
+        return .{ .value = 0 };
     }
 
     /// Creates a new canonical virtual address, throwing out bits 48..64.
@@ -131,6 +141,13 @@ pub const PhysAddr = packed struct {
         return try_new(addr) catch |_| @panic("addr must not contain any data in bits 52 to 64");
     }
 
+    /// Creates new physical address, without any checks.
+    ///
+    /// You must make sure bits 52..64 are zero.
+    pub fn init_unchecked(addr: u64) PhysAddr {
+        return .{ .value = addr };
+    }
+
     /// Tries to create a new physical address.
     ///
     /// Fails if any bits in the range 52 to 64 are set.
@@ -144,6 +161,11 @@ pub const PhysAddr = packed struct {
     /// Creates a new physical address, throwing bits 52..64 away.
     pub fn init_truncate(addr: u64) PhysAddr {
         return PhysAddr{ .value = addr & @as(u64, 1) << 52 };
+    }
+
+    /// Creates a physical address that points to `0`
+    pub fn zero() PhysAddr {
+        return .{ .value = 0 };
     }
 
     /// Convenience method for checking if a physical address is null.

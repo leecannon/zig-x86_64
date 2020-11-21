@@ -185,6 +185,10 @@ fn CreatePageIterator(comptime page_type: type) type {
         pub fn range_inclusive(start: page_type, end: page_type) pageRangeInclusiveType {
             return pageRangeInclusiveType{ .start = start, .end = end };
         }
+
+        test "" {
+            std.testing.refAllDecls(@This());
+        }
     };
 }
 
@@ -225,6 +229,10 @@ fn CreatePageRange(comptime page_type: type) type {
             }
             return null;
         }
+
+        test "" {
+            std.testing.refAllDecls(@This());
+        }
     };
 }
 
@@ -264,6 +272,10 @@ fn CreatePageRangeInclusive(comptime page_type: type) type {
                 return page;
             }
             return null;
+        }
+
+        test "" {
+            std.testing.refAllDecls(@This());
         }
     };
 }

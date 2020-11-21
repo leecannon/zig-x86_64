@@ -109,24 +109,26 @@ pub fn set_bits(target: anytype, comptime start_bit: comptime_int, comptime leng
         if (ptr_type_info != .Pointer) @compileError("not a pointer");
     }
 
-    const target_type = ptr_type_info.Pointer.child;
+    const targetType = ptr_type_info.Pointer.child;
 
     comptime {
-        if (@typeInfo(target_type) != .Int and @typeInfo(target_type) != .ComptimeInt) @compileError("not an integer");
+        if (@typeInfo(targetType) != .Int and @typeInfo(targetType) != .ComptimeInt) @compileError("not an integer");
         if (length <= 0) @compileError("length must be greater than zero");
-        if (start_bit >= @bitSizeOf(target_type)) @compileError("start_bit index is out of bounds of the bit field");
-        if (start_bit + length > @bitSizeOf(target_type)) @compileError("start_bit plus length is out of bounds of the bit field");
+        if (start_bit >= @bitSizeOf(targetType)) @compileError("start_bit index is out of bounds of the bit field");
+        if (start_bit + length > @bitSizeOf(targetType)) @compileError("start_bit plus length is out of bounds of the bit field");
     }
 
-    if (get_bits(@as(target_type, value), 0, length) != value) {
+    const peer_value = @as(targetType, value);
+
+    if (get_bits(peer_value, 0, length) != peer_value) {
         @panic("value exceeds bit range");
     }
 
     const end = start_bit + length;
 
-    const bitmask: target_type = ~(~@as(target_type, 0) << (@bitSizeOf(target_type) - end) >> (@bitSizeOf(target_type) - end) >> start_bit << start_bit);
+    const bitmask: targetType = ~(~@as(targetType, 0) << (@bitSizeOf(targetType) - end) >> (@bitSizeOf(targetType) - end) >> start_bit << start_bit);
 
-    target.* = (target.* & bitmask) | (value << start_bit);
+    target.* = (target.* & bitmask) | (peer_value << start_bit);
 }
 
 test "get_bit" {

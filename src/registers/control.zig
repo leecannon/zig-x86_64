@@ -95,6 +95,10 @@ pub const Cr0 = packed struct {
             : "memory"
         );
     }
+
+    test "" {
+        std.testing.refAllDecls(@This());
+    }
 };
 
 test "Cr0" {
@@ -115,6 +119,10 @@ pub const Cr2 = struct {
             : [ret] "=r" (-> u64)
         );
         return VirtAddr.init(value);
+    }
+
+    test "" {
+        std.testing.refAllDecls(@This());
     }
 };
 
@@ -170,6 +178,10 @@ pub const Cr3 = packed struct {
             : [value] "r" (value)
             : "memory"
         );
+    }
+
+    test "" {
+        std.testing.refAllDecls(@This());
     }
 };
 
@@ -301,6 +313,10 @@ pub const Cr4 = packed struct {
             : [val] "r" (value)
             : "memory"
         );
+    }
+
+    test "" {
+        std.testing.refAllDecls(@This());
     }
 };
 
