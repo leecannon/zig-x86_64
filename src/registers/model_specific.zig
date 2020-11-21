@@ -280,5 +280,5 @@ fn write_msr(reg: u32, value: u64) void {
 }
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

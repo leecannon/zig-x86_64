@@ -46,5 +46,5 @@ pub fn write_u32(port: u16, value: u32) void {
 }
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

@@ -310,5 +310,5 @@ test "Cr4" {
 }
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

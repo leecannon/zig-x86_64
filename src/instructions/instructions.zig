@@ -29,5 +29,5 @@ pub fn bochs_breakpoint() void {
 
 test "" {
     const std = @import("std");
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

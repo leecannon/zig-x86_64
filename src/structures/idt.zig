@@ -610,5 +610,5 @@ pub const PAGE_FAULT_MALFORMED_TABLE: u64 = 1 << 3;
 pub const PAGE_FAULT_INSTRUCTION_FETCH: u64 = 1 << 4;
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

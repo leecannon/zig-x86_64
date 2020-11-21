@@ -15,5 +15,5 @@ pub fn flush_all() void {
 }
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

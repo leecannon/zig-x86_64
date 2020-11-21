@@ -37,5 +37,5 @@ test "TaskStateSegment" {
 }
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

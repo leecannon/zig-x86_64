@@ -345,5 +345,5 @@ pub const PageTableIndex = packed struct {
 };
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

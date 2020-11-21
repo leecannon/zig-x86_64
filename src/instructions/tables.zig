@@ -31,5 +31,5 @@ pub fn load_tss(sel: structures.gdt.SegmentSelector) void {
 }
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

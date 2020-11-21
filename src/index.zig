@@ -13,6 +13,8 @@ pub const registers = @import("registers/registers.zig");
 /// Various additional functionality in addition to the rust x86_64 crate
 pub const additional = @import("additional/additional.zig");
 
+pub const PrivilegeLevelError = error{InvalidPrivledgeLevel};
+
 pub const PrivilegeLevel = packed enum(u8) {
     /// Privilege-level 0 (most privilege): This level is used by critical system-software
     /// components that require direct access to, and control over, all processor and system
@@ -39,13 +41,13 @@ pub const PrivilegeLevel = packed enum(u8) {
     /// to perform the accesses.
     Ring3 = 3,
 
-    pub fn from_u16(value: u16) PrivilegeLevel {
+    pub fn from_u16(value: u16) PrivilegeLevelError!PrivilegeLevel {
         return switch (value) {
             0 => PrivilegeLevel.Ring0,
             1 => PrivilegeLevel.Ring1,
             2 => PrivilegeLevel.Ring2,
             3 => PrivilegeLevel.Ring3,
-            else => @panic("Not a valid privilege level"),
+            else => error.InvalidPrivledgeLevel,
         };
     }
 
@@ -135,5 +137,5 @@ pub const CpuidMax = struct {
 
 test "" {
     const std = @import("std");
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

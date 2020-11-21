@@ -77,5 +77,5 @@ pub fn get_cs() structures.gdt.SegmentSelector {
 }
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

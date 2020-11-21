@@ -27,5 +27,5 @@ fn CreateFrameAllocator(comptime page_size: structures.paging.PageSize) type {
 }
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

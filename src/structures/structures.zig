@@ -30,5 +30,5 @@ test "DescriptorTablePointer" {
 
 test "" {
     const std = @import("std");
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

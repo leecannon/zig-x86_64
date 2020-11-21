@@ -4,5 +4,5 @@ pub const std = @import("std");
 pub const testing = std.testing;
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

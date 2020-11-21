@@ -23,8 +23,8 @@ pub const SegmentSelector = packed struct {
     }
 
     /// Returns the requested privilege level.
-    pub fn get_rpl(self: SegmentSelector) PrivilegeLevel {
-        return PrivilegeLevel.from_u16(get_bits(self.selector, 0, 2));
+    pub fn get_rpl(self: SegmentSelector) !PrivilegeLevel {
+        return try PrivilegeLevel.from_u16(get_bits(self.selector, 0, 2));
     }
 
     /// Set the privilege level for this Segment selector.
@@ -44,10 +44,10 @@ pub const SegmentSelector = packed struct {
 test "SegmentSelector" {
     var a = SegmentSelector.init(1, .Ring0);
     testing.expectEqual(@as(u16, 1), a.gdt_index());
-    testing.expectEqual(PrivilegeLevel.Ring0, a.get_rpl());
+    testing.expectEqual(PrivilegeLevel.Ring0, try a.get_rpl());
     a.set_rpl(.Ring3);
     testing.expectEqual(@as(u16, 1), a.gdt_index());
-    testing.expectEqual(PrivilegeLevel.Ring3, a.get_rpl());
+    testing.expectEqual(PrivilegeLevel.Ring3, try a.get_rpl());
 }
 
 /// A 64-bit mode global descriptor table (GDT).
@@ -244,5 +244,5 @@ test "SystemSegmentData" {
 }
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

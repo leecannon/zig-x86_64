@@ -290,5 +290,5 @@ pub const TranslatePageError = error{
 };
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

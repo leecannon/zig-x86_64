@@ -208,5 +208,5 @@ pub fn raw_align_up(addr: u64, alignment: u64) u64 {
 }
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

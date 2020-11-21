@@ -169,5 +169,5 @@ pub const SerialPort = struct {
 };
 
 test "" {
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

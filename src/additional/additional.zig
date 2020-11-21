@@ -6,5 +6,5 @@ pub const serial_port = @import("serial_port.zig");
 
 test "" {
     const std = @import("std");
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }

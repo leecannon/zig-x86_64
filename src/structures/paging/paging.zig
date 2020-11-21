@@ -6,5 +6,5 @@ pub usingnamespace @import("mapper/mapper.zig");
 
 test "" {
     const std = @import("std");
-    std.meta.refAllDecls(@This());
+    std.testing.refAllDecls(@This());
 }
