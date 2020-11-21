@@ -83,13 +83,13 @@ fn BuildSerialPort(comptime useLock: bool) type {
         }
 
         /// Write a single char
-        inline fn write_char(self: LockedSerialPort, char: u8) void {
+        inline fn write_char(self: Self, char: u8) void {
             while (self.line_status_port.read() & 0x20 == 0) {}
             self.data_port.write(char);
         }
 
         /// Write a string
-        pub fn write_str(self: *LockedSerialPort, str: []const u8) void {
+        pub fn write_str(self: *Self, str: []const u8) void {
             if (comptime useLock) {
                 const token = self.lock.lock();
                 defer token.unlock();
@@ -100,20 +100,20 @@ fn BuildSerialPort(comptime useLock: bool) type {
         }
 
         /// Write formated output
-        pub inline fn write_format(self: *LockedSerialPort, comptime fmt: []const u8, args: anytype) void {
+        pub inline fn write_format(self: *Self, comptime fmt: []const u8, args: anytype) void {
             self.writer().print(fmt, args) catch return;
         }
 
-        pub const Writer = std.io.Writer(*LockedSerialPort, error{}, writer_impl);
+        pub const Writer = std.io.Writer(*Self, error{}, writer_impl);
 
         /// The impl function driving the `std.io.Writer`
-        fn writer_impl(self: *LockedSerialPort, bytes: []const u8) error{}!usize {
+        fn writer_impl(self: *Self, bytes: []const u8) error{}!usize {
             self.write_str(bytes);
             return bytes.len;
         }
 
         /// Create a `std.io.Writer` for this serial port
-        pub inline fn writer(self: *LockedSerialPort) Writer {
+        pub inline fn writer(self: *Self) Writer {
             return .{ .context = self };
         }
 
