@@ -200,7 +200,7 @@ pub const TranslateError = error{
 /// made the change to ensure that the TLB flush is not forgotten.
 pub const MapperFlushAll = struct {
     /// Flush all pages from the TLB to ensure that the newest mapping is used.
-    pub fn flush_all(self: Self) void {
+    pub inline fn flush_all(self: Self) void {
         instructions.tlb.flush_all();
     }
 };
@@ -238,12 +238,12 @@ fn CreateMapperFlush(comptime page_size: paging.PageSize) type {
         page: pageType,
 
         /// Create a new flush promise
-        pub fn init(page: pageType) Self {
+        pub inline fn init(page: pageType) Self {
             return Self{ .page = page };
         }
 
         /// Flush the page from the TLB to ensure that the newest mapping is used.
-        pub fn flush(self: Self) void {
+        pub inline fn flush(self: Self) void {
             instructions.tlb.flush(self.page.start_address);
         }
 

@@ -14,7 +14,7 @@ pub const VirtAddr = packed struct {
     ///
     /// This function performs sign extension of bit 47 to make the address canonical. Panics
     /// if the bits in the range 48 to 64 contain data (i.e. are not null and no sign extension).
-    pub fn init(addr: u64) VirtAddr {
+    pub inline fn init(addr: u64) VirtAddr {
         return try_new(addr) catch |_| {
             @panic("addr must not contain any data in bits 48 to 64");
         };
@@ -37,12 +37,12 @@ pub const VirtAddr = packed struct {
     /// Creates new virtual address, without any checks.
     ///
     /// You must make sure bits 48..64 are equal to bit 47.
-    pub fn init_unchecked(addr: u64) VirtAddr {
+    pub inline fn init_unchecked(addr: u64) VirtAddr {
         return .{ .value = addr };
     }
 
     /// Creates a virtual address that points to `0`
-    pub fn zero() VirtAddr {
+    pub inline fn zero() VirtAddr {
         return .{ .value = 0 };
     }
 
@@ -51,17 +51,17 @@ pub const VirtAddr = packed struct {
     /// This function performs sign extension of bit 47 to make the address canonical, so
     /// bits 48 to 64 are overwritten. If you want to check that these bits contain no data,
     /// use `new` or `try_new`.
-    pub fn init_truncate(addr: u64) VirtAddr {
+    pub inline fn init_truncate(addr: u64) VirtAddr {
         return VirtAddr{ .value = @intCast(u64, @intCast(i64, (addr << 16)) >> 16) };
     }
 
     /// Convenience method for checking if a virtual address is null.
-    pub fn is_null(self: VirtAddr) bool {
+    pub inline fn is_null(self: VirtAddr) bool {
         return self.value == 0;
     }
 
     /// Creates a virtual address from the given pointer
-    pub fn from_ptr(ptr: anytype) VirtAddr {
+    pub inline fn from_ptr(ptr: anytype) VirtAddr {
         comptime {
             if (@typeInfo(@TypeOf(ptr)) != .Pointer) @compileError("not a pointer");
         }
@@ -69,42 +69,42 @@ pub const VirtAddr = packed struct {
     }
 
     /// Aligns the virtual address upwards to the given alignment.
-    pub fn align_up(self: VirtAddr, alignment: u64) VirtAddr {
+    pub inline fn align_up(self: VirtAddr, alignment: u64) VirtAddr {
         return VirtAddr.init(raw_align_up(self.value, alignment));
     }
 
     /// Aligns the virtual address downwards to the given alignment.
-    pub fn align_down(self: VirtAddr, alignment: u64) VirtAddr {
+    pub inline fn align_down(self: VirtAddr, alignment: u64) VirtAddr {
         return VirtAddr.init(raw_align_down(self.value, alignment));
     }
 
     /// Checks whether the virtual address has the given alignment.
-    pub fn is_aligned(self: VirtAddr, alignment: u64) bool {
+    pub inline fn is_aligned(self: VirtAddr, alignment: u64) bool {
         return raw_align_down(self.value, alignment) == self.value;
     }
 
     /// Returns the 12-bit page offset of this virtual address.
-    pub fn page_offset(self: VirtAddr) structures.paging.PageOffset {
+    pub inline fn page_offset(self: VirtAddr) structures.paging.PageOffset {
         return structures.paging.PageOffset.init_truncate(@intCast(u16, self.value));
     }
 
     /// Returns the 9-bit level 1 page table index.
-    pub fn p1_index(self: VirtAddr) structures.paging.PageTableIndex {
+    pub inline fn p1_index(self: VirtAddr) structures.paging.PageTableIndex {
         return structures.paging.PageTableIndex.init_truncate(@intCast(u16, self.value >> 12));
     }
 
     /// Returns the 9-bit level 2 page table index.
-    pub fn p2_index(self: VirtAddr) structures.paging.PageTableIndex {
+    pub inline fn p2_index(self: VirtAddr) structures.paging.PageTableIndex {
         return structures.paging.PageTableIndex.init_truncate(@intCast(u16, self.value >> 12 >> 9));
     }
 
     /// Returns the 9-bit level 3 page table index.
-    pub fn p3_index(self: VirtAddr) structures.paging.PageTableIndex {
+    pub inline fn p3_index(self: VirtAddr) structures.paging.PageTableIndex {
         return structures.paging.PageTableIndex.init_truncate(@intCast(u16, self.value >> 12 >> 9 >> 9));
     }
 
     /// Returns the 9-bit level 4 page table index.
-    pub fn p4_index(self: VirtAddr) structures.paging.PageTableIndex {
+    pub inline fn p4_index(self: VirtAddr) structures.paging.PageTableIndex {
         return structures.paging.PageTableIndex.init_truncate(@intCast(u16, self.value >> 12 >> 9 >> 9 >> 9));
     }
 
@@ -137,14 +137,14 @@ pub const PhysAddr = packed struct {
     /// Creates a new physical address.
     ///
     /// Panics if a bit in the range 52 to 64 is set.
-    pub fn init(addr: u64) PhysAddr {
+    pub inline fn init(addr: u64) PhysAddr {
         return try_new(addr) catch |_| @panic("addr must not contain any data in bits 52 to 64");
     }
 
     /// Creates new physical address, without any checks.
     ///
     /// You must make sure bits 52..64 are zero.
-    pub fn init_unchecked(addr: u64) PhysAddr {
+    pub inline fn init_unchecked(addr: u64) PhysAddr {
         return .{ .value = addr };
     }
 
@@ -159,32 +159,32 @@ pub const PhysAddr = packed struct {
     }
 
     /// Creates a new physical address, throwing bits 52..64 away.
-    pub fn init_truncate(addr: u64) PhysAddr {
+    pub inline fn init_truncate(addr: u64) PhysAddr {
         return PhysAddr{ .value = addr & @as(u64, 1) << 52 };
     }
 
     /// Creates a physical address that points to `0`
-    pub fn zero() PhysAddr {
+    pub inline fn zero() PhysAddr {
         return .{ .value = 0 };
     }
 
     /// Convenience method for checking if a physical address is null.
-    pub fn is_null(self: PhysAddr) bool {
+    pub inline fn is_null(self: PhysAddr) bool {
         return self.value == 0;
     }
 
     /// Aligns the physical address upwards to the given alignment.
-    pub fn align_up(self: PhysAddr, alignment: u64) PhysAddr {
+    pub inline fn align_up(self: PhysAddr, alignment: u64) PhysAddr {
         return PhysAddr.init(raw_align_up(self.value, alignment));
     }
 
     /// Aligns the physical address downwards to the given alignment.
-    pub fn align_down(self: PhysAddr, alignment: u64) PhysAddr {
+    pub inline fn align_down(self: PhysAddr, alignment: u64) PhysAddr {
         return PhysAddr.init(raw_align_down(self.value, alignment));
     }
 
     /// Checks whether the physical address has the given alignment.
-    pub fn is_aligned(self: PhysAddr, alignment: u64) bool {
+    pub inline fn is_aligned(self: PhysAddr, alignment: u64) bool {
         return raw_align_down(self.value, alignment) == self.value;
     }
 
@@ -207,7 +207,7 @@ pub const PhysAddr = packed struct {
 ///
 /// Returns the greatest x with alignment `align` so that x <= addr. The alignment must be
 ///  a power of 2.
-pub fn raw_align_down(addr: u64, alignment: u64) u64 {
+pub inline fn raw_align_down(addr: u64, alignment: u64) u64 {
     std.debug.assert(std.math.isPowerOfTwo(alignment));
     return addr & ~(alignment - 1);
 }
@@ -216,7 +216,7 @@ pub fn raw_align_down(addr: u64, alignment: u64) u64 {
 ///
 /// Returns the smallest x with alignment `align` so that x >= addr. The alignment must be
 /// a power of 2.
-pub fn raw_align_up(addr: u64, alignment: u64) u64 {
+pub inline fn raw_align_up(addr: u64, alignment: u64) u64 {
     std.debug.assert(std.math.isPowerOfTwo(alignment));
 
     const align_mask = alignment - 1;

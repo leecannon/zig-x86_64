@@ -27,13 +27,13 @@ pub fn hlt() void {
 /// optimized away (see https://github.com/rust-lang/rust/issues/28728). By invoking this
 /// instruction (which is marked as volatile), the compiler should no longer optimize the
 /// endless loop away.
-pub fn nop() void {
+pub inline fn nop() void {
     asm volatile ("nop");
 }
 
 /// Emits a '[magic breakpoint](https://wiki.osdev.org/Bochs#Magic_Breakpoint)' instruction for the [Bochs](http://bochs.sourceforge.net/) CPU
 /// emulator. Make sure to set `magic_break: enabled=1` in your `.bochsrc` file.
-pub fn bochs_breakpoint() void {
+pub inline fn bochs_breakpoint() void {
     asm volatile ("xchgw %%bx, %%bx");
 }
 

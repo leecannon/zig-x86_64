@@ -107,7 +107,6 @@ pub fn cpuid(leaf: u32) CpuidResult {
     return cpuid_with_subleaf(leaf, 0);
 }
 
-/// BUG: this always returns 0?
 /// Get the id of the currently executing cpu/core (Local APIC ID)
 pub fn get_current_cpu_id() u16 {
     const bits = @import("bits.zig");

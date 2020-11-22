@@ -37,11 +37,11 @@ pub const Cr0 = packed struct {
     // I can't wait for better bitfields in Zig... this is a mess
     _padding_a: u26,
 
-    pub fn from_u64(value: u64) Cr0 {
+    pub inline fn from_u64(value: u64) Cr0 {
         return @bitCast(Cr0, value & NO_PADDING);
     }
 
-    pub fn to_u64(self: Cr0) u64 {
+    pub inline fn to_u64(self: Cr0) u64 {
         return @bitCast(u64, self) & NO_PADDING;
     }
 
@@ -64,12 +64,12 @@ pub const Cr0 = packed struct {
     });
 
     /// Read the current set of CR0 flags.
-    pub fn read() Cr0 {
+    pub inline fn read() Cr0 {
         return Cr0.from_u64(read_raw());
     }
 
     /// Read the current raw CR0 value.
-    pub fn read_raw() u64 {
+    pub inline fn read_raw() u64 {
         return asm ("mov %%cr0, %[ret]"
             : [ret] "=r" (-> u64)
         );
@@ -88,7 +88,7 @@ pub const Cr0 = packed struct {
     /// Write raw CR0 flags.
     ///
     /// Does _not_ preserve any values, including reserved fields.
-    pub fn write_raw(value: u64) void {
+    pub inline fn write_raw(value: u64) void {
         asm volatile ("mov %[val], %%cr0"
             :
             : [val] "r" (value)
@@ -114,11 +114,10 @@ test "Cr0" {
 /// When page fault occurs, the CPU sets this register to the accessed address.
 pub const Cr2 = struct {
     /// Read the current page fault linear address from the CR2 register.
-    pub fn read() VirtAddr {
-        const value = asm ("mov %%cr2, %[ret]"
+    pub inline fn read() VirtAddr {
+        return VirtAddr.init(asm ("mov %%cr2, %[ret]"
             : [ret] "=r" (-> u64)
-        );
-        return VirtAddr.init(value);
+        ));
     }
 
     test "" {
@@ -142,11 +141,11 @@ pub const Cr3 = packed struct {
 
     // The padding in this struct is actually required for the struct to be valid.
     // The padding contains the PhysFrame
-    pub fn from_u64(value: u64) Cr3 {
+    pub inline fn from_u64(value: u64) Cr3 {
         return @bitCast(Cr3, value);
     }
 
-    pub fn to_u64(self: Cr3) u64 {
+    pub inline fn to_u64(self: Cr3) u64 {
         return @bitCast(u64, self);
     }
 
@@ -248,11 +247,11 @@ pub const Cr4 = packed struct {
     _padding_a: u11,
     _padding_b: u32,
 
-    pub fn from_u64(value: u64) Cr4 {
+    pub inline fn from_u64(value: u64) Cr4 {
         return @bitCast(Cr4, value & NO_PADDING);
     }
 
-    pub fn to_u64(self: Cr4) u64 {
+    pub inline fn to_u64(self: Cr4) u64 {
         return @bitCast(u64, self) & NO_PADDING;
     }
 
@@ -283,12 +282,12 @@ pub const Cr4 = packed struct {
     });
 
     /// Read the current set of Cr4 flags.
-    pub fn read() Cr4 {
+    pub inline fn read() Cr4 {
         return Cr4.from_u64(read_raw());
     }
 
     /// Read the current raw Cr4 value.
-    pub fn read_raw() u64 {
+    pub inline fn read_raw() u64 {
         return asm ("mov %%cr4, %[ret]"
             : [ret] "=r" (-> u64)
         );
@@ -307,7 +306,7 @@ pub const Cr4 = packed struct {
     /// Write raw Cr4 flags.
     ///
     /// Does _not_ preserve any values, including reserved fields.
-    pub fn write_raw(value: u64) void {
+    pub inline fn write_raw(value: u64) void {
         asm volatile ("mov %[val], %%cr4"
             :
             : [val] "r" (value)

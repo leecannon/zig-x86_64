@@ -18,7 +18,7 @@ pub const TaskStateSegment = packed struct {
 
     /// Creates a new TSS with zeroed privilege and interrupt stack table and a zero
     /// `iomap_base`.
-    pub fn init() TaskStateSegment {
+    pub inline fn init() TaskStateSegment {
         return TaskStateSegment{
             .reserved_1 = 0,
             .privilege_stack_table = [_]VirtAddr{VirtAddr.init(0)} ** 3,

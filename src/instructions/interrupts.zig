@@ -1,21 +1,21 @@
 usingnamespace @import("../common.zig");
 
 /// Returns whether interrupts are enabled.
-pub fn are_enabled() bool {
+pub inline fn are_enabled() bool {
     return registers.rflags.RFlags.read().INTERRUPT_FLAG;
 }
 
 /// Enable interrupts.
 ///
 /// This is a wrapper around the `sti` instruction.
-pub fn enable() void {
+pub inline fn enable() void {
     asm volatile ("sti");
 }
 
 /// Disable interrupts.
 ///
 /// This is a wrapper around the `cli` instruction.
-pub fn disable() void {
+pub inline fn disable() void {
     asm volatile ("cli");
 }
 
@@ -112,17 +112,17 @@ pub fn without_interrupts_argument_return(comptime ret_type: type, comptime func
 ///
 /// See <http://lkml.iu.edu/hypermail/linux/kernel/1009.2/01406.html> for more
 /// information.
-pub fn enable_and_hlt() void {
+pub inline fn enable_and_hlt() void {
     asm volatile ("sti; hlt");
 }
 
 /// Cause a breakpoint exception by invoking the `int3` instruction.
-pub fn int3() void {
+pub inline fn int3() void {
     asm volatile ("int3");
 }
 
 /// Generate a software interrupt by invoking the `int` instruction.
-pub fn software_interupt(comptime num: usize) void {
+pub inline fn software_interupt(comptime num: usize) void {
     asm volatile ("int %[num]"
         :
         : [num] "N" (num)

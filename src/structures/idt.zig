@@ -374,7 +374,7 @@ pub const InterruptDescriptorTable = packed struct {
     }
 
     /// Resets all entries of this IDT in place.
-    pub fn reset(self: *InterruptDescriptorTable) void {
+    pub inline fn reset(self: *InterruptDescriptorTable) void {
         self.* = InterruptDescriptorTable.init();
     }
 
@@ -489,24 +489,24 @@ pub const EntryOptions = packed struct {
     value: u16,
 
     /// Creates a minimal options field with all the must-be-one bits set.
-    pub fn minimal() EntryOptions {
+    pub inline fn minimal() EntryOptions {
         return EntryOptions{ .value = 0b1110_0000_0000 };
     }
 
     /// Set or reset the preset bit.
-    pub fn set_present(self: *EntryOptions, present: bool) void {
+    pub inline fn set_present(self: *EntryOptions, present: bool) void {
         set_bit(&self.value, 15, present);
     }
 
     /// Let the CPU disable hardware interrupts when the handler is invoked. By default,
     /// interrupts are disabled on handler invocation.
-    pub fn disable_interupts(self: *EntryOptions, disable: bool) void {
+    pub inline fn disable_interupts(self: *EntryOptions, disable: bool) void {
         set_bit(&self.value, 8, !disable);
     }
 
     /// Set the required privilege level (DPL) for invoking the handler. The DPL can be 0, 1, 2,
     /// or 3, the default is 0. If CPL < DPL, a general protection fault occurs.
-    pub fn set_privledge_level(self: *EntryOptions, dpl: PrivilegeLevel) void {
+    pub inline fn set_privledge_level(self: *EntryOptions, dpl: PrivilegeLevel) void {
         set_bits(&self.value, 13, 2, dpl.to_u16());
     }
 
@@ -516,7 +516,7 @@ pub const EntryOptions = packed struct {
     ///
     /// An IST stack is specified by an IST index between 0 and 6 (inclusive). Using the same
     /// stack for multiple interrupts can be dangerous when nested interrupts are possible.
-    pub fn set_stack_index(self: *EntryOptions, index: u16) void {
+    pub inline fn set_stack_index(self: *EntryOptions, index: u16) void {
         // The hardware IST index starts at 1, but our software IST index
         // starts at 0. Therefore we need to add 1 here.
         set_bits(&self.value, 0, 3, index + 1);

@@ -61,11 +61,11 @@ pub const RFlags = packed struct {
     _padding_a: u10,
     _padding_b: u32,
 
-    pub fn from_u64(value: u64) RFlags {
+    pub inline fn from_u64(value: u64) RFlags {
         return @bitCast(RFlags, value & NO_PADDING);
     }
 
-    pub fn to_u64(self: RFlags) u64 {
+    pub inline fn to_u64(self: RFlags) u64 {
         return @bitCast(u64, self) & NO_PADDING;
     }
 
@@ -99,12 +99,12 @@ pub const RFlags = packed struct {
     /// Returns the current value of the RFLAGS register.
     ///
     /// Drops any unknown bits.
-    pub fn read() RFlags {
+    pub inline fn read() RFlags {
         return RFlags.from_u64(read_raw());
     }
 
     /// Returns the raw current value of the RFLAGS register.
-    pub fn read_raw() u64 {
+    pub inline fn read_raw() u64 {
         return asm ("pushfq; popq %[ret]"
             : [ret] "=r" (-> u64)
             :
@@ -123,7 +123,7 @@ pub const RFlags = packed struct {
     /// Writes the RFLAGS register.
     ///
     /// Does not preserve any bits, including reserved bits.
-    pub fn write_raw(value: u64) void {
+    pub inline fn write_raw(value: u64) void {
         asm volatile ("pushq %[val]; popfq"
             :
             : [val] "r" (value)

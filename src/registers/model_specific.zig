@@ -34,11 +34,11 @@ pub const EferFlags = packed struct {
     _padding_a: u16,
     _padding_b: u32,
 
-    pub fn from_u64(value: u64) EferFlags {
+    pub inline fn from_u64(value: u64) EferFlags {
         return @bitCast(EferFlags, value & NO_PADDING);
     }
 
-    pub fn to_u64(self: EferFlags) u64 {
+    pub inline fn to_u64(self: EferFlags) u64 {
         return @bitCast(u64, self) & NO_PADDING;
     }
 
@@ -72,19 +72,19 @@ pub const Efer = struct {
     const register: u32 = 0xC000_0080;
 
     /// Read the current EFER flags.
-    pub fn read() EferFlags {
+    pub inline fn read() EferFlags {
         return EferFlags.from_u64(read_raw());
     }
 
     /// Read the current raw EFER flags.
-    pub fn read_raw() u64 {
+    pub inline fn read_raw() u64 {
         return read_msr(register);
     }
 
     /// Write the EFER flags.
     ///
     /// Does not preserve any bits, including reserved fields.
-    pub fn write_raw(flags: u64) void {
+    pub inline fn write_raw(flags: u64) void {
         write_msr(register, flags);
     }
 
@@ -219,7 +219,7 @@ pub const SFMask = struct {
     /// executed. If a bit in SFMASK is set to 1, the corresponding
     /// bit in RFLAGS is cleared to 0. If a bit in SFMASK is cleared
     /// to 0, the corresponding rFLAGS bit is not modified.
-    pub fn read() registers.rflags.RFlags {
+    pub inline fn read() registers.rflags.RFlags {
         return registers.rflags.RFlags.from_u64(read_msr(register));
     }
 
@@ -230,7 +230,7 @@ pub const SFMask = struct {
     /// executed. If a bit in SFMASK is set to 1, the corresponding
     /// bit in RFLAGS is cleared to 0. If a bit in SFMASK is cleared
     /// to 0, the corresponding rFLAGS bit is not modified.
-    pub fn write(value: registers.rflags.RFlags) void {
+    pub inline fn write(value: registers.rflags.RFlags) void {
         write_msr(register, value.to_u64());
     }
 
@@ -257,12 +257,12 @@ fn construct_virtaddr_register(comptime reg: u32) type {
         const register: u32 = reg;
 
         /// Read the current register value.
-        pub fn read() VirtAddr {
+        pub inline fn read() VirtAddr {
             return VirtAddr.init(read_msr(register));
         }
 
         /// Write a given virtual address to the register.
-        pub fn write(addr: VirtAddr) void {
+        pub inline fn write(addr: VirtAddr) void {
             write_msr(register, addr.value);
         }
 

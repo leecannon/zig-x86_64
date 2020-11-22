@@ -21,7 +21,7 @@ pub const KernelSpinLock = struct {
     };
 
     /// Create a new SpinLock
-    pub fn init() KernelSpinLock {
+    pub inline fn init() KernelSpinLock {
         return KernelSpinLock{ .locked = false };
     }
 
@@ -32,7 +32,7 @@ pub const KernelSpinLock = struct {
 
         if (interrupts_enabled) instructions.interrupts.disable();
 
-        if (@cmpxchgWeak(bool, &self.locked, false, true, .Acquire, .Acquire) == null) {
+        if (@cmpxchgStrong(bool, &self.locked, false, true, .Acquire, .Acquire) == null) {
             return LockToken{
                 .interrupts_enabled = interrupts_enabled,
                 .lock = self,
@@ -52,7 +52,7 @@ pub const KernelSpinLock = struct {
         if (interrupts_enabled) instructions.interrupts.disable();
 
         while (true) {
-            if (@cmpxchgWeak(bool, &self.locked, false, true, .Acquire, .Acquire) == null) {
+            if (@cmpxchgStrong(bool, &self.locked, false, true, .Acquire, .Acquire) == null) {
                 return LockToken{
                     .interrupts_enabled = interrupts_enabled,
                     .lock = self,
@@ -62,9 +62,9 @@ pub const KernelSpinLock = struct {
             if (interrupts_enabled) instructions.interrupts.enable();
 
             instructions.pause();
-            while (self.locked) {
-                instructions.pause();
-            }
+            // while (@atomicLoad(bool, &self.locked, .Acquire)) {
+            //     instructions.pause();
+            // }
 
             if (interrupts_enabled) instructions.interrupts.disable();
         }

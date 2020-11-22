@@ -13,22 +13,22 @@ pub const SegmentSelector = packed struct {
     /// # Arguments
     ///  * `index`: index in GDT or LDT array (not the offset)
     ///  * `rpl`: the requested privilege level
-    pub fn init(index: u16, rpl: PrivilegeLevel) SegmentSelector {
+    pub inline fn init(index: u16, rpl: PrivilegeLevel) SegmentSelector {
         return SegmentSelector{ .selector = index << 3 | @as(u16, @enumToInt(rpl)) };
     }
 
     /// Returns the GDT index.
-    pub fn gdt_index(self: SegmentSelector) u16 {
+    pub inline fn gdt_index(self: SegmentSelector) u16 {
         return self.selector >> 3;
     }
 
     /// Returns the requested privilege level.
-    pub fn get_rpl(self: SegmentSelector) !PrivilegeLevel {
+    pub inline fn get_rpl(self: SegmentSelector) !PrivilegeLevel {
         return try PrivilegeLevel.from_u16(get_bits(self.selector, 0, 2));
     }
 
     /// Set the privilege level for this Segment selector.
-    pub fn set_rpl(self: *SegmentSelector, rpl: PrivilegeLevel) void {
+    pub inline fn set_rpl(self: *SegmentSelector, rpl: PrivilegeLevel) void {
         set_bits(&self.selector, 0, 2, @as(u16, @enumToInt(rpl)));
     }
 
@@ -104,7 +104,7 @@ pub const GlobalDescriptorTable = struct {
     next_free: u16,
 
     /// Creates an empty GDT.
-    pub fn init() GlobalDescriptorTable {
+    pub inline fn init() GlobalDescriptorTable {
         return GlobalDescriptorTable{
             .table = [_]u64{0} ** 8,
             .next_free = 1,
@@ -165,19 +165,19 @@ test "GlobalDescriptorTable" {
 
 /// Creates a segment descriptor for a 64-bit kernel code segment. Suitable
 /// for use with `syscall` or 64-bit `sysenter`.
-pub fn kernel_code_segment() Descriptor {
+pub inline fn kernel_code_segment() Descriptor {
     return Descriptor{ .UserSegment = Descriptor.KERNEL_CODE64 };
 }
 
 /// Creates a segment descriptor for a ring 3 data segment (32-bit or
 /// 64-bit). Suitable for use with `sysret` or `sysexit`.
-pub fn user_data_segment() Descriptor {
+pub inline fn user_data_segment() Descriptor {
     return Descriptor{ .UserSegment = Descriptor.USER_DATA };
 }
 
 /// Creates a segment descriptor for a 64-bit ring 3 code segment. Suitable
 /// for use with `sysret` or `sysexit`.
-pub fn user_code_segment() Descriptor {
+pub inline fn user_code_segment() Descriptor {
     return Descriptor{ .UserSegment = Descriptor.USER_CODE64 };
 }
 

@@ -11,7 +11,7 @@ pub const PageSize = enum {
     Size2MiB,
     Size1GiB,
 
-    pub fn Size(self: PageSize) u64 {
+    pub inline fn Size(self: PageSize) u64 {
         return switch (self) {
             .Size4KiB => 4096,
             .Size2MiB => 4096 * 512,
@@ -19,7 +19,7 @@ pub const PageSize = enum {
         };
     }
 
-    pub fn SizeString(self: PageSize) []const u8 {
+    pub inline fn SizeString(self: PageSize) []const u8 {
         return switch (self) {
             .Size4KiB => size4KiBStr,
             .Size2MiB => size2MiBStr,
@@ -27,7 +27,7 @@ pub const PageSize = enum {
         };
     }
 
-    pub fn IsGiantPage(self: PageSize) bool {
+    pub inline fn IsGiantPage(self: PageSize) bool {
         return self == .Size1GiB;
     }
 };
@@ -59,7 +59,7 @@ fn CreatePage(comptime page_size: PageSize) type {
         /// Returns the page that starts at the given virtual address.
         ///
         /// Returns an error if the address is not correctly aligned (i.e. is not a valid page start).
-        pub fn from_start_address(address: VirtAddr) PageError!Self {
+        pub inline fn from_start_address(address: VirtAddr) PageError!Self {
             if (!address.is_aligned(page_size.Size())) {
                 return PageError.AddressNotAligned;
             }
@@ -67,28 +67,28 @@ fn CreatePage(comptime page_size: PageSize) type {
         }
 
         /// Returns the page that starts at the given virtual address.
-        pub fn from_start_address_unchecked(address: VirtAddr) Self {
+        pub inline fn from_start_address_unchecked(address: VirtAddr) Self {
             return Self{ .start_address = address };
         }
 
         /// Returns the page that contains the given virtual address.
-        pub fn containing_address(address: VirtAddr) Self {
+        pub inline fn containing_address(address: VirtAddr) Self {
             return Self{ .start_address = address.align_down(page_size.Size()) };
         }
 
         /// Returns the level 4 page table index of this page.
-        pub fn p4_index(self: Self) PageTableIndex {
+        pub inline fn p4_index(self: Self) PageTableIndex {
             return self.start_address.p4_index();
         }
 
         /// Returns the level 3 page table index of this page.
-        pub fn p3_index(self: Self) PageTableIndex {
+        pub inline fn p3_index(self: Self) PageTableIndex {
             return self.start_address.p3_index();
         }
 
         /// Returns the level 2 page table index of this page.
         /// Not usable for Size1GiB
-        pub fn p2_index(self: Self) PageTableIndex {
+        pub inline fn p2_index(self: Self) PageTableIndex {
             comptime {
                 if (page_size == .Size1GiB) {
                     @compileError("Not usable for Size1GiB");
@@ -99,7 +99,7 @@ fn CreatePage(comptime page_size: PageSize) type {
 
         /// Returns the level 1 page table index of this page.
         /// Only usable for Size4KiB
-        pub fn p1_index(self: Self) PageTableIndex {
+        pub inline fn p1_index(self: Self) PageTableIndex {
             comptime {
                 if (page_size != .Size4KiB) {
                     @compileError("Only usable for Size4KiB");
@@ -177,12 +177,12 @@ fn CreatePageIterator(comptime page_type: type) type {
 
     return struct {
         /// Returns a range of pages, exclusive `end`.
-        pub fn range(start: page_type, end: page_type) pageRangeType {
+        pub inline fn range(start: page_type, end: page_type) pageRangeType {
             return pageRangeType{ .start = start, .end = end };
         }
 
         /// Returns a range of pages, inclusive `end`.
-        pub fn range_inclusive(start: page_type, end: page_type) pageRangeInclusiveType {
+        pub inline fn range_inclusive(start: page_type, end: page_type) pageRangeInclusiveType {
             return pageRangeInclusiveType{ .start = start, .end = end };
         }
 
@@ -217,7 +217,7 @@ fn CreatePageRange(comptime page_type: type) type {
         end: page_type,
 
         /// Returns whether the range contains no frames.
-        pub fn is_empty(self: Self) bool {
+        pub inline fn is_empty(self: Self) bool {
             return self.start.start_address.value >= self.end.start_address.value;
         }
 
@@ -261,7 +261,7 @@ fn CreatePageRangeInclusive(comptime page_type: type) type {
         end: page_type,
 
         /// Returns whether the range contains no frames.
-        pub fn is_empty(self: Self) bool {
+        pub inline fn is_empty(self: Self) bool {
             return self.start.start_address.value > self.end.start_address.value;
         }
 
