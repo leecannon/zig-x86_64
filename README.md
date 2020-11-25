@@ -1,6 +1,7 @@
 # zig-x86_64
 
 This repo is a [zig](https://github.com/ziglang) reimplementation of rust's [x86_64](https://github.com/rust-osdev/x86_64) crate.
+Also includes a reimplementation of rust's [pic8259_simple](https://docs.rs/pic8259_simple) crate inside 'x86_64.additional.pic8259'.
 
 ## Page Size change from Rust crate
 
