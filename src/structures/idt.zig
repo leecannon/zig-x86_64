@@ -388,6 +388,32 @@ pub const InterruptDescriptorTable = packed struct {
         instructions.tables.lidt(&ptr);
     }
 
+    /// Returns the IDT entry with the specified index.
+    ///
+    /// Panics if index is outside the IDT (i.e. greater than 255) or if the entry is an
+    /// exception that pushes an error code (use the struct fields for accessing these entries).
+    pub fn index_interrupt_handler(self: *InterruptDescriptorTable, index: usize) *HandlerFuncEntry {
+        return switch (index) {
+            0 => &self.divide_error,
+            1 => &self.debug,
+            2 => &self.non_maskable_interrupt,
+            3 => &self.breakpoint,
+            4 => &self.overflow,
+            5 => &self.bound_range_exceeded,
+            6 => &self.invalid_opcode,
+            7 => &self.device_not_available,
+            9 => &self.coprocessor_segment_overrun,
+            16 => &self.x87_floating_point,
+            19 => &self.simd_floating_point,
+            20 => &self.virtualization,
+            32...255 => &self.interrupts[index - 32],
+            15, 31, 21...29 => @panic("entry is reserved"),
+            8, 10...14, 17, 30 => @panic("entry has an error code"),
+            18 => @panic("entry is a diverging exception"),
+            else => @panic("no entry with that index"),
+        };
+    }
+
     test "" {
         std.testing.refAllDecls(@This());
     }
