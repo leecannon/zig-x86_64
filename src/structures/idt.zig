@@ -535,7 +535,15 @@ test "EntryOptions" {
 /// Represents the interrupt stack frame pushed by the CPU on interrupt or exception entry.
 pub const InterruptStackFrame = packed struct {
     /// The stack segment descriptor at the time of the interrupt (often zero in 64-bit mode).
-    instruction_pointer: VirtAddr, code_segment: u64, cpu_flags: u64, stack_pointer: VirtAddr, stack_segment: u64
+    instruction_pointer: VirtAddr,
+    code_segment: u64,
+    cpu_flags: u64,
+    stack_pointer: VirtAddr,
+    stack_segment: u64,
+
+    pub fn format(value: InterruptStackFrame, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        try std.fmt.format(writer, "InterruptStackFrame( instruction_pointer: {}, code_segment: {}, cpu_flags: 0x{x}, stack_pointer: {}, stack_segment: {} )", .{ value.instruction_pointer, value.code_segment, value.cpu_flags, value.stack_pointer, value.stack_segment });
+    }
 };
 
 test "InterruptStackFrame" {
