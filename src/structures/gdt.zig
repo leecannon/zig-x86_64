@@ -169,6 +169,10 @@ pub inline fn kernel_code_segment() Descriptor {
     return Descriptor{ .UserSegment = Descriptor.KERNEL_CODE64 };
 }
 
+pub inline fn kernel_data_segment() Descriptor {
+    return Descriptor{ .UserSegment = Descriptor.KERNEL_DATA };
+}
+
 /// Creates a segment descriptor for a ring 3 data segment (32-bit or
 /// 64-bit). Suitable for use with `sysret` or `sysexit`.
 pub inline fn user_data_segment() Descriptor {
