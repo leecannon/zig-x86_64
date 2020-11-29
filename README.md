@@ -1,17 +1,17 @@
 # zig-x86_64
 
-This repo is a [zig](https://github.com/ziglang) reimplementation of rust's [x86_64](https://github.com/rust-osdev/x86_64) crate.
+This repo contains various functionality required to make an x86_64 kernel (following [Writing an OS in Rust](https://os.phil-opp.com/))
 
-Also includes a reimplementation of rust's [pic8259_simple](https://docs.rs/pic8259_simple) crate inside 'x86_64.additional.pic8259'.
-
-## Page Size change from Rust crate
-
-The original rust crate uses a generic PageSize over 4KiB, 2MiB and 1 GiB heavily, in this package there are seperate versions of structs for each with the page size appended to the struct name. 
-
-However as a page size of 4KiB is the defacto standard, it's structs have no postfix, for example: 
- - PageIterator (4KiB)
- - PageIterator2MiB
- - PageIterator1GiB
+It is mainly a zig reimplementation of the rust crates:
+ - [x86_64](https://github.com/rust-osdev/x86_64)
+ - [pic8259_simple](https://docs.rs/pic8259_simple)
+ 
+But includes a few additonal types in the `x86_64.additional` namespace:
+ - `x86_64.additional.lock.KernelSpinLock` - A kernel spinlock that takes care of interrupts (im not 100% comfortable with the design)
+ - `x86_64.additional.serial_port.SerialPort` - Serial port type, mainly for debug output
+ - `x86_64.additional.pic8259.SimplePic` - Small re-write of [pic8259_simple](https://docs.rs/pic8259_simple)
+ 
+### Contributions are welcome!
 
 ## How to use
 
