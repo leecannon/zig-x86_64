@@ -85,6 +85,7 @@ pub const SimplePic = struct {
     pub fn notify_end_of_interrupt(self: SimplePic, interrupt_id: u8) void {
         if (handlesInterrupt(self.secondaryInterruptOffset, interrupt_id)) {
             secondaryCommand.write(CMD_END_INTERRUPT);
+            primaryCommand.write(CMD_END_INTERRUPT);
         } else if (handlesInterrupt(self.primaryInterruptOffset, interrupt_id)) {
             primaryCommand.write(CMD_END_INTERRUPT);
         }
