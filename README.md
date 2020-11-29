@@ -7,9 +7,9 @@ It is mainly a zig reimplementation of the rust crates:
  - [pic8259_simple](https://docs.rs/pic8259_simple)
  
 But includes a few additonal types in the `x86_64.additional` namespace:
- - `x86_64.additional.lock.KernelSpinLock` - A kernel spinlock that takes care of interrupts (im not 100% comfortable with the design)
- - `x86_64.additional.serial_port.SerialPort` - Serial port type, mainly for debug output
- - `x86_64.additional.pic8259.SimplePic` - Small re-write of [pic8259_simple](https://docs.rs/pic8259_simple)
+ - `KernelSpinLock` - A kernel spinlock that takes care of interrupts (im not 100% comfortable with the design)
+ - `SerialPort` - Serial port type, mainly for debug output
+ - `SimplePic` - Small re-write of [pic8259_simple](https://docs.rs/pic8259_simple)
  
 ### Contributions are welcome!
 
