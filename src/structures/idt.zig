@@ -250,11 +250,11 @@ pub const InterruptDescriptorTable = packed struct {
     /// The virtual (linear) address that caused the `#PF` is stored in the `CR2` register.
     /// The saved instruction pointer points to the instruction that caused the `#PF`.
     ///
-    /// The page-fault error code is described by the
-    /// [`PageFaultErrorCode`](struct.PageFaultErrorCode.html) struct.
+    /// The page-fault error code is described by the `PageFaultErrorCode` struct.
+    /// Use `x86_64.structures.idt.PageFaultErrorCode.from_u64(error_code)`
     ///
     /// The vector number of the `#PF` exception is 14.
-    page_fault: PageFaultHandlerFuncEntry,
+    page_fault: HandlerWithErrorCodeFuncEntry,
 
     /// vector nr. 15
     reserved_1: HandlerFuncEntry,
@@ -359,7 +359,7 @@ pub const InterruptDescriptorTable = packed struct {
             .segment_not_present = HandlerWithErrorCodeFuncEntry.missing(),
             .stack_segment_fault = HandlerWithErrorCodeFuncEntry.missing(),
             .general_protection_fault = HandlerWithErrorCodeFuncEntry.missing(),
-            .page_fault = PageFaultHandlerFuncEntry.missing(),
+            .page_fault = HandlerWithErrorCodeFuncEntry.missing(),
             .reserved_1 = HandlerFuncEntry.missing(),
             .x87_floating_point = HandlerFuncEntry.missing(),
             .alignment_check = HandlerWithErrorCodeFuncEntry.missing(),
@@ -430,9 +430,6 @@ pub const HandlerFuncEntry = Entry(HandlerFunc);
 pub const HandlerWithErrorCodeFunc = fn (interruptStackFrame: *InterruptStackFrame, error_code: u64) callconv(.Interrupt) void;
 pub const HandlerWithErrorCodeFuncEntry = Entry(HandlerWithErrorCodeFunc);
 
-pub const PageFaultHandlerFunc = fn (interruptStackFrame: *InterruptStackFrame, page_fault_error_code: u64) callconv(.Interrupt) void;
-pub const PageFaultHandlerFuncEntry = Entry(PageFaultHandlerFunc);
-
 pub const HandlerDivergingFunc = fn (interruptStackFrame: *InterruptStackFrame) callconv(.Interrupt) noreturn;
 pub const HandlerDivergingFuncEntry = Entry(HandlerDivergingFunc);
 
@@ -441,7 +438,7 @@ pub const HandlerDivergingWithErrorCodeFuncEntry = Entry(HandlerDivergingWithErr
 
 fn Entry(comptime handler_type: type) type {
     comptime {
-        if (handler_type != HandlerFunc and handler_type != HandlerWithErrorCodeFunc and handler_type != PageFaultHandlerFunc and handler_type != HandlerDivergingFunc and handler_type != HandlerDivergingWithErrorCodeFunc) {
+        if (handler_type != HandlerFunc and handler_type != HandlerWithErrorCodeFunc and handler_type != HandlerDivergingFunc and handler_type != HandlerDivergingWithErrorCodeFunc) {
             @compileError("Non-Interupt handler func type given");
         }
     }
@@ -499,9 +496,6 @@ test "EntrySize" {
 
     std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerWithErrorCodeFuncEntry));
     std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerWithErrorCodeFuncEntry));
-
-    std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(PageFaultHandlerFuncEntry));
-    std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(PageFaultHandlerFuncEntry));
 
     std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerDivergingFuncEntry));
     std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerDivergingFuncEntry));
@@ -577,59 +571,43 @@ test "InterruptStackFrame" {
     std.testing.expectEqual(@sizeOf(u64) * 5, @sizeOf(InterruptStackFrame));
 }
 
-// Commented out is a packed struct representing a Page Fault error code, however due to https://github.com/ziglang/zig/issues/1481 it cannot be used
+/// Describes an page fault error code.
+pub const PageFaultErrorCode = packed struct {
+    /// If this flag is set, the page fault was caused by a page-protection violation,
+    /// else the page fault was caused by a not-present page.
+    PROTECTION_VIOLATION: bool,
+    /// If this flag is set, the memory access that caused the page fault was a write.
+    /// Else the access that caused the page fault is a memory read. This bit does not
+    /// necessarily indicate the cause of the page fault was a read or write violation.
+    CAUSED_BY_WRITE: bool,
+    /// If this flag is set, an access in user mode (CPL=3) caused the page fault. Else
+    /// an access in supervisor mode (CPL=0, 1, or 2) caused the page fault. This bit
+    /// does not necessarily indicate the cause of the page fault was a privilege violation.
+    USER_MODE: bool,
+    /// If this flag is set, the page fault is a result of the processor reading a 1 from
+    /// a reserved field within a page-translation-table entry.
+    MALFORMED_TABLE: bool,
+    /// If this flag is set, it indicates that the access that caused the page fault was an
+    /// instruction fetch.
+    INSTRUCTION_FETCH: bool,
 
-// /// Describes an page fault error code.
-// pub const PageFaultErrorCode = packed struct {
-//     /// If this flag is set, the page fault was caused by a page-protection violation,
-//     /// else the page fault was caused by a not-present page.
-//     PROTECTION_VIOLATION: bool,
-//     /// If this flag is set, the memory access that caused the page fault was a write.
-//     /// Else the access that caused the page fault is a memory read. This bit does not
-//     /// necessarily indicate the cause of the page fault was a read or write violation.
-//     CAUSED_BY_WRITE: bool,
-//     /// If this flag is set, an access in user mode (CPL=3) caused the page fault. Else
-//     /// an access in supervisor mode (CPL=0, 1, or 2) caused the page fault. This bit
-//     /// does not necessarily indicate the cause of the page fault was a privilege violation.
-//     USER_MODE: bool,
-//     /// If this flag is set, the page fault is a result of the processor reading a 1 from
-//     /// a reserved field within a page-translation-table entry.
-//     MALFORMED_TABLE: bool,
-//     /// If this flag is set, it indicates that the access that caused the page fault was an
-//     /// instruction fetch.
-//     INSTRUCTION_FETCH: bool,
+    _padding1: bool,
+    _padding2: bool,
+    _padding3: bool,
 
-//     _padding1: bool,
-//     _padding2: bool,
-//     _padding3: bool,
+    _padding_a: u8,
+    _padding_b: u16,
+    _padding_c: u32,
 
-//     _padding_a: u8,
-//     _padding_b: u16,
-//     _padding_c: u32,
-// };
+    pub fn from_u64(value: u64) PageFaultErrorCode {
+        return @bitCast(PageFaultErrorCode, value);
+    }
+};
 
-// test "PageFaultErrorCode" {
-//     std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageFaultErrorCode));
-//     std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageFaultErrorCode));
-// }
-
-/// If this flag is set, the page fault was caused by a page-protection violation,
-/// else the page fault was caused by a not-present page.
-pub const PAGE_FAULT_PROTECTION_VIOLATION: u64 = 1;
-/// If this flag is set, the memory access that caused the page fault was a write.
-/// Else the access that caused the page fault is a memory read. This bit does not
-/// necessarily indicate the cause of the page fault was a read or write violation.
-pub const PAGE_FAULT_CAUSED_BY_WRITE: u64 = 1 << 1;
-/// If this flag is set, an access in user mode (CPL=3) caused the page fault. Else
-/// an access in supervisor mode (CPL=0, 1, or 2) caused the page fault. This bit
-/// does not necessarily indicate the cause of the page fault was a privilege violation.
-pub const PAGE_FAULT_USER_MODE: u64 = 1 << 2;
-/// If this flag is set, the page fault is a result of the processor reading a 1 from
-/// a reserved field within a page-translation-table entry.
-pub const PAGE_FAULT_MALFORMED_TABLE: u64 = 1 << 3;
-/// If this flag is set, it indicates that the access that caused the page fault was an
-/// instruction fetch.
-pub const PAGE_FAULT_INSTRUCTION_FETCH: u64 = 1 << 4;
+test "PageFaultErrorCode" {
+    std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageFaultErrorCode));
+    std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageFaultErrorCode));
+}
 
 test "" {
     std.testing.refAllDecls(@This());
