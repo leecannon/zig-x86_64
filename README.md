@@ -2,14 +2,13 @@
 
 This repo contains various functionality required to make an x86_64 kernel (following [Writing an OS in Rust](https://os.phil-opp.com/))
 
-It is mainly a zig reimplementation of the rust crates:
- - [x86_64](https://github.com/rust-osdev/x86_64)
- - [pic8259_simple](https://docs.rs/pic8259_simple)
+It is mainly a zig reimplementation of the rust crate [x86_64](https://github.com/rust-osdev/x86_64).
  
-But includes a few additonal types in the `x86_64.additional` namespace:
+It includes a few additonal types in the `x86_64.additional` namespace:
  - `KernelSpinLock` - A kernel spinlock that takes care of interrupts (im not 100% comfortable with the design)
  - `SerialPort` - Serial port type, mainly for debug output
- - `SimplePic` - Small re-write of [pic8259_simple](https://docs.rs/pic8259_simple)
+ - `SimplePic` - Reimplementation of [pic8259_simple](https://docs.rs/pic8259_simple)
+ - `Keyboard` - Reimplementation of [pc-keyboard](https://github.com/rust-embedded-community/pc-keyboard)
  
 ### Contributions are welcome!
 
