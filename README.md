@@ -8,7 +8,6 @@ It includes a few additonal types in the `x86_64.additional` namespace:
  - `KernelSpinLock` - A kernel spinlock that takes care of interrupts (im not 100% comfortable with the design)
  - `SerialPort` - Serial port type, mainly for debug output
  - `SimplePic` - Reimplementation of [pic8259_simple](https://docs.rs/pic8259_simple)
- - `Keyboard` - Reimplementation of [pc-keyboard](https://github.com/rust-embedded-community/pc-keyboard)
  
 ### Contributions are welcome!
 
