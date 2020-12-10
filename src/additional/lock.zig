@@ -27,8 +27,8 @@ pub const KernelSpinLock = struct {
 
     /// Try to acquire the lock, returns a LockToken if acquired null otherwise
     /// Interrupts are disabled while the lock is held and re-enabled upon release if previously enabled.
-    pub fn try_lock(self: *KernelSpinLock) ?LockToken {
-        const interrupts_enabled = instructions.interrupts.are_enabled();
+    pub fn tryLock(self: *KernelSpinLock) ?LockToken {
+        const interrupts_enabled = instructions.interrupts.areEnabled();
 
         if (interrupts_enabled) instructions.interrupts.disable();
 
@@ -47,7 +47,7 @@ pub const KernelSpinLock = struct {
     /// Interrupts are disabled while the lock is held and re-enabled upon release if previously enabled.
     /// If the lock is not acquired immediately then a weak spin on the lock bit occurs with interrupts enabled
     pub fn lock(self: *KernelSpinLock) LockToken {
-        const interrupts_enabled = instructions.interrupts.are_enabled();
+        const interrupts_enabled = instructions.interrupts.areEnabled();
 
         if (interrupts_enabled) instructions.interrupts.disable();
 

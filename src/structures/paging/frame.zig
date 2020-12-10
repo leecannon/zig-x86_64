@@ -20,8 +20,8 @@ fn CreatePhysFrame(comptime page_size: structures.paging.PageSize) type {
         /// Returns the frame that starts at the given physical address.
         ///
         /// Returns an error if the address is not correctly aligned (i.e. is not a valid frame start)
-        pub fn from_start_address(address: PhysAddr) PhysFrameError!Self {
-            if (!address.is_aligned(size.Size())) {
+        pub fn fromStartAddress(address: PhysAddr) PhysFrameError!Self {
+            if (!address.isAligned(size.bytes())) {
                 return PhysFrameError.AddressNotAligned;
             }
 
@@ -30,24 +30,24 @@ fn CreatePhysFrame(comptime page_size: structures.paging.PageSize) type {
 
         /// Returns the frame that starts at the given physical address.
         /// Without validaing the addresses alignment
-        pub inline fn from_start_address_unchecked(address: PhysAddr) Self {
+        pub inline fn fromStartAddressUnchecked(address: PhysAddr) Self {
             return Self{ .start_address = address };
         }
 
         /// Returns the frame that contains the given physical address.
-        pub inline fn containing_address(address: PhysAddr) Self {
+        pub inline fn containingAddress(address: PhysAddr) Self {
             return Self{
-                .start_address = address.align_down(size.Size()),
+                .start_address = address.alignDown(size.bytes()),
             };
         }
 
         /// Returns the size of the frame (4KB, 2MB or 1GB).
-        pub inline fn size_of(self: Self) u64 {
-            return size.Size();
+        pub inline fn sizeOf(self: Self) u64 {
+            return size.bytes();
         }
 
         pub fn format(value: Self, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-            try writer.writeAll("PhysFrame[" ++ size.SizeString() ++ "](0x");
+            try writer.writeAll("PhysFrame[" ++ size.sizeString() ++ "](0x");
 
             try std.fmt.formatType(
                 value.start_address.value,
@@ -76,14 +76,14 @@ pub const PhysFrameIterator2MiB = CreatePhysFrameIterator(PhysFrame2MiB);
 pub const PhysFrameIterator1GiB = CreatePhysFrameIterator(PhysFrame1GiB);
 
 fn CreatePhysFrameIterator(comptime phys_frame_type: type) type {
-    const physFrameRangeType = switch (phys_frame_type) {
+    const phy_frame_range_type = switch (phys_frame_type) {
         PhysFrame => PhysFrameRange,
         PhysFrame2MiB => PhysFrameRange2MiB,
         PhysFrame1GiB => PhysFrameRange1GiB,
         else => @compileError("Non-PhysFrame type given"),
     };
 
-    const physFrameRangeInclusiveType = switch (phys_frame_type) {
+    const phys_frame_range_inclusive_type = switch (phys_frame_type) {
         PhysFrame => PhysFrameRangeInclusive,
         PhysFrame2MiB => PhysFrameRange2MiBInclusive,
         PhysFrame1GiB => PhysFrameRange1GiBInclusive,
@@ -92,13 +92,13 @@ fn CreatePhysFrameIterator(comptime phys_frame_type: type) type {
 
     return struct {
         /// Returns a range of frames, exclusive `end`.
-        pub inline fn range(start: phys_frame_type, end: phys_frame_type) physFrameRangeType {
-            return physFrameRangeType{ .start = start, .end = end };
+        pub inline fn range(start: phys_frame_type, end: phys_frame_type) phy_frame_range_type {
+            return phy_frame_range_type{ .start = start, .end = end };
         }
 
         /// Returns a range of frames, inclusive `end`.
-        pub inline fn range_inclusive(start: phys_frame_type, end: phys_frame_type) physFrameRangeInclusiveType {
-            return physFrameRangeInclusiveType{ .start = start, .end = end };
+        pub inline fn rangeInclusive(start: phys_frame_type, end: phys_frame_type) phys_frame_range_inclusive_type {
+            return phys_frame_range_inclusive_type{ .start = start, .end = end };
         }
 
         test "" {
@@ -132,7 +132,7 @@ fn CreatePhysFrameRange(comptime phys_frame_type: type) type {
         end: phys_frame_type,
 
         /// Returns whether the range contains no frames.
-        pub inline fn is_empty(self: Self) bool {
+        pub inline fn isEmpty(self: Self) bool {
             if (self.start) |x| {
                 return x.start_address.value >= self.end.start_address.value;
             }
@@ -144,10 +144,10 @@ fn CreatePhysFrameRange(comptime phys_frame_type: type) type {
                 if (start.start_address.value < self.end.start_address.value) {
                     const frame = start;
 
-                    const opt_addr = PhysAddr.try_new(start.start_address.value + phys_frame_type.size.Size()) catch null;
+                    const opt_addr = PhysAddr.tryNew(start.start_address.value + phys_frame_type.size.bytes()) catch null;
 
                     if (opt_addr) |addr| {
-                        self.start = phys_frame_type.containing_address(addr);
+                        self.start = phys_frame_type.containingAddress(addr);
                     } else {
                         self.start = null;
                     }
@@ -189,7 +189,7 @@ fn CreatePhysFrameRangeInclusive(comptime phys_frame_type: type) type {
         end: phys_frame_type,
 
         /// Returns whether the range contains no frames.
-        pub inline fn is_empty(self: Self) bool {
+        pub inline fn isEmpty(self: Self) bool {
             if (self.start) |x| {
                 return x.start_address.value > self.end.start_address.value;
             }
@@ -201,10 +201,10 @@ fn CreatePhysFrameRangeInclusive(comptime phys_frame_type: type) type {
                 if (start.start_address.value <= self.end.start_address.value) {
                     const frame = start;
 
-                    const opt_addr = PhysAddr.try_new(start.start_address.value + phys_frame_type.size.Size()) catch null;
+                    const opt_addr = PhysAddr.tryNew(start.start_address.value + phys_frame_type.size.bytes()) catch null;
 
                     if (opt_addr) |addr| {
-                        self.start = phys_frame_type.containing_address(addr);
+                        self.start = phys_frame_type.containingAddress(addr);
                     } else {
                         self.start = null;
                     }
@@ -223,19 +223,19 @@ fn CreatePhysFrameRangeInclusive(comptime phys_frame_type: type) type {
 
 test "PhysFrameIterator" {
     var physAddrA = PhysAddr.init(0x000FFFFFFFFF0000);
-    physAddrA = physAddrA.align_down(structures.paging.PageSize.Size4KiB.Size());
+    physAddrA = physAddrA.alignDown(structures.paging.PageSize.Size4KiB.bytes());
 
     var physAddrB = PhysAddr.init(0x000FFFFFFFFFFFFF);
-    physAddrB = physAddrB.align_down(structures.paging.PageSize.Size4KiB.Size());
+    physAddrB = physAddrB.alignDown(structures.paging.PageSize.Size4KiB.bytes());
 
-    const a = try PhysFrame.from_start_address(physAddrA);
-    const b = try PhysFrame.from_start_address(physAddrB);
+    const a = try PhysFrame.fromStartAddress(physAddrA);
+    const b = try PhysFrame.fromStartAddress(physAddrB);
 
     var iterator = PhysFrameIterator.range(a, b);
-    var inclusive_iterator = PhysFrameIterator.range_inclusive(a, b);
+    var inclusive_iterator = PhysFrameIterator.rangeInclusive(a, b);
 
-    std.testing.expect(!iterator.is_empty());
-    std.testing.expect(!inclusive_iterator.is_empty());
+    std.testing.expect(!iterator.isEmpty());
+    std.testing.expect(!inclusive_iterator.isEmpty());
 
     var count: usize = 0;
     while (iterator.next()) |frame| {
@@ -249,8 +249,8 @@ test "PhysFrameIterator" {
     }
     testing.expectEqual(@as(usize, 16), count);
 
-    std.testing.expect(iterator.is_empty());
-    std.testing.expect(inclusive_iterator.is_empty());
+    std.testing.expect(iterator.isEmpty());
+    std.testing.expect(inclusive_iterator.isEmpty());
 }
 
 test "" {

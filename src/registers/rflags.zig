@@ -3,95 +3,95 @@ usingnamespace @import("../common.zig");
 pub const RFlags = packed struct {
     /// Set by hardware if last arithmetic operation generated a carry out of the
     /// most-significant bit of the result.
-    CARRY_FLAG: bool,
+    carry_flag: bool,
     _padding1: bool,
     /// Set by hardware if last result has an even number of 1 bits (only for some operations)
-    PARITY_FLAG: bool,
+    parity_flag: bool,
     _padding3: bool,
     /// Set by hardware if last arithmetic operation generated a carry ouf of bit 3 of the
     /// result.
-    AUXILIARY_CARRY_FLAG: bool,
+    auxiliary_carry_flag: bool,
     _padding5: bool,
     /// Set by hardware if last arithmetic operation resulted in a zero value.
-    ZERO_FLAG: bool,
+    zero_flag: bool,
     /// Set by hardware if last arithmetic operation resulted in a negative value.
-    SIGN_FLAG: bool,
+    sign_flag: bool,
     /// Enable single-step mode for debugging.
-    TRAP_FLAG: bool,
+    trap_flag: bool,
     /// Enable interrupts.
-    INTERRUPT_FLAG: bool,
+    interrupt_flag: bool,
     /// Determines the order in which strings are processed.
-    DIRECTION_FLAG: bool,
+    direction_flag: bool,
     /// Set by hardware to indicate that the sign bit of the result of the last signed integer
     /// operation differs from the source operands.
-    OVERFLOW_FLAG: bool,
+    overflow_flag: bool,
     /// The low bit of the I/O Privilege Level field.
     ///
     /// Specifies the privilege level required for executing I/O address-space instructions.
-    IOPL_LOW: bool,
+    iopl_low: bool,
     /// The high bit of the I/O Privilege Level field.
     ///
     /// Specifies the privilege level required for executing I/O address-space instructions.
-    IOPL_HIGH: bool,
+    iopl_high: bool,
     /// Used by `iret` in hardware task switch mode to determine if current task is nested.
-    NESTED_TASK: bool,
+    nested_task: bool,
     _padding15: bool,
     /// Allows to restart an instruction following an instrucion breakpoint.
-    RESUME_FLAG: bool,
+    resume_flag: bool,
     /// Enable the virtual-8086 mode.
-    VIRTUAL_8086_MODE: bool,
+    virtual_8086_mode: bool,
     /// Enable automatic alignment checking if CR0.AM is set. Only works if CPL is 3.
-    ALIGNMENT_CHECK: bool,
-    /// Virtual image of the INTERRUPT_FLAG bit.
+    alignment_check: bool,
+    /// Virtual image of the interrupt_flag bit.
     ///
     /// Used when virtual-8086 mode extensions (CR4.VME) or protected-mode virtual
     /// interrupts (CR4.PVI) are activated.
-    VIRTUAL_INTERRUPT: bool,
+    virtual_interrupt: bool,
     /// Indicates that an external, maskable interrupt is pending.
     ///
     /// Used when virtual-8086 mode extensions (CR4.VME) or protected-mode virtual
     /// interrupts (CR4.PVI) are activated.
-    VIRTUAL_INTERRUPT_PENDING: bool,
+    virtual_interrupt_pending: bool,
     /// Processor feature identification flag.
     ///
     /// If this flag is modifiable, the CPU supports CPUID.
-    ID: bool,
+    id: bool,
 
     // I can't wait for better bitfields in Zig... this is a mess
     _padding_a: u10,
     _padding_b: u32,
 
-    pub inline fn from_u64(value: u64) RFlags {
+    pub inline fn fromU64(value: u64) RFlags {
         return @bitCast(RFlags, value & NO_PADDING);
     }
 
-    pub inline fn to_u64(self: RFlags) u64 {
+    pub inline fn toU64(self: RFlags) u64 {
         return @bitCast(u64, self) & NO_PADDING;
     }
 
     const NO_PADDING: u64 = @bitCast(u64, RFlags{
-        .CARRY_FLAG = true,
+        .carry_flag = true,
         ._padding1 = false,
-        .PARITY_FLAG = true,
+        .parity_flag = true,
         ._padding3 = false,
-        .AUXILIARY_CARRY_FLAG = true,
+        .auxiliary_carry_flag = true,
         ._padding5 = false,
-        .ZERO_FLAG = true,
-        .SIGN_FLAG = true,
-        .TRAP_FLAG = true,
-        .INTERRUPT_FLAG = true,
-        .DIRECTION_FLAG = true,
-        .OVERFLOW_FLAG = true,
-        .IOPL_HIGH = true,
-        .IOPL_LOW = true,
-        .NESTED_TASK = true,
+        .zero_flag = true,
+        .sign_flag = true,
+        .trap_flag = true,
+        .interrupt_flag = true,
+        .direction_flag = true,
+        .overflow_flag = true,
+        .iopl_high = true,
+        .iopl_low = true,
+        .nested_task = true,
         ._padding15 = false,
-        .RESUME_FLAG = true,
-        .VIRTUAL_8086_MODE = true,
-        .ALIGNMENT_CHECK = true,
-        .VIRTUAL_INTERRUPT = true,
-        .VIRTUAL_INTERRUPT_PENDING = true,
-        .ID = true,
+        .resume_flag = true,
+        .virtual_8086_mode = true,
+        .alignment_check = true,
+        .virtual_interrupt = true,
+        .virtual_interrupt_pending = true,
+        .id = true,
         ._padding_a = 0,
         ._padding_b = 0,
     });
@@ -100,11 +100,11 @@ pub const RFlags = packed struct {
     ///
     /// Drops any unknown bits.
     pub inline fn read() RFlags {
-        return RFlags.from_u64(read_raw());
+        return RFlags.fromU64(readRaw());
     }
 
     /// Returns the raw current value of the RFLAGS register.
-    pub inline fn read_raw() u64 {
+    pub inline fn readRaw() u64 {
         return asm ("pushfq; popq %[ret]"
             : [ret] "=r" (-> u64)
             :
@@ -114,16 +114,16 @@ pub const RFlags = packed struct {
 
     /// Writes the RFLAGS register, preserves reserved bits.
     pub fn write(self: RFlags) void {
-        const old_value = read_raw();
+        const old_value = readRaw();
         const reserved = old_value & ~NO_PADDING;
-        const new_value = reserved | self.to_u64();
-        write_raw(new_value);
+        const new_value = reserved | self.toU64();
+        writeRaw(new_value);
     }
 
     /// Writes the RFLAGS register.
     ///
     /// Does not preserve any bits, including reserved bits.
-    pub inline fn write_raw(value: u64) void {
+    pub inline fn writeRaw(value: u64) void {
         asm volatile ("pushq %[val]; popfq"
             :
             : [val] "r" (value)
@@ -140,9 +140,9 @@ test "RFlags" {
     std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(RFlags));
     std.testing.expectEqual(@sizeOf(u64), @sizeOf(RFlags));
 
-    var a = RFlags.from_u64(0);
-    a.PARITY_FLAG = true;
-    std.testing.expectEqual(@as(u64, 1 << 2), a.to_u64());
+    var a = RFlags.fromU64(0);
+    a.parity_flag = true;
+    std.testing.expectEqual(@as(u64, 1 << 2), a.toU64());
 }
 
 test "" {

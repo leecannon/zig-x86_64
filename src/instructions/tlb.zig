@@ -10,7 +10,7 @@ pub inline fn flush(addr: VirtAddr) void {
 }
 
 /// Invalidate the TLB completely by reloading the CR3 register.
-pub inline fn flush_all() void {
+pub inline fn flushAll() void {
     registers.control.Cr3.write(registers.control.Cr3.read());
 }
 

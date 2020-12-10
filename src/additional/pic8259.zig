@@ -11,28 +11,28 @@ const CMD_END_INTERRUPT: u8 = 0x20;
 /// The mode in which we want to run our PICs.
 const MODE_8086: u8 = 0x01;
 
-const defaultPrimaryMask: u8 = blk: {
-    var temp = PicPrimaryInterruptMask.all_masked();
-    temp.CHAIN = false;
-    break :blk temp.to_u8();
+const DEFAULT_PRIMARY_MASK: u8 = blk: {
+    var temp = PicPrimaryInterruptMask.allMasked();
+    temp.chain = false;
+    break :blk temp.toU8();
 };
-const defaultSecondaryMask: u8 = PicSecondaryInterruptMask.all_masked().to_u8();
+const DEFAULT_SECONDARY_MASK: u8 = PicSecondaryInterruptMask.allMasked().toU8();
 
-const primaryCommand: port = port.init(0x20);
-const primaryData: port = port.init(0x21);
-const secondaryCommand: port = port.init(0xA0);
-const secondaryData: port = port.init(0xA1);
+const PRIMARY_COMMAND_PORT: port = port.init(0x20);
+const PRIMARY_DATA_PORT: port = port.init(0x21);
+const SECONDARY_COMMAND_PORT: port = port.init(0xA0);
+const SECONDARY_DATA_PORT: port = port.init(0xA1);
 
 pub const SimplePic = struct {
-    primaryInterruptOffset: u8,
-    secondaryInterruptOffset: u8,
+    primary_interrupt_offset: u8,
+    secondary_interrupt_offset: u8,
 
     /// Initialize both our PICs.  We initialize them together, at the same
     /// time, because it's traditional to do so, and because I/O operations
     /// might not be instantaneous on older processors.
     ///
     /// NOTE: All interrupts start masked, except the connection from primary to secondary.
-    pub fn init(primaryInterruptOffset: u8, secondaryInterruptOffset: u8) SimplePic {
+    pub fn init(primary_interrupt_offset: u8, secondary_interrupt_offset: u8) SimplePic {
         // We need to add a delay between writes to our PICs, especially on
         // older motherboards.  But we don't necessarily have any kind of
         // timers yet, because most of them require interrupts.  Various
@@ -44,36 +44,36 @@ pub const SimplePic = struct {
 
         // Tell each PIC that we're going to send it a three-byte
         // initialization sequence on its data port.
-        primaryCommand.write(CMD_INIT);
+        PRIMARY_COMMAND_PORT.write(CMD_INIT);
         wait_port.write(0);
-        secondaryCommand.write(CMD_INIT);
+        SECONDARY_COMMAND_PORT.write(CMD_INIT);
         wait_port.write(0);
 
         // Byte 1: Set up our base offsets.
-        primaryData.write(primaryInterruptOffset);
+        PRIMARY_DATA_PORT.write(primary_interrupt_offset);
         wait_port.write(0);
-        secondaryData.write(secondaryInterruptOffset);
+        SECONDARY_DATA_PORT.write(secondary_interrupt_offset);
         wait_port.write(0);
 
         // Byte 2: Configure chaining between PIC1 and PIC2.
-        primaryData.write(4);
+        PRIMARY_DATA_PORT.write(4);
         wait_port.write(0);
-        secondaryData.write(2);
+        SECONDARY_DATA_PORT.write(2);
         wait_port.write(0);
 
         // Byte 3: Set our mode.
-        primaryData.write(MODE_8086);
+        PRIMARY_DATA_PORT.write(MODE_8086);
         wait_port.write(0);
-        secondaryData.write(MODE_8086);
+        SECONDARY_DATA_PORT.write(MODE_8086);
         wait_port.write(0);
 
         // Set the default interrupt masks
-        primaryData.write(defaultPrimaryMask);
-        secondaryData.write(defaultSecondaryMask);
+        PRIMARY_DATA_PORT.write(DEFAULT_PRIMARY_MASK);
+        SECONDARY_DATA_PORT.write(DEFAULT_SECONDARY_MASK);
 
         return .{
-            .primaryInterruptOffset = primaryInterruptOffset,
-            .secondaryInterruptOffset = secondaryInterruptOffset,
+            .primary_interrupt_offset = primary_interrupt_offset,
+            .secondary_interrupt_offset = secondary_interrupt_offset,
         };
     }
 
@@ -82,52 +82,52 @@ pub const SimplePic = struct {
     }
 
     /// Figure out which (if any) PICs in our chain need to know about this interrupt
-    pub fn notify_end_of_interrupt(self: SimplePic, interrupt_id: u8) void {
-        if (handlesInterrupt(self.secondaryInterruptOffset, interrupt_id)) {
-            secondaryCommand.write(CMD_END_INTERRUPT);
-            primaryCommand.write(CMD_END_INTERRUPT);
-        } else if (handlesInterrupt(self.primaryInterruptOffset, interrupt_id)) {
-            primaryCommand.write(CMD_END_INTERRUPT);
+    pub fn notifyEndOfInterrupt(self: SimplePic, interrupt_id: u8) void {
+        if (handlesInterrupt(self.secondary_interrupt_offset, interrupt_id)) {
+            SECONDARY_COMMAND_PORT.write(CMD_END_INTERRUPT);
+            PRIMARY_COMMAND_PORT.write(CMD_END_INTERRUPT);
+        } else if (handlesInterrupt(self.primary_interrupt_offset, interrupt_id)) {
+            PRIMARY_COMMAND_PORT.write(CMD_END_INTERRUPT);
         }
     }
 
-    pub fn raw_getPrimaryInterruptMask() PicPrimaryInterruptMask {
-        return PicPrimaryInterruptMask.from_u8(primaryData.read());
+    pub fn rawGetPrimaryInterruptMask() PicPrimaryInterruptMask {
+        return PicPrimaryInterruptMask.fromU8(PRIMARY_DATA_PORT.read());
     }
 
-    pub fn raw_setPrimaryInterruptMask(mask: PicPrimaryInterruptMask) void {
-        primaryData.write(mask.to_u8());
+    pub fn rawSetPrimaryInterruptMask(mask: PicPrimaryInterruptMask) void {
+        PRIMARY_DATA_PORT.write(mask.toU8());
     }
 
-    pub fn raw_getSecondaryInterruptMask() PicSecondaryInterruptMask {
-        return PicSecondaryInterruptMask.from_u8(secondaryData.read());
+    pub fn rawGetSecondaryInterruptMask() PicSecondaryInterruptMask {
+        return PicSecondaryInterruptMask.fromU8(SECONDARY_DATA_PORT.read());
     }
 
-    pub fn raw_setSecondaryInterruptMask(mask: PicSecondaryInterruptMask) void {
-        secondaryData.write(mask.to_u8());
+    pub fn rawSetSecondaryInterruptMask(mask: PicSecondaryInterruptMask) void {
+        SECONDARY_DATA_PORT.write(mask.toU8());
     }
 
     pub fn isInterruptMasked(self: SimplePic, interrupt: PicInterrupt) bool {
         return switch (interrupt) {
             // Primary
-            .Timer => raw_getPrimaryInterruptMask().TIMER,
-            .Keyboard => raw_getPrimaryInterruptMask().KEYBOARD,
-            .Chain => raw_getPrimaryInterruptMask().CHAIN,
-            .SerialPort2 => raw_getPrimaryInterruptMask().SERIAL_PORT_2,
-            .SerialPort1 => raw_getPrimaryInterruptMask().SERIAL_PORT_1,
-            .ParallelPort23 => raw_getPrimaryInterruptMask().PARALLEL_PORT_23,
-            .FloppyDisk => raw_getPrimaryInterruptMask().FLOPPY_DISK,
-            .ParallelPort1 => raw_getPrimaryInterruptMask().PARALLEL_PORT_1,
+            .Timer => rawGetPrimaryInterruptMask().timer,
+            .Keyboard => rawGetPrimaryInterruptMask().keyboard,
+            .Chain => rawGetPrimaryInterruptMask().chain,
+            .SerialPort2 => rawGetPrimaryInterruptMask().serial_port_2,
+            .SerialPort1 => rawGetPrimaryInterruptMask().serial_port_1,
+            .ParallelPort23 => rawGetPrimaryInterruptMask().parallel_port_23,
+            .FloppyDisk => rawGetPrimaryInterruptMask().floppy_disk,
+            .ParallelPort1 => rawGetPrimaryInterruptMask().parallel_port_1,
 
             // Secondary
-            .RealTimeClock => raw_getSecondaryInterruptMask().REAL_TIME_CLOCK,
-            .Acpi => raw_getSecondaryInterruptMask().ACPI,
-            .Available1 => raw_getSecondaryInterruptMask().AVAILABLE_1,
-            .Available2 => raw_getSecondaryInterruptMask().AVAILABLE_2,
-            .Mouse => raw_getSecondaryInterruptMask().MOUSE,
-            .CoProcessor => raw_getSecondaryInterruptMask().CO_PROCESSOR,
-            .PrimaryAta => raw_getSecondaryInterruptMask().PRIMARY_ATA,
-            .SecondaryAta => raw_getSecondaryInterruptMask().SECONDARY_ATA,
+            .RealTimeClock => rawGetSecondaryInterruptMask().real_time_clock,
+            .Acpi => rawGetSecondaryInterruptMask().acpi,
+            .Available1 => rawGetSecondaryInterruptMask().available_1,
+            .Available2 => rawGetSecondaryInterruptMask().available_2,
+            .Mouse => rawGetSecondaryInterruptMask().mouse,
+            .CoProcessor => rawGetSecondaryInterruptMask().co_processor,
+            .PrimaryAta => rawGetSecondaryInterruptMask().primary_ata,
+            .SecondaryAta => rawGetSecondaryInterruptMask().secondary_ata,
         };
     }
 
@@ -140,33 +140,33 @@ pub const SimplePic = struct {
 
     pub fn setInterruptMask(self: SimplePic, interrupt: PicInterrupt, mask: bool) void {
         if (isPrimaryPic(interrupt)) {
-            var current_mask = raw_getPrimaryInterruptMask();
+            var current_mask = rawGetPrimaryInterruptMask();
             switch (interrupt) {
-                .Timer => current_mask.TIMER = mask,
-                .Keyboard => current_mask.KEYBOARD = mask,
-                .Chain => current_mask.CHAIN = mask,
-                .SerialPort2 => current_mask.SERIAL_PORT_2 = mask,
-                .SerialPort1 => current_mask.SERIAL_PORT_1 = mask,
-                .ParallelPort23 => current_mask.PARALLEL_PORT_23 = mask,
-                .FloppyDisk => current_mask.FLOPPY_DISK = mask,
-                .ParallelPort1 => current_mask.PARALLEL_PORT_1 = mask,
+                .Timer => current_mask.timer = mask,
+                .Keyboard => current_mask.keyboard = mask,
+                .Chain => current_mask.chain = mask,
+                .SerialPort2 => current_mask.serial_port_2 = mask,
+                .SerialPort1 => current_mask.serial_port_1 = mask,
+                .ParallelPort23 => current_mask.parallel_port_23 = mask,
+                .FloppyDisk => current_mask.floppy_disk = mask,
+                .ParallelPort1 => current_mask.parallel_port_1 = mask,
                 else => unreachable,
             }
-            raw_setPrimaryInterruptMask(current_mask);
+            rawSetPrimaryInterruptMask(current_mask);
         } else {
-            var current_mask = raw_getSecondaryInterruptMask();
+            var current_mask = rawGetSecondaryInterruptMask();
             switch (interrupt) {
-                .RealTimeClock => current_mask.REAL_TIME_CLOCK = mask,
-                .Acpi => current_mask.ACPI = mask,
-                .Available1 => current_mask.AVAILABLE_1 = mask,
-                .Available2 => current_mask.AVAILABLE_2 = mask,
-                .Mouse => current_mask.MOUSE = mask,
-                .CoProcessor => current_mask.CO_PROCESSOR = mask,
-                .PrimaryAta => current_mask.PRIMARY_ATA = mask,
-                .SecondaryAta => current_mask.SECONDARY_ATA = mask,
+                .RealTimeClock => current_mask.real_time_clock = mask,
+                .Acpi => current_mask.acpi = mask,
+                .Available1 => current_mask.available_1 = mask,
+                .Available2 => current_mask.available_2 = mask,
+                .Mouse => current_mask.mouse = mask,
+                .CoProcessor => current_mask.co_processor = mask,
+                .PrimaryAta => current_mask.primary_ata = mask,
+                .SecondaryAta => current_mask.secondary_ata = mask,
                 else => unreachable,
             }
-            raw_setSecondaryInterruptMask(current_mask);
+            rawSetSecondaryInterruptMask(current_mask);
         }
     }
 
@@ -195,28 +195,28 @@ pub const PicInterrupt = enum {
 };
 
 pub const PicPrimaryInterruptMask = packed struct {
-    TIMER: bool,
-    KEYBOARD: bool,
-    CHAIN: bool,
-    SERIAL_PORT_2: bool,
-    SERIAL_PORT_1: bool,
-    PARALLEL_PORT_23: bool,
-    FLOPPY_DISK: bool,
-    PARALLEL_PORT_1: bool,
+    timer: bool,
+    keyboard: bool,
+    chain: bool,
+    serial_port_2: bool,
+    serial_port_1: bool,
+    parallel_port_23: bool,
+    floppy_disk: bool,
+    parallel_port_1: bool,
 
-    pub inline fn none_masked() PicPrimaryInterruptMask {
-        return from_u8(0);
+    pub inline fn noneMasked() PicPrimaryInterruptMask {
+        return fromU8(0);
     }
 
-    pub inline fn all_masked() PicPrimaryInterruptMask {
-        return from_u8(0b11111111);
+    pub inline fn allMasked() PicPrimaryInterruptMask {
+        return fromU8(0b11111111);
     }
 
-    pub inline fn to_u8(value: PicPrimaryInterruptMask) u8 {
+    pub inline fn toU8(value: PicPrimaryInterruptMask) u8 {
         return @bitCast(u8, value);
     }
 
-    pub inline fn from_u8(value: u8) PicPrimaryInterruptMask {
+    pub inline fn fromU8(value: u8) PicPrimaryInterruptMask {
         return @bitCast(PicPrimaryInterruptMask, value);
     }
 
@@ -227,28 +227,28 @@ pub const PicPrimaryInterruptMask = packed struct {
 };
 
 pub const PicSecondaryInterruptMask = packed struct {
-    REAL_TIME_CLOCK: bool,
-    ACPI: bool,
-    AVAILABLE_1: bool,
-    AVAILABLE_2: bool,
-    MOUSE: bool,
-    CO_PROCESSOR: bool,
-    PRIMARY_ATA: bool,
-    SECONDARY_ATA: bool,
+    real_time_clock: bool,
+    acpi: bool,
+    available_1: bool,
+    available_2: bool,
+    mouse: bool,
+    co_processor: bool,
+    primary_ata: bool,
+    secondary_ata: bool,
 
-    pub inline fn none_masked() PicSecondaryInterruptMask {
-        return from_u8(0);
+    pub inline fn noneMasked() PicSecondaryInterruptMask {
+        return fromU8(0);
     }
 
-    pub inline fn all_masked() PicSecondaryInterruptMask {
-        return from_u8(0b11111111);
+    pub inline fn allMasked() PicSecondaryInterruptMask {
+        return fromU8(0b11111111);
     }
 
-    pub inline fn to_u8(value: PicSecondaryInterruptMask) u8 {
+    pub inline fn toU8(value: PicSecondaryInterruptMask) u8 {
         return @bitCast(u8, value);
     }
 
-    pub inline fn from_u8(value: u8) PicSecondaryInterruptMask {
+    pub inline fn fromU8(value: u8) PicSecondaryInterruptMask {
         return @bitCast(PicSecondaryInterruptMask, value);
     }
 

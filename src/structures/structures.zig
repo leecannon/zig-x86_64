@@ -16,7 +16,7 @@ pub const idt = @import("idt.zig");
 /// A struct describing a pointer to a descriptor table (GDT / IDT).
 /// This is in a format suitable for giving to 'lgdt' or 'lidt'.
 pub const DescriptorTablePointer = packed struct {
-    /// Size of the DT.
+    /// bytes of the DT.
     limit: u16,
     /// Pointer to the memory region containing the DT.
     base: u64,

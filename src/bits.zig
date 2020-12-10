@@ -8,14 +8,14 @@ const testing = std.testing;
 /// ```zig
 /// const a: u8 = 0b00000010;
 ///
-/// testing.expect(!get_bit(a, 0));
-/// testing.expect(get_bit(a, 1));
+/// testing.expect(!getBit(a, 0));
+/// testing.expect(getBit(a, 1));
 /// ```
 ///
 /// ## Panics
 ///
 /// This method will panic if the bit index is out of bounds of the bit field.
-pub fn get_bit(target: anytype, comptime bit: comptime_int) bool {
+pub fn getBit(target: anytype, comptime bit: comptime_int) bool {
     const target_type = @TypeOf(target);
     comptime {
         if (@typeInfo(target_type) != .Int and @typeInfo(target_type) != .ComptimeInt) @compileError("not an integer");
@@ -29,7 +29,7 @@ pub fn get_bit(target: anytype, comptime bit: comptime_int) bool {
 ///
 /// ```zig
 /// const a: u8 = 0b01101100;
-/// const b = get_bits(a, 2, 4);
+/// const b = getBits(a, 2, 4);
 /// testing.expectEqual(@as(u8,0b00001011), b);
 /// ```
 ///
@@ -37,7 +37,7 @@ pub fn get_bit(target: anytype, comptime bit: comptime_int) bool {
 ///
 /// This method will panic if the start or end indexes of the range are out of bounds of the
 /// bit array, or if the range can't be contained by the bit field T.
-pub fn get_bits(target: anytype, comptime start_bit: comptime_int, comptime length: comptime_int) @TypeOf(target) {
+pub fn getBits(target: anytype, comptime start_bit: comptime_int, comptime length: comptime_int) @TypeOf(target) {
     const target_type = @TypeOf(target);
 
     comptime {
@@ -60,15 +60,15 @@ pub fn get_bits(target: anytype, comptime start_bit: comptime_int, comptime leng
 ///
 /// ```zig
 /// var val: u8 = 0b00000000;
-/// testing.expect(!get_bit(val, 0));
-/// set_bit( &val, 0, true);
-/// testing.expect(get_bit(val, 0));
+/// testing.expect(!getBit(val, 0));
+/// setBit( &val, 0, true);
+/// testing.expect(getBit(val, 0));
 /// ```
 ///
 /// ## Panics
 ///
 /// This method will panic if the bit index is out of the bounds of the bit field.
-pub fn set_bit(target: anytype, comptime bit: comptime_int, value: bool) void {
+pub fn setBit(target: anytype, comptime bit: comptime_int, value: bool) void {
     const ptr_type_info: std.builtin.TypeInfo = @typeInfo(@TypeOf(target));
     comptime {
         if (ptr_type_info != .Pointer) @compileError("not a pointer");
@@ -94,7 +94,7 @@ pub fn set_bit(target: anytype, comptime bit: comptime_int, value: bool) void {
 ///
 /// ```zig
 /// var val: u8 = 0b10000000;
-/// set_bits(&val, 2, 4, 0b00001101);
+/// setBits(&val, 2, 4, 0b00001101);
 /// testing.expectEqual(@as(u8, 0b10110100), val);
 /// ```
 ///
@@ -103,7 +103,7 @@ pub fn set_bit(target: anytype, comptime bit: comptime_int, value: bool) void {
 /// This method will panic if the range is out of bounds of the bit array,
 /// if the range can't be contained by the bit field T, or if there are `1`s
 /// not in the lower N bits of `value`.
-pub fn set_bits(target: anytype, comptime start_bit: comptime_int, comptime length: comptime_int, value: anytype) void {
+pub fn setBits(target: anytype, comptime start_bit: comptime_int, comptime length: comptime_int, value: anytype) void {
     const ptr_type_info: std.builtin.TypeInfo = @typeInfo(@TypeOf(target));
     comptime {
         if (ptr_type_info != .Pointer) @compileError("not a pointer");
@@ -120,7 +120,7 @@ pub fn set_bits(target: anytype, comptime start_bit: comptime_int, comptime leng
 
     const peer_value = @as(targetType, value);
 
-    if (get_bits(peer_value, 0, length) != peer_value) {
+    if (getBits(peer_value, 0, length) != peer_value) {
         @panic("value exceeds bit range");
     }
 
@@ -131,38 +131,38 @@ pub fn set_bits(target: anytype, comptime start_bit: comptime_int, comptime leng
     target.* = (target.* & bitmask) | (peer_value << start_bit);
 }
 
-test "get_bit" {
+test "getBit" {
     const a: u8 = 0b00000000;
-    testing.expect(!get_bit(a, 0));
-    testing.expect(!get_bit(a, 1));
+    testing.expect(!getBit(a, 0));
+    testing.expect(!getBit(a, 1));
 
     const b: u8 = 0b11111111;
-    testing.expect(get_bit(b, 0));
-    testing.expect(get_bit(b, 1));
+    testing.expect(getBit(b, 0));
+    testing.expect(getBit(b, 1));
 
     const c: u8 = 0b00000010;
-    testing.expect(!get_bit(c, 0));
-    testing.expect(get_bit(c, 1));
+    testing.expect(!getBit(c, 0));
+    testing.expect(getBit(c, 1));
 }
 
-test "get_bits" {
+test "getBits" {
     const a: u8 = 0b01101100;
-    const b = get_bits(a, 2, 4);
+    const b = getBits(a, 2, 4);
     testing.expectEqual(@as(u8, 0b00001011), b);
 }
 
-test "set_bit" {
+test "setBit" {
     var val: u8 = 0b00000000;
-    testing.expect(!get_bit(val, 0));
-    set_bit(&val, 0, true);
-    testing.expect(get_bit(val, 0));
-    set_bit(&val, 0, false);
-    testing.expect(!get_bit(val, 0));
+    testing.expect(!getBit(val, 0));
+    setBit(&val, 0, true);
+    testing.expect(getBit(val, 0));
+    setBit(&val, 0, false);
+    testing.expect(!getBit(val, 0));
 }
 
-test "set_bits" {
+test "setBits" {
     var val: u8 = 0b10000000;
-    set_bits(&val, 2, 4, 0b00001101);
+    setBits(&val, 2, 4, 0b00001101);
     testing.expectEqual(@as(u8, 0b10110100), val);
 }
 

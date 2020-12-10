@@ -6,7 +6,7 @@ usingnamespace @import("../common.zig");
 /// to %cs. Instead we push the new segment selector
 /// and return value on the stack and use lretq
 /// to reload cs and continue at 1:.
-pub inline fn set_cs(sel: structures.gdt.SegmentSelector) void {
+pub inline fn setCs(sel: structures.gdt.SegmentSelector) void {
     asm volatile ("pushq %[sel]; leaq 1f(%%rip), %%rax; pushq %%rax; lretq; 1:"
         :
         : [sel] "ri" (@as(u64, sel.selector))
@@ -15,7 +15,7 @@ pub inline fn set_cs(sel: structures.gdt.SegmentSelector) void {
 }
 
 /// Reload stack segment register.
-pub inline fn load_ss(sel: structures.gdt.SegmentSelector) void {
+pub inline fn loadSs(sel: structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%ss"
         :
         : [sel] "r" (sel.selector)
@@ -24,7 +24,7 @@ pub inline fn load_ss(sel: structures.gdt.SegmentSelector) void {
 }
 
 /// Reload data segment register.
-pub inline fn load_ds(sel: structures.gdt.SegmentSelector) void {
+pub inline fn loadDs(sel: structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%ds"
         :
         : [sel] "r" (sel.selector)
@@ -33,7 +33,7 @@ pub inline fn load_ds(sel: structures.gdt.SegmentSelector) void {
 }
 
 /// Reload es segment register.
-pub inline fn load_es(sel: structures.gdt.SegmentSelector) void {
+pub inline fn loadEs(sel: structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%es"
         :
         : [sel] "r" (sel.selector)
@@ -42,7 +42,7 @@ pub inline fn load_es(sel: structures.gdt.SegmentSelector) void {
 }
 
 /// Reload fs segment register.
-pub inline fn load_fs(sel: structures.gdt.SegmentSelector) void {
+pub inline fn loadFs(sel: structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%fs"
         :
         : [sel] "r" (sel.selector)
@@ -51,7 +51,7 @@ pub inline fn load_fs(sel: structures.gdt.SegmentSelector) void {
 }
 
 /// Reload gs segment register.
-pub inline fn load_gs(sel: structures.gdt.SegmentSelector) void {
+pub inline fn loadGs(sel: structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%gs"
         :
         : [sel] "r" (sel.selector)
@@ -60,7 +60,7 @@ pub inline fn load_gs(sel: structures.gdt.SegmentSelector) void {
 }
 
 /// Swap `KernelGsBase` MSR and `GsBase` MSR.
-pub inline fn swap_gs() void {
+pub inline fn swapGs() void {
     asm volatile ("swapgs"
         :
         :
@@ -69,7 +69,7 @@ pub inline fn swap_gs() void {
 }
 
 /// Returns the current value of the code segment register.
-pub inline fn get_cs() structures.gdt.SegmentSelector {
+pub inline fn getCs() structures.gdt.SegmentSelector {
     const cs = asm ("mov %%cs, %[ret]"
         : [ret] "=r" (-> u16)
     );
@@ -80,7 +80,7 @@ pub inline fn get_cs() structures.gdt.SegmentSelector {
 ///
 /// ## Safety
 ///
-/// If `CR4.FSGSBASE` is not set, this instruction will throw an `#UD`.
+/// If `CR4.fsgsbase` is not set, this instruction will throw an `#UD`.
 ///
 /// The caller must ensure that this write operation has no unsafe side
 /// effects, as the FS segment base address is often used for thread
@@ -96,7 +96,7 @@ pub inline fn wrfsbase(value: u64) void {
 ///
 /// ## Safety
 ///
-/// If `CR4.FSGSBASE` is not set, this instruction will throw an `#UD`.
+/// If `CR4.fsgsbase` is not set, this instruction will throw an `#UD`.
 pub inline fn rdfsbase() u64 {
     return asm volatile ("rdfsbase %[ret]"
         : [ret] "=r" (-> u64)
@@ -107,7 +107,7 @@ pub inline fn rdfsbase() u64 {
 ///
 /// ## Safety
 ///
-/// If `CR4.FSGSBASE` is not set, this instruction will throw an `#UD`.
+/// If `CR4.fsgsbase` is not set, this instruction will throw an `#UD`.
 ///
 /// The caller must ensure that this write operation has no unsafe side
 /// effects, as the GS segment base address might be in use.
@@ -122,7 +122,7 @@ pub inline fn wrgsbase(value: u64) void {
 ///
 /// ## Safety
 ///
-/// If `CR4.FSGSBASE` is not set, this instruction will throw an `#UD`.
+/// If `CR4.fsgsbase` is not set, this instruction will throw an `#UD`.
 pub inline fn rdgsbase() u64 {
     return asm volatile ("rdgsbase %[ret]"
         : [ret] "=r" (-> u64)

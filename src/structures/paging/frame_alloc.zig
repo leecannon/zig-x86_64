@@ -10,7 +10,7 @@ pub const FrameAllocator2MiB = CreateFrameAllocator(structures.paging.PageSize.S
 pub const FrameAllocator1GiB = CreateFrameAllocator(structures.paging.PageSize.Size1GiB);
 
 fn CreateFrameAllocator(comptime page_size: structures.paging.PageSize) type {
-    const physFrameType = switch (page_size) {
+    const phys_frame_type = switch (page_size) {
         .Size4KiB => structures.paging.PhysFrame,
         .Size2MiB => structures.paging.PhysFrame2MiB,
         .Size1GiB => structures.paging.PhysFrame1GiB,
@@ -20,9 +20,9 @@ fn CreateFrameAllocator(comptime page_size: structures.paging.PageSize) type {
         const Self = @This();
 
         /// Allocate a frame of the appropriate size and return it if possible.
-        allocate_frame: fn (self: *Self) ?physFrameType,
+        allocate_frame: fn (self: *Self) ?phys_frame_type,
         /// Deallocate the given unused frame.
-        deallocate_frame: fn (self: *Self, frame: physFrameType) void,
+        deallocate_frame: fn (self: *Self, frame: phys_frame_type) void,
 
         test "" {
             std.testing.refAllDecls(@This());

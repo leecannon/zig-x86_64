@@ -18,18 +18,18 @@ pub const SegmentSelector = packed struct {
     }
 
     /// Returns the GDT index.
-    pub inline fn gdt_index(self: SegmentSelector) u16 {
+    pub inline fn gdtIndex(self: SegmentSelector) u16 {
         return self.selector >> 3;
     }
 
     /// Returns the requested privilege level.
-    pub inline fn get_rpl(self: SegmentSelector) !PrivilegeLevel {
-        return try PrivilegeLevel.from_u16(get_bits(self.selector, 0, 2));
+    pub inline fn getRpl(self: SegmentSelector) !PrivilegeLevel {
+        return try PrivilegeLevel.fromU16(getBits(self.selector, 0, 2));
     }
 
     /// Set the privilege level for this Segment selector.
-    pub inline fn set_rpl(self: *SegmentSelector, rpl: PrivilegeLevel) void {
-        set_bits(&self.selector, 0, 2, @as(u16, @enumToInt(rpl)));
+    pub inline fn setRpl(self: *SegmentSelector, rpl: PrivilegeLevel) void {
+        setBits(&self.selector, 0, 2, @as(u16, @enumToInt(rpl)));
     }
 
     pub fn format(value: SegmentSelector, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
@@ -37,7 +37,7 @@ pub const SegmentSelector = packed struct {
             index: u16,
             rpl: PrivilegeLevel,
         };
-        try std.fmt.formatType(SegmentSelectorFormat{ .index = value.gdt_index(), .rpl = value.get_rpl() }, fmt, options, writer, 1);
+        try std.fmt.formatType(SegmentSelectorFormat{ .index = value.gdtIndex(), .rpl = value.getRpl() }, fmt, options, writer, 1);
     }
 
     test "" {
@@ -47,11 +47,11 @@ pub const SegmentSelector = packed struct {
 
 test "SegmentSelector" {
     var a = SegmentSelector.init(1, .Ring0);
-    testing.expectEqual(@as(u16, 1), a.gdt_index());
-    testing.expectEqual(PrivilegeLevel.Ring0, try a.get_rpl());
-    a.set_rpl(.Ring3);
-    testing.expectEqual(@as(u16, 1), a.gdt_index());
-    testing.expectEqual(PrivilegeLevel.Ring3, try a.get_rpl());
+    testing.expectEqual(@as(u16, 1), a.gdtIndex());
+    testing.expectEqual(PrivilegeLevel.Ring0, try a.getRpl());
+    a.setRpl(.Ring3);
+    testing.expectEqual(@as(u16, 1), a.gdtIndex());
+    testing.expectEqual(PrivilegeLevel.Ring3, try a.getRpl());
 }
 
 /// A 64-bit mode global descriptor table (GDT).
@@ -66,8 +66,8 @@ test "SegmentSelector" {
 ///
 /// Data segment registers in ring 0 can be loaded with the null segment selector. When running in
 /// ring 3, the `ss` register must point to a valid data segment which can be obtained through the
-/// `user_data_segment()` function. Code segments must be valid and non-null at all times and can be obtained through
-/// the `kernel_code_segment()` and `user_code_segment()` in rings 0 and 3 respectively.
+/// `createUserDataSegment()` function. Code segments must be valid and non-null at all times and can be obtained through
+/// the `createKernelCodeSegment()` and `createUserCodeSegment()` in rings 0 and 3 respectively.
 ///
 /// For more info, see:
 /// [x86 Instruction Reference for `mov`](https://www.felixcloutier.com/x86/mov#64-bit-mode-exceptions),
@@ -82,21 +82,21 @@ test "SegmentSelector" {
 /// var tss: structures.tss.TaskStateSegment = SOMETHING_HERE
 ///
 /// var gdt = GlobalDescriptorTable.init();
-/// const kernel_code_segment = gdt.add_entry(kernel_code_segment());
-/// const kernel_data_segment = gdt.add_entry(kernel_data_segment());
-/// const user_code_segment = gdt.add_entry(user_code_segment());
-/// const user_data_segment = gdt.add_entry(user_data_segment());
-/// const tss_segment = gdt.add_entry(tss_segment(&tss)); // Pointer to structures.tss.TaskStateSegment
+/// const createKernelCodeSegment = gdt.addEntry(createKernelCodeSegment());
+/// const createKernelDataSegment = gdt.addEntry(createKernelDataSegment());
+/// const createUserCodeSegment = gdt.addEntry(createUserCodeSegment());
+/// const createUserDataSegment = gdt.addEntry(createUserDataSegment());
+/// const tssSegment = gdt.addEntry(tssSegment(&tss)); // Pointer to structures.tss.TaskStateSegment
 /// gdt.load()
 ///
-/// instructions.segmentation.set_cs(kernel_code_segment);
-/// instructions.segmentation.load_ds(kernel_data_segment);
-/// instructions.segmentation.load_es(kernel_data_segment);
-/// instructions.segmentation.load_fs(kernel_data_segment);
-/// instructions.segmentation.load_gs(kernel_data_segment);
-/// instructions.segmentation.load_ss(kernel_data_segment);
+/// instructions.segmentation.setCs(createKernelCodeSegment);
+/// instructions.segmentation.loadDs(createKernelDataSegment);
+/// instructions.segmentation.loadEs(createKernelDataSegment);
+/// instructions.segmentation.loadFs(createKernelDataSegment);
+/// instructions.segmentation.loadGs(createKernelDataSegment);
+/// instructions.segmentation.loadSs(createKernelDataSegment);
 ///
-/// instructions.tables.load_tss(tss_segment);
+/// instructions.tables.loadTss(tssSegment);
 ///
 /// ```
 pub const GlobalDescriptorTable = struct {
@@ -114,10 +114,10 @@ pub const GlobalDescriptorTable = struct {
     /// Adds the given segment descriptor to the GDT, returning the segment selector.
     ///
     /// Panics if the GDT has no free entries left.
-    pub fn add_entry(self: *GlobalDescriptorTable, entry: Descriptor) SegmentSelector {
+    pub fn addEntry(self: *GlobalDescriptorTable, entry: Descriptor) SegmentSelector {
         switch (entry) {
             .UserSegment => |value| {
-                const rpl = if (value & Descriptor.DPL_RING_3 != 0) PrivilegeLevel.Ring3 else PrivilegeLevel.Ring0;
+                const rpl = if (value & Descriptor.dpl_ring_3 != 0) PrivilegeLevel.Ring3 else PrivilegeLevel.Ring0;
                 return SegmentSelector.init(self.push(value), rpl);
             },
             .SystemSegment => |systemSegmentData| {
@@ -130,7 +130,7 @@ pub const GlobalDescriptorTable = struct {
 
     /// Loads the GDT in the CPU using the `lgdt` instruction. This does **not** alter any of the
     /// segment registers; you **must** (re)load them yourself using the appropriate
-    /// functions: `instructions.segmentation.load_ss`, `instructions.segmentation.set_cs`
+    /// functions: `instructions.segmentation.loadSs`, `instructions.segmentation.setCs`
     pub fn load(self: *GlobalDescriptorTable) void {
         const ptr = structures.DescriptorTablePointer{
             .base = @ptrToInt(&self.table),
@@ -158,48 +158,48 @@ pub const GlobalDescriptorTable = struct {
 
 test "GlobalDescriptorTable" {
     var gdt = GlobalDescriptorTable.init();
-    _ = gdt.add_entry(kernel_code_segment());
-    _ = gdt.add_entry(user_code_segment());
-    _ = gdt.add_entry(user_data_segment());
+    _ = gdt.addEntry(createKernelCodeSegment());
+    _ = gdt.addEntry(createUserCodeSegment());
+    _ = gdt.addEntry(createUserDataSegment());
 }
 
 /// Creates a segment descriptor for a 64-bit kernel code segment. Suitable
 /// for use with `syscall` or 64-bit `sysenter`.
-pub inline fn kernel_code_segment() Descriptor {
+pub inline fn createKernelCodeSegment() Descriptor {
     return Descriptor{ .UserSegment = Descriptor.KERNEL_CODE64 };
 }
 
-pub inline fn kernel_data_segment() Descriptor {
+pub inline fn createKernelDataSegment() Descriptor {
     return Descriptor{ .UserSegment = Descriptor.KERNEL_DATA };
 }
 
 /// Creates a segment descriptor for a ring 3 data segment (32-bit or
 /// 64-bit). Suitable for use with `sysret` or `sysexit`.
-pub inline fn user_data_segment() Descriptor {
+pub inline fn createUserDataSegment() Descriptor {
     return Descriptor{ .UserSegment = Descriptor.USER_DATA };
 }
 
 /// Creates a segment descriptor for a 64-bit ring 3 code segment. Suitable
 /// for use with `sysret` or `sysexit`.
-pub inline fn user_code_segment() Descriptor {
+pub inline fn createUserCodeSegment() Descriptor {
     return Descriptor{ .UserSegment = Descriptor.USER_CODE64 };
 }
 
 /// Creates a TSS system descriptor for the given TSS.
-pub fn tss_segment(tss: *structures.tss.TaskStateSegment) Descriptor {
+pub fn tssSegment(tss: *structures.tss.TaskStateSegment) Descriptor {
     const ptr = @ptrToInt(tss);
 
-    var low = Descriptor.PRESENT;
+    var low = Descriptor.present;
     // base
-    set_bits(&low, 16, 24, get_bits(ptr, 0, 24));
-    set_bits(&low, 56, 8, get_bits(ptr, 24, 8));
+    setBits(&low, 16, 24, getBits(ptr, 0, 24));
+    setBits(&low, 56, 8, getBits(ptr, 24, 8));
     // limit (the `-1` in needed since the bound is inclusive)
-    set_bits(&low, 0, 16, @as(u64, @sizeOf(structures.tss.TaskStateSegment) - 1));
+    setBits(&low, 0, 16, @as(u64, @sizeOf(structures.tss.TaskStateSegment) - 1));
     // type (0b1001 = available 64-bit tss)
-    set_bits(&low, 40, 4, 0b1001);
+    setBits(&low, 40, 4, 0b1001);
 
     var high: u64 = 0;
-    set_bits(&high, 0, 32, get_bits(ptr, 32, 32));
+    setBits(&high, 0, 32, getBits(ptr, 32, 32));
 
     return Descriptor{
         .SystemSegment = Descriptor.SystemSegmentData{
@@ -215,67 +215,67 @@ pub fn tss_segment(tss: *structures.tss.TaskStateSegment) Descriptor {
 /// contents are ignored.
 pub const Descriptor = union(enum) {
     /// Set by the processor if this segment has been accessed. Only cleared by software.
-    pub const ACCESSED: u64 = 1 << 40;
+    pub const accessed: u64 = 1 << 40;
 
     /// For 32-bit data segments, sets the segment as writable. For 32-bit code segments,
     /// sets the segment as _readable_. In 64-bit mode, ignored for all segments.
-    pub const WRITABLE: u64 = 1 << 41;
+    pub const writable: u64 = 1 << 41;
 
     /// For code segments, sets the segment as “conforming”, influencing the
     /// privilege checks that occur on control transfers. For 32-bit data segments,
     /// sets the segment as "expand down". In 64-bit mode, ignored for data segments.
-    pub const CONFORMING: u64 = 1 << 42;
+    pub const conforming: u64 = 1 << 42;
 
     /// This flag must be set for code segments and unset for data segments.
-    pub const EXECUTABLE: u64 = 1 << 43;
+    pub const executable: u64 = 1 << 43;
 
     /// This flag must be set for user segments (in contrast to system segments).
-    pub const USER_SEGMENT: u64 = 1 << 44;
+    pub const user_segment: u64 = 1 << 44;
 
     /// The DPL for this descriptor is Ring 3. In 64-bit mode, ignored for data segments.
-    pub const DPL_RING_3: u64 = 3 << 45;
+    pub const dpl_ring_3: u64 = 3 << 45;
 
     /// Must be set for any segment, causes a segment not present exception if not set.
-    pub const PRESENT: u64 = 1 << 47;
+    pub const present: u64 = 1 << 47;
 
     /// Available for use by the Operating System
-    pub const AVAILABLE: u64 = 1 << 52;
+    pub const available: u64 = 1 << 52;
 
     /// Must be set for 64-bit code segments, unset otherwise.
-    pub const LONG_MODE: u64 = 1 << 53;
+    pub const long_mode: u64 = 1 << 53;
 
-    /// Use 32-bit (as opposed to 16-bit) operands. If [`LONG_MODE`] is set,
+    /// Use 32-bit (as opposed to 16-bit) operands. If [`long_mode`] is set,
     /// this must be unset. In 64-bit mode, ignored for data segments.
-    pub const DEFAULT_SIZE: u64 = 1 << 54;
+    pub const default_size: u64 = 1 << 54;
 
     /// Limit field is scaled by 4096 bytes. In 64-bit mode, ignored for all segments.
-    pub const GRANULARITY: u64 = 1 << 55;
+    pub const granularity: u64 = 1 << 55;
 
     /// Bits 0..=15 of the limit field (ignored in 64-bit mode)
-    pub const LIMIT_0_15: u64 = 0xFFFF;
+    pub const limit_0_15: u64 = 0xFFFF;
     /// Bits 16..=19 of the limit field (ignored in 64-bit mode)
-    pub const LIMIT_16_19: u64 = 0xF << 48;
+    pub const limit_16_19: u64 = 0xF << 48;
     /// Bits 0..=23 of the base field (ignored in 64-bit mode, except for fs and gs)
-    pub const BASE_0_23: u64 = 0xFF_FFFF << 16;
+    pub const base_0_23: u64 = 0xFF_FFFF << 16;
     /// Bits 24..=31 of the base field (ignored in 64-bit mode, except for fs and gs)
-    pub const BASE_24_31: u64 = 0xFF << 56;
+    pub const base_24_31: u64 = 0xFF << 56;
 
     /// Flags that we set for all our default segments
-    pub const COMMON: u64 = USER_SEGMENT | PRESENT | WRITABLE | ACCESSED | LIMIT_0_15 | LIMIT_16_19 | GRANULARITY;
+    pub const COMMON: u64 = user_segment | present | writable | accessed | limit_0_15 | limit_16_19 | granularity;
 
     /// A kernel data segment (64-bit or flat 32-bit)
-    pub const KERNEL_DATA: u64 = COMMON | DEFAULT_SIZE;
+    pub const KERNEL_DATA: u64 = COMMON | default_size;
     /// A flat 32-bit kernel code segment
-    pub const KERNEL_CODE32: u64 = COMMON | EXECUTABLE | DEFAULT_SIZE;
+    pub const KERNEL_CODE32: u64 = COMMON | executable | default_size;
     /// A 64-bit kernel code segment
-    pub const KERNEL_CODE64: u64 = COMMON | EXECUTABLE | LONG_MODE;
+    pub const KERNEL_CODE64: u64 = COMMON | executable | long_mode;
 
     /// A user data segment (64-bit or flat 32-bit)
-    pub const USER_DATA: u64 = KERNEL_DATA | DPL_RING_3;
+    pub const USER_DATA: u64 = KERNEL_DATA | dpl_ring_3;
     /// A flat 32-bit user code segment
-    pub const USER_CODE32: u64 = KERNEL_CODE32 | DPL_RING_3;
+    pub const USER_CODE32: u64 = KERNEL_CODE32 | dpl_ring_3;
     /// A 64-bit user code segment
-    pub const USER_CODE64: u64 = KERNEL_CODE64 | DPL_RING_3;
+    pub const USER_CODE64: u64 = KERNEL_CODE64 | dpl_ring_3;
 
     /// Descriptor for a code or data segment.
     ///

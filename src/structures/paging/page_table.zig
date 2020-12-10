@@ -4,9 +4,9 @@ const PageSize = structures.paging.PageSize;
 
 /// The error returned by the `PageTableEntry::frame` method.
 pub const FrameError = error{
-    /// The entry does not have the `PRESENT` flag set, so it isn't currently mapped to a frame.
+    /// The entry does not have the `present` flag set, so it isn't currently mapped to a frame.
     FrameNotPresent,
-    /// The entry does have the `HUGE_PAGE` flag set. The `frame` method has a standard 4KiB frame
+    /// The entry does have the `huge_page` flag set. The `frame` method has a standard 4KiB frame
     /// as return type, so a huge frame can't be returned.
     HugeFrame,
 };
@@ -21,25 +21,25 @@ pub const PageTableEntry = packed struct {
     }
 
     /// Returns whether this entry is zero.
-    pub inline fn is_unused(self: PageTableEntry) bool {
+    pub inline fn isUnused(self: PageTableEntry) bool {
         return self.entry == 0;
     }
 
     /// Sets this entry to zero.
-    pub inline fn set_unused(self: *PageTableEntry) void {
+    pub inline fn setUnused(self: *PageTableEntry) void {
         self.entry = 0;
     }
 
     /// Returns the flags of this entry.
-    pub fn get_flags(self: PageTableEntry) PageTableFlags {
+    pub fn getFlags(self: PageTableEntry) PageTableFlags {
         // Clear out the addr part of the entry
         var entry = self.entry;
-        set_bits(&entry, 12, 40, 0);
-        return PageTableFlags.from_u64(entry);
+        setBits(&entry, 12, 40, 0);
+        return PageTableFlags.fromU64(entry);
     }
 
     /// Returns the physical address mapped by this entry, might be zero.
-    pub inline fn get_addr(self: PageTableEntry) PhysAddr {
+    pub inline fn getAddr(self: PageTableEntry) PhysAddr {
         return PhysAddr.init(self.entry & 0x000fffff_fffff000);
     }
 
@@ -47,45 +47,45 @@ pub const PageTableEntry = packed struct {
     ///
     /// Returns the following errors:
     ///
-    /// - `FrameError::FrameNotPresent` if the entry doesn't have the `PRESENT` flag set.
-    /// - `FrameError::HugeFrame` if the entry has the `HUGE_PAGE` flag set (for huge pages the
+    /// - `FrameError::FrameNotPresent` if the entry doesn't have the `present` flag set.
+    /// - `FrameError::HugeFrame` if the entry has the `huge_page` flag set (for huge pages the
     ///    `addr` function must be used)
-    pub fn get_frame(self: PageTableEntry) FrameError!structures.paging.PhysFrame4KiB {
-        const flags = self.get_flags();
+    pub fn getFrame(self: PageTableEntry) FrameError!structures.paging.PhysFrame4KiB {
+        const flags = self.getFlags();
 
-        if (!flags.PRESENT) {
+        if (!flags.present) {
             return FrameError.FrameNotPresent;
         }
 
-        if (flags.HUGE_PAGE) {
+        if (flags.huge_page) {
             return FrameError.HugeFrame;
         }
 
-        return structures.paging.PhysFrame4KiB.containing_address(self.get_addr());
+        return structures.paging.PhysFrame4KiB.containingAddress(self.getAddr());
     }
 
     /// Map the entry to the specified physical address
-    pub inline fn set_addr(self: *PageTableEntry, addr: PhysAddr) void {
-        std.debug.assert(addr.is_aligned(PageSize.Size4KiB.Size()));
-        self.entry = addr.value | self.get_flags().to_u64();
+    pub inline fn setAddr(self: *PageTableEntry, addr: PhysAddr) void {
+        std.debug.assert(addr.isAligned(PageSize.Size4KiB.bytes()));
+        self.entry = addr.value | self.getFlags().toU64();
     }
 
     /// Map the entry to the specified physical frame with the specified flags.
-    pub inline fn set_frame(self: *PageTableEntry, frame: structures.paging.PhysFrame4KiB, flags: PageTableFlags) void {
-        std.debug.assert(!self.get_flags().HUGE_PAGE);
-        self.set_addr(frame.start_address, flags);
+    pub inline fn setFrame(self: *PageTableEntry, frame: structures.paging.PhysFrame4KiB, flags: PageTableFlags) void {
+        std.debug.assert(!self.getFlags().huge_page);
+        self.setAddr(frame.start_address, flags);
     }
 
     /// Sets the flags of this entry.
-    pub inline fn set_flags(self: *PageTableEntry, flags: PageTableFlags) void {
-        self.entry = self.get_addr().value | flags.to_u64();
+    pub inline fn setFlags(self: *PageTableEntry, flags: PageTableFlags) void {
+        self.entry = self.getAddr().value | flags.toU64();
     }
 
     pub fn format(value: PageTableEntry, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         try writer.writeAll("PageTableEntry(Addr = ");
 
         try std.fmt.formatType(
-            value.get_addr(),
+            value.getAddr(),
             "x",
             .{},
             writer,
@@ -95,7 +95,7 @@ pub const PageTableEntry = packed struct {
         try writer.writeAll(", Flags = ");
 
         try std.fmt.formatType(
-            value.get_flags(),
+            value.getFlags(),
             "b",
             .{},
             writer,
@@ -112,60 +112,60 @@ test "PageTableEntry" {
     var addr = PhysAddr.init(0x000fffff_ffff2000);
     var flags = PageTableFlags.init();
 
-    a.set_addr(addr);
-    a.set_flags(flags);
+    a.setAddr(addr);
+    a.setFlags(flags);
 
-    testing.expectEqual(@as(u64, 0x000fffff_ffff2000), a.get_addr().value);
-    testing.expectEqual(@as(u64, 0), a.get_flags().to_u64());
+    testing.expectEqual(@as(u64, 0x000fffff_ffff2000), a.getAddr().value);
+    testing.expectEqual(@as(u64, 0), a.getFlags().toU64());
 
-    flags.PRESENT = true;
-    testing.expectEqual(@as(u64, 0), a.get_flags().to_u64());
+    flags.present = true;
+    testing.expectEqual(@as(u64, 0), a.getFlags().toU64());
 
-    a.set_flags(flags);
-    testing.expectEqual(@as(u64, 0x000fffff_ffff2000), a.get_addr().value);
-    testing.expectEqual(@as(u64, 1), a.get_flags().to_u64());
+    a.setFlags(flags);
+    testing.expectEqual(@as(u64, 0x000fffff_ffff2000), a.getAddr().value);
+    testing.expectEqual(@as(u64, 1), a.getFlags().toU64());
 
     addr.value = 0x000fffff_ffff3000;
-    testing.expectEqual(@as(u64, 0x000fffff_ffff2000), a.get_addr().value);
+    testing.expectEqual(@as(u64, 0x000fffff_ffff2000), a.getAddr().value);
 
-    a.set_addr(addr);
-    testing.expectEqual(@as(u64, 0x000fffff_ffff3000), a.get_addr().value);
-    testing.expectEqual(@as(u64, 1), a.get_flags().to_u64());
+    a.setAddr(addr);
+    testing.expectEqual(@as(u64, 0x000fffff_ffff3000), a.getAddr().value);
+    testing.expectEqual(@as(u64, 1), a.getFlags().toU64());
 }
 
 /// Possible flags for a page table entry.
 pub const PageTableFlags = packed struct {
     /// Specifies whether the mapped frame or page table is loaded in memory.
-    PRESENT: bool,
+    present: bool,
     /// Controls whether writes to the mapped frames are allowed.
     ///
     /// If this bit is unset in a level 1 page table entry, the mapped frame is read-only.
     /// If this bit is unset in a higher level page table entry the complete range of mapped
     /// pages is read-only.
-    WRITABLE: bool,
+    writable: bool,
     /// Controls whether accesses from userspace (i.e. ring 3) are permitted.
-    USER_ACCESSIBLE: bool,
+    user_accessible: bool,
     /// If this bit is set, a “write-through” policy is used for the cache, else a “write-back”
     /// policy is used.
-    WRITE_THROUGH: bool,
+    write_through: bool,
     /// Disables caching for the pointed entry is cacheable.
-    NO_CACHE: bool,
+    no_cache: bool,
     /// Set by the CPU when the mapped frame or page table is accessed.
-    ACCESSED: bool,
+    accessed: bool,
     /// Set by the CPU on a write to the mapped frame.
-    DIRTY: bool,
+    dirty: bool,
     /// Specifies that the entry maps a huge frame instead of a page table. Only allowed in
     /// P2 or P3 tables.
-    HUGE_PAGE: bool,
+    huge_page: bool,
     /// Indicates that the mapping is present in all address spaces, so it isn't flushed from
     /// the TLB on an address space switch
-    GLOBAL: bool,
+    global: bool,
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    BIT_9: bool,
+    bit_9: bool,
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    BIT_10: bool,
+    bit_10: bool,
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    BIT_11: bool,
+    bit_11: bool,
 
     // I can't wait for better bitfields in Zig... this is a mess
     // These bits are used to store the physical frame
@@ -189,59 +189,59 @@ pub const PageTableFlags = packed struct {
     _padding_48: bool,
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    BIT_52: bool,
+    bit_52: bool,
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    BIT_53: bool,
+    bit_53: bool,
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    BIT_54: bool,
+    bit_54: bool,
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    BIT_55: bool,
+    bit_55: bool,
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    BIT_56: bool,
+    bit_56: bool,
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    BIT_57: bool,
+    bit_57: bool,
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    BIT_58: bool,
+    bit_58: bool,
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    BIT_59: bool,
+    bit_59: bool,
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    BIT_60: bool,
+    bit_60: bool,
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    BIT_61: bool,
+    bit_61: bool,
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    BIT_62: bool,
+    bit_62: bool,
     /// Forbid code execution from the mapped frames.
     ///
     /// Can be only used when the no-execute page protection feature is enabled in the EFER
     /// register.
-    NO_EXECUTE: bool,
+    no_execute: bool,
 
     // Create a blank/empty `PageTableFlags`
     pub inline fn init() PageTableFlags {
-        return from_u64(0);
+        return fromU64(0);
     }
 
-    pub inline fn from_u64(value: u64) PageTableFlags {
+    pub inline fn fromU64(value: u64) PageTableFlags {
         return @bitCast(PageTableFlags, value & NO_PADDING);
     }
 
-    pub inline fn to_u64(self: PageTableFlags) u64 {
+    pub inline fn toU64(self: PageTableFlags) u64 {
         return @bitCast(u64, self) & NO_PADDING;
     }
 
     const NO_PADDING: u64 = @bitCast(u64, PageTableFlags{
-        .PRESENT = true,
-        .WRITABLE = true,
-        .USER_ACCESSIBLE = true,
-        .WRITE_THROUGH = true,
-        .NO_CACHE = true,
-        .ACCESSED = true,
-        .DIRTY = true,
-        .HUGE_PAGE = true,
-        .GLOBAL = true,
-        .BIT_9 = true,
-        .BIT_10 = true,
-        .BIT_11 = true,
+        .present = true,
+        .writable = true,
+        .user_accessible = true,
+        .write_through = true,
+        .no_cache = true,
+        .accessed = true,
+        .dirty = true,
+        .huge_page = true,
+        .global = true,
+        .bit_9 = true,
+        .bit_10 = true,
+        .bit_11 = true,
         ._padding_1 = 0,
         ._padding_2 = 0,
         ._padding_31 = false,
@@ -260,18 +260,18 @@ pub const PageTableFlags = packed struct {
         ._padding_46 = false,
         ._padding_47 = false,
         ._padding_48 = false,
-        .BIT_52 = true,
-        .BIT_53 = true,
-        .BIT_54 = true,
-        .BIT_55 = true,
-        .BIT_56 = true,
-        .BIT_57 = true,
-        .BIT_58 = true,
-        .BIT_59 = true,
-        .BIT_60 = true,
-        .BIT_61 = true,
-        .BIT_62 = true,
-        .NO_EXECUTE = true,
+        .bit_52 = true,
+        .bit_53 = true,
+        .bit_54 = true,
+        .bit_55 = true,
+        .bit_56 = true,
+        .bit_57 = true,
+        .bit_58 = true,
+        .bit_59 = true,
+        .bit_60 = true,
+        .bit_61 = true,
+        .bit_62 = true,
+        .no_execute = true,
     });
 };
 
@@ -298,11 +298,11 @@ pub const PageTable = extern struct {
     /// Clears all entries.
     pub inline fn zero(self: *PageTable) void {
         for (self.entries) |*entry| {
-            entry.set_unused();
+            entry.setUnused();
         }
     }
 
-    pub inline fn get_at_index(self: *PageTable, index: PageTableIndex) *PageTableEntry {
+    pub inline fn getAtIndex(self: *PageTable, index: PageTableIndex) *PageTableEntry {
         return &self.entries[index.value];
     }
 
@@ -327,7 +327,7 @@ pub const PageOffset = packed struct {
     }
 
     /// Creates a new offset from the given `u16`. Throws away bits if the value is >=4096.
-    pub inline fn init_truncate(offset: u16) PageOffset {
+    pub inline fn initTruncate(offset: u16) PageOffset {
         return PageOffset{ .value = offset % (1 << 12) };
     }
 
@@ -347,7 +347,7 @@ pub const PageTableIndex = packed struct {
     }
 
     /// Creates a new index from the given `u16`. Throws away bits if the value is >=ENTRY_COUNT.
-    pub inline fn init_truncate(index: u16) PageTableIndex {
+    pub inline fn initTruncate(index: u16) PageTableIndex {
         return PageTableIndex{ .value = index % @as(u16, ENTRY_COUNT) };
     }
 

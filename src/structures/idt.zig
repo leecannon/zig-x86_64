@@ -109,7 +109,7 @@ pub const InterruptDescriptorTable = packed struct {
     /// - Execution of the `ARPL`, `LAR`, `LLDT`, `LSL`, `LTR`, `SLDT`, `STR`, `VERR`, or
     ///   `VERW` instructions when protected mode is not enabled, or when virtual-8086 mode
     ///   is enabled.
-    /// - Execution of any legacy SSE instruction when `CR4.OSFXSR` is cleared to 0.
+    /// - Execution of any legacy SSE instruction when `CR4.osfxsr` is cleared to 0.
     /// - Execution of any SSE instruction (uses `YMM`/`XMM` registers), or 64-bit media
     /// instruction (uses `MMXTM` registers) when `CR0.EM` = 1.
     /// - Execution of any SSE floating-point instruction (uses `YMM`/`XMM` registers) that
@@ -251,7 +251,7 @@ pub const InterruptDescriptorTable = packed struct {
     /// The saved instruction pointer points to the instruction that caused the `#PF`.
     ///
     /// The page-fault error code is described by the `PageFaultErrorCode` struct.
-    /// Use `x86_64.structures.idt.PageFaultErrorCode.from_u64(error_code)`
+    /// Use `x86_64.structures.idt.PageFaultErrorCode.fromU64(error_code)`
     ///
     /// The vector number of the `#PF` exception is 14.
     page_fault: HandlerWithErrorCodeFuncEntry,
@@ -392,7 +392,7 @@ pub const InterruptDescriptorTable = packed struct {
     ///
     /// Panics if index is outside the IDT (i.e. greater than 255) or if the entry is an
     /// exception that pushes an error code (use the struct fields for accessing these entries).
-    pub fn index_interrupt_handler(self: *InterruptDescriptorTable, index: usize) *HandlerFuncEntry {
+    pub fn indexInterruptHandler(self: *InterruptDescriptorTable, index: usize) *HandlerFuncEntry {
         return switch (index) {
             0 => &self.divide_error,
             1 => &self.debug,
@@ -424,16 +424,16 @@ test "InterruptDescriptorTable" {
     std.testing.expectEqual(@sizeOf(u64) * 2 * 256, @sizeOf(InterruptDescriptorTable));
 }
 
-pub const HandlerFunc = fn (interruptStackFrame: *InterruptStackFrame) callconv(.Interrupt) void;
+pub const HandlerFunc = fn (interrupt_stack_frame: *InterruptStackFrame) callconv(.Interrupt) void;
 pub const HandlerFuncEntry = Entry(HandlerFunc);
 
-pub const HandlerWithErrorCodeFunc = fn (interruptStackFrame: *InterruptStackFrame, error_code: u64) callconv(.Interrupt) void;
+pub const HandlerWithErrorCodeFunc = fn (interrupt_stack_frame: *InterruptStackFrame, error_code: u64) callconv(.Interrupt) void;
 pub const HandlerWithErrorCodeFuncEntry = Entry(HandlerWithErrorCodeFunc);
 
-pub const HandlerDivergingFunc = fn (interruptStackFrame: *InterruptStackFrame) callconv(.Interrupt) noreturn;
+pub const HandlerDivergingFunc = fn (interrupt_stack_frame: *InterruptStackFrame) callconv(.Interrupt) noreturn;
 pub const HandlerDivergingFuncEntry = Entry(HandlerDivergingFunc);
 
-pub const HandlerDivergingWithErrorCodeFunc = fn (interruptStackFrame: *InterruptStackFrame, error_code: u64) callconv(.Interrupt) noreturn;
+pub const HandlerDivergingWithErrorCodeFunc = fn (interrupt_stack_frame: *InterruptStackFrame, error_code: u64) callconv(.Interrupt) noreturn;
 pub const HandlerDivergingWithErrorCodeFuncEntry = Entry(HandlerDivergingWithErrorCodeFunc);
 
 fn Entry(comptime handler_type: type) type {
@@ -465,16 +465,16 @@ fn Entry(comptime handler_type: type) type {
             };
         }
 
-        pub fn set_handler(self: *Self, handler: handler_type) void {
+        pub fn setHandler(self: *Self, handler: handler_type) void {
             const addr = @ptrToInt(handler);
 
             self.pointer_low = @truncate(u16, addr);
             self.pointer_middle = @truncate(u16, (addr >> 16));
             self.pointer_high = @truncate(u32, (addr >> 32));
 
-            self.gdt_selector = instructions.segmentation.get_cs().selector;
+            self.gdt_selector = instructions.segmentation.getCs().selector;
 
-            self.options.set_present(true);
+            self.options.setPresent(true);
         }
 
         test "" {
@@ -483,11 +483,11 @@ fn Entry(comptime handler_type: type) type {
     };
 }
 
-fn dummy_fn(interruptStackFrame: *InterruptStackFrame) callconv(.Interrupt) void {}
+fn dummyFn(interrupt_stack_frame: *InterruptStackFrame) callconv(.Interrupt) void {}
 
 test "Entry" {
     var a = HandlerFuncEntry.missing();
-    a.set_handler(dummy_fn);
+    a.setHandler(dummyFn);
 }
 
 test "EntrySize" {
@@ -514,20 +514,20 @@ pub const EntryOptions = packed struct {
     }
 
     /// Set or reset the preset bit.
-    pub inline fn set_present(self: *EntryOptions, present: bool) void {
-        set_bit(&self.value, 15, present);
+    pub inline fn setPresent(self: *EntryOptions, present: bool) void {
+        setBit(&self.value, 15, present);
     }
 
     /// Let the CPU disable hardware interrupts when the handler is invoked. By default,
     /// interrupts are disabled on handler invocation.
-    pub inline fn disable_interupts(self: *EntryOptions, disable: bool) void {
-        set_bit(&self.value, 8, !disable);
+    pub inline fn disableInterrupts(self: *EntryOptions, disable: bool) void {
+        setBit(&self.value, 8, !disable);
     }
 
     /// Set the required privilege level (DPL) for invoking the handler. The DPL can be 0, 1, 2,
     /// or 3, the default is 0. If CPL < DPL, a general protection fault occurs.
-    pub inline fn set_privledge_level(self: *EntryOptions, dpl: PrivilegeLevel) void {
-        set_bits(&self.value, 13, 2, dpl.to_u16());
+    pub inline fn setPrivledgeLevel(self: *EntryOptions, dpl: PrivilegeLevel) void {
+        setBits(&self.value, 13, 2, dpl.toU16());
     }
 
     /// Assigns a Interrupt Stack Table (IST) stack to this handler. The CPU will then always
@@ -536,10 +536,10 @@ pub const EntryOptions = packed struct {
     ///
     /// An IST stack is specified by an IST index between 0 and 6 (inclusive). Using the same
     /// stack for multiple interrupts can be dangerous when nested interrupts are possible.
-    pub inline fn set_stack_index(self: *EntryOptions, index: u16) void {
+    pub inline fn setStackIndex(self: *EntryOptions, index: u16) void {
         // The hardware IST index starts at 1, but our software IST index
         // starts at 0. Therefore we need to add 1 here.
-        set_bits(&self.value, 0, 3, index + 1);
+        setBits(&self.value, 0, 3, index + 1);
     }
 
     test "" {
@@ -575,21 +575,21 @@ test "InterruptStackFrame" {
 pub const PageFaultErrorCode = packed struct {
     /// If this flag is set, the page fault was caused by a page-protection violation,
     /// else the page fault was caused by a not-present page.
-    PROTECTION_VIOLATION: bool,
+    protection_violation: bool,
     /// If this flag is set, the memory access that caused the page fault was a write.
     /// Else the access that caused the page fault is a memory read. This bit does not
     /// necessarily indicate the cause of the page fault was a read or write violation.
-    CAUSED_BY_WRITE: bool,
+    caused_by_write: bool,
     /// If this flag is set, an access in user mode (CPL=3) caused the page fault. Else
     /// an access in supervisor mode (CPL=0, 1, or 2) caused the page fault. This bit
     /// does not necessarily indicate the cause of the page fault was a privilege violation.
-    USER_MODE: bool,
+    user_mode: bool,
     /// If this flag is set, the page fault is a result of the processor reading a 1 from
     /// a reserved field within a page-translation-table entry.
-    MALFORMED_TABLE: bool,
+    malformed_table: bool,
     /// If this flag is set, it indicates that the access that caused the page fault was an
     /// instruction fetch.
-    INSTRUCTION_FETCH: bool,
+    instruction_fetch: bool,
 
     _padding1: bool,
     _padding2: bool,
@@ -599,7 +599,7 @@ pub const PageFaultErrorCode = packed struct {
     _padding_b: u16,
     _padding_c: u32,
 
-    pub fn from_u64(value: u64) PageFaultErrorCode {
+    pub fn fromU64(value: u64) PageFaultErrorCode {
         return @bitCast(PageFaultErrorCode, value);
     }
 };

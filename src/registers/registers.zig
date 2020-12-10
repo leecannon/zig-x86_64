@@ -9,7 +9,7 @@ pub const model_specific = @import("model_specific.zig");
 
 /// Gets the current instruction pointer. Note that this is only approximate as it requires a few
 /// instructions to execute.
-pub inline fn read_rip() u64 {
+pub inline fn readRip() u64 {
     return asm volatile ("lea (%%rip), %[ret]"
         : [ret] "=r" (-> u64)
     );

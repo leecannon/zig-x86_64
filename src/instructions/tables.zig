@@ -23,7 +23,7 @@ pub inline fn lidt(idt: *const structures.DescriptorTablePointer) void {
 }
 
 /// Load the task state register using the `ltr` instruction.
-pub inline fn load_tss(sel: structures.gdt.SegmentSelector) void {
+pub inline fn loadTss(sel: structures.gdt.SegmentSelector) void {
     asm volatile ("ltr %[sel]"
         :
         : [sel] "r" (sel.selector)

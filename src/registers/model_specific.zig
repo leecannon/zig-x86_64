@@ -4,55 +4,55 @@ const SegmentSelector = structures.gdt.SegmentSelector;
 
 pub const EferFlags = packed struct {
     /// Enables the `syscall` and `sysret` instructions.
-    SYSTEM_CALL_EXTENSIONS: bool,
+    system_call_extensions: bool,
 
     _padding1_7: u7,
 
     /// Activates long mode, requires activating paging.
-    LONG_MODE_ENABLE: bool,
+    long_mode_enable: bool,
 
     _padding9: bool,
 
     /// Indicates that long mode is active.
-    LONG_MODE_ACTIVE: bool,
+    long_mode_active: bool,
 
     /// Enables the no-execute page-protection feature.
-    NO_EXECUTE_ENABLE: bool,
+    no_execute_enable: bool,
 
     /// Enables SVM extensions.
-    SECURE_VIRTUAL_MACHINE_ENABLE: bool,
+    secure_virtual_machine_enable: bool,
 
     /// Enable certain limit checks in 64-bit mode.
-    LONG_MODE_SEGMENT_LIMIT_ENABLE: bool,
+    long_mode_segment_limit_enable: bool,
 
     /// Enable the `fxsave` and `fxrstor` instructions to execute faster in 64-bit mode.
-    FAST_FXSAVE_FXRSTOR: bool,
+    fast_fxsave_fxrstor: bool,
 
     /// Changes how the `invlpg` instruction operates on TLB entries of upper-level entries.
-    TRANSLATION_CACHE_EXTENSION: bool,
+    translation_cache_extension: bool,
 
     _padding_a: u16,
     _padding_b: u32,
 
-    pub inline fn from_u64(value: u64) EferFlags {
+    pub inline fn fromU64(value: u64) EferFlags {
         return @bitCast(EferFlags, value & NO_PADDING);
     }
 
-    pub inline fn to_u64(self: EferFlags) u64 {
+    pub inline fn toU64(self: EferFlags) u64 {
         return @bitCast(u64, self) & NO_PADDING;
     }
 
     const NO_PADDING: u64 = @bitCast(u64, EferFlags{
-        .SYSTEM_CALL_EXTENSIONS = true,
+        .system_call_extensions = true,
         ._padding1_7 = 0,
-        .LONG_MODE_ENABLE = true,
+        .long_mode_enable = true,
         ._padding9 = false,
-        .LONG_MODE_ACTIVE = true,
-        .NO_EXECUTE_ENABLE = true,
-        .SECURE_VIRTUAL_MACHINE_ENABLE = true,
-        .LONG_MODE_SEGMENT_LIMIT_ENABLE = true,
-        .FAST_FXSAVE_FXRSTOR = true,
-        .TRANSLATION_CACHE_EXTENSION = true,
+        .long_mode_active = true,
+        .no_execute_enable = true,
+        .secure_virtual_machine_enable = true,
+        .long_mode_segment_limit_enable = true,
+        .fast_fxsave_fxrstor = true,
+        .translation_cache_extension = true,
         ._padding_a = 0,
         ._padding_b = 0,
     });
@@ -73,29 +73,29 @@ pub const Efer = struct {
 
     /// Read the current EFER flags.
     pub inline fn read() EferFlags {
-        return EferFlags.from_u64(read_raw());
+        return EferFlags.fromU64(readRaw());
     }
 
     /// Read the current raw EFER flags.
-    pub inline fn read_raw() u64 {
-        return read_msr(register);
+    pub inline fn readRaw() u64 {
+        return readMsr(register);
     }
 
     /// Write the EFER flags.
     ///
     /// Does not preserve any bits, including reserved fields.
-    pub inline fn write_raw(flags: u64) void {
-        write_msr(register, flags);
+    pub inline fn writeRaw(flags: u64) void {
+        writeMsr(register, flags);
     }
 
     /// Write the EFER flags, preserving reserved values.
     ///
     /// Preserves the value of reserved fields.
     pub fn write(flags: EferFlags) void {
-        const old_value = read_raw();
+        const old_value = readRaw();
         const reserved = old_value & ~EferFlags.NO_PADDING;
-        const new_value = reserved | flags.to_u64();
-        write_raw(new_value);
+        const new_value = reserved | flags.toU64();
+        writeRaw(new_value);
     }
 
     test "" {
@@ -120,9 +120,9 @@ pub const Star = struct {
 
     /// Read the Ring 0 and Ring 3 segment bases.
     /// The remaining fields are ignored because they are not valid for long mode
-    pub fn read_raw() ReadRawStruct {
-        const value = read_msr(register);
-        return ReadRawStruct{ .sysret = @intCast(u16, get_bits(value, 48, 16)), .syscall = @intCast(u16, get_bits(value, 32, 16)) };
+    pub fn readRaw() ReadRawStruct {
+        const value = readMsr(register);
+        return ReadRawStruct{ .sysret = @intCast(u16, getBits(value, 48, 16)), .syscall = @intCast(u16, getBits(value, 32, 16)) };
     }
 
     pub const ReadStruct = struct {
@@ -138,7 +138,7 @@ pub const Star = struct {
 
     /// Read the Ring 0 and Ring 3 segment bases.
     pub fn read() ReadStruct {
-        const raw = read_raw();
+        const raw = readRaw();
 
         return ReadStruct{
             .sysret_cs_sel = SegmentSelector{ .selector = raw.sysret + 16 },
@@ -159,11 +159,11 @@ pub const Star = struct {
     /// - syscall: This field is copied directly into CS.Sel. SS.Sel is set to
     ///  this field + 8. Because SYSCALL always switches to CPL 0, the RPL bits
     /// 33:32 should be initialized to 00b.
-    pub fn write_raw(sysret: u16, syscall: u16) void {
+    pub fn writeRaw(sysret: u16, syscall: u16) void {
         var value: u64 = 0;
-        set_bits(&value, 48, 16, sysret);
-        set_bits(&value, 32, 16, syscall);
-        write_msr(register, value);
+        setBits(&value, 48, 16, sysret);
+        setBits(&value, 32, 16, syscall);
+        writeMsr(register, value);
     }
 
     pub const WriteErrors = error{
@@ -192,15 +192,15 @@ pub const Star = struct {
             return WriteErrors.InvlaidSyscallOffset;
         }
 
-        if ((ss_sysret.get_rpl() catch return WriteErrors.SysretNotRing3) != .Ring3) {
+        if ((ss_sysret.getRpl() catch return WriteErrors.SysretNotRing3) != .Ring3) {
             return WriteErrors.SysretNotRing3;
         }
 
-        if ((ss_syscall.get_rpl() catch return WriteErrors.SyscallNotRing0) != .Ring0) {
+        if ((ss_syscall.getRpl() catch return WriteErrors.SyscallNotRing0) != .Ring0) {
             return WriteErrors.SyscallNotRing0;
         }
 
-        write_raw(ss_sysret.selector - 8, cs_syscall.selector);
+        writeRaw(ss_sysret.selector - 8, cs_syscall.selector);
     }
 
     test "" {
@@ -220,7 +220,7 @@ pub const SFMask = struct {
     /// bit in RFLAGS is cleared to 0. If a bit in SFMASK is cleared
     /// to 0, the corresponding rFLAGS bit is not modified.
     pub inline fn read() registers.rflags.RFlags {
-        return registers.rflags.RFlags.from_u64(read_msr(register));
+        return registers.rflags.RFlags.fromU64(readMsr(register));
     }
 
     /// Write to the SFMask register.
@@ -231,7 +231,7 @@ pub const SFMask = struct {
     /// bit in RFLAGS is cleared to 0. If a bit in SFMASK is cleared
     /// to 0, the corresponding rFLAGS bit is not modified.
     pub inline fn write(value: registers.rflags.RFlags) void {
-        write_msr(register, value.to_u64());
+        writeMsr(register, value.toU64());
     }
 
     test "" {
@@ -241,29 +241,29 @@ pub const SFMask = struct {
 
 /// Syscall Register: LSTAR
 /// This holds the target RIP of a syscall.
-pub const LStar = construct_virtaddr_register(0xC000_0082);
+pub const LStar = constructVirtaddrRegister(0xC000_0082);
 
 /// FS.Base Model Specific Register.
-pub const FsBase = construct_virtaddr_register(0xC000_0100);
+pub const FsBase = constructVirtaddrRegister(0xC000_0100);
 
 /// GS.Base Model Specific Register.
-pub const GsBase = construct_virtaddr_register(0xC000_0101);
+pub const GsBase = constructVirtaddrRegister(0xC000_0101);
 
 /// KernelGsBase Model Specific Register.
-pub const KernelGsBase = construct_virtaddr_register(0xC000_0102);
+pub const KernelGsBase = constructVirtaddrRegister(0xC000_0102);
 
-fn construct_virtaddr_register(comptime reg: u32) type {
+fn constructVirtaddrRegister(comptime reg: u32) type {
     return struct {
         const register: u32 = reg;
 
         /// Read the current register value.
         pub inline fn read() VirtAddr {
-            return VirtAddr.init(read_msr(register));
+            return VirtAddr.init(readMsr(register));
         }
 
         /// Write a given virtual address to the register.
         pub inline fn write(addr: VirtAddr) void {
-            write_msr(register, addr.value);
+            writeMsr(register, addr.value);
         }
 
         test "" {
@@ -272,7 +272,7 @@ fn construct_virtaddr_register(comptime reg: u32) type {
     };
 }
 
-fn read_msr(reg: u32) u64 {
+fn readMsr(reg: u32) u64 {
     var high: u32 = undefined;
     var low: u32 = undefined;
 
@@ -286,7 +286,7 @@ fn read_msr(reg: u32) u64 {
     return (@as(u64, high) << 32) | @as(u64, low);
 }
 
-fn write_msr(reg: u32, value: u64) void {
+fn writeMsr(reg: u32, value: u64) void {
     var high: u32 = @truncate(u32, value >> 32);
     var low: u32 = @truncate(u32, value);
 
