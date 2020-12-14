@@ -68,6 +68,10 @@ pub const VirtAddr = packed struct {
         return VirtAddr.init(@ptrToInt(ptr));
     }
 
+    pub inline fn toPtr(self: VirtAddr, comptime ptr_type: type) ptr_type {
+        return @intToPtr(ptr_type, self.value);
+    }
+
     /// Aligns the virtual address upwards to the given alignment.
     pub inline fn alignUp(self: VirtAddr, alignment: u64) VirtAddr {
         return VirtAddr.init(rawAlignUp(self.value, alignment));
@@ -90,22 +94,22 @@ pub const VirtAddr = packed struct {
 
     /// Returns the 9-bit level 1 page table index.
     pub inline fn getP1Index(self: VirtAddr) structures.paging.PageTableIndex {
-        return structures.paging.PageTableIndex.initTruncate(@intCast(u16, self.value >> 12));
+        return structures.paging.PageTableIndex.initTruncate(@truncate(u16, self.value >> 12));
     }
 
     /// Returns the 9-bit level 2 page table index.
     pub inline fn getP2Index(self: VirtAddr) structures.paging.PageTableIndex {
-        return structures.paging.PageTableIndex.initTruncate(@intCast(u16, self.value >> 12 >> 9));
+        return structures.paging.PageTableIndex.initTruncate(@truncate(u16, self.value >> 12 >> 9));
     }
 
     /// Returns the 9-bit level 3 page table index.
     pub inline fn getP3Index(self: VirtAddr) structures.paging.PageTableIndex {
-        return structures.paging.PageTableIndex.initTruncate(@intCast(u16, self.value >> 12 >> 9 >> 9));
+        return structures.paging.PageTableIndex.initTruncate(@truncate(u16, self.value >> 12 >> 9 >> 9));
     }
 
     /// Returns the 9-bit level 4 page table index.
     pub inline fn getP4Index(self: VirtAddr) structures.paging.PageTableIndex {
-        return structures.paging.PageTableIndex.initTruncate(@intCast(u16, self.value >> 12 >> 9 >> 9 >> 9));
+        return structures.paging.PageTableIndex.initTruncate(@truncate(u16, self.value >> 12 >> 9 >> 9 >> 9));
     }
 
     pub fn format(value: VirtAddr, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {

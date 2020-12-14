@@ -50,7 +50,7 @@ pub const PageTableEntry = packed struct {
     /// - `FrameError::FrameNotPresent` if the entry doesn't have the `present` flag set.
     /// - `FrameError::HugeFrame` if the entry has the `huge_page` flag set (for huge pages the
     ///    `addr` function must be used)
-    pub fn getFrame(self: PageTableEntry) FrameError!structures.paging.PhysFrame4KiB {
+    pub fn getFrame(self: PageTableEntry) FrameError!structures.paging.PhysFrame {
         const flags = self.getFlags();
 
         if (!flags.present) {
@@ -61,7 +61,7 @@ pub const PageTableEntry = packed struct {
             return FrameError.HugeFrame;
         }
 
-        return structures.paging.PhysFrame4KiB.containingAddress(self.getAddr());
+        return structures.paging.PhysFrame.containingAddress(self.getAddr());
     }
 
     /// Map the entry to the specified physical address
@@ -71,9 +71,10 @@ pub const PageTableEntry = packed struct {
     }
 
     /// Map the entry to the specified physical frame with the specified flags.
-    pub inline fn setFrame(self: *PageTableEntry, frame: structures.paging.PhysFrame4KiB, flags: PageTableFlags) void {
+    pub inline fn setFrame(self: *PageTableEntry, frame: structures.paging.PhysFrame, flags: PageTableFlags) void {
         std.debug.assert(!self.getFlags().huge_page);
-        self.setAddr(frame.start_address, flags);
+        self.setAddr(frame.start_address);
+        self.setFlags(flags);
     }
 
     /// Sets the flags of this entry.
@@ -82,27 +83,11 @@ pub const PageTableEntry = packed struct {
     }
 
     pub fn format(value: PageTableEntry, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        try writer.writeAll("PageTableEntry(Addr = ");
+        try writer.print("PageTableEntry(Addr = {x}, Flags = {})", .{ value.getAddr(), value.getFlags() });
+    }
 
-        try std.fmt.formatType(
-            value.getAddr(),
-            "x",
-            .{},
-            writer,
-            1,
-        );
-
-        try writer.writeAll(", Flags = ");
-
-        try std.fmt.formatType(
-            value.getFlags(),
-            "b",
-            .{},
-            writer,
-            1,
-        );
-
-        try writer.writeAll(")");
+    test "" {
+        std.testing.refAllDecls(@This());
     }
 };
 
@@ -219,6 +204,76 @@ pub const PageTableFlags = packed struct {
     /// register.
     no_execute: bool,
 
+    pub fn format(value: PageTableFlags, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        try writer.writeAll("PageTableFlags(");
+
+        var something = false;
+
+        if (value.present) {
+            try writer.writeAll(" PRESENT ");
+            something = true;
+        } else {
+            try writer.writeAll(" NOT_PRESENT ");
+            something = true;
+        }
+
+        if (value.writable) {
+            try writer.writeAll("- WRITEABLE ");
+            something = true;
+        }
+
+        if (value.user_accessible) {
+            try writer.writeAll("- USER_ACCESSIBLE ");
+            something = true;
+        }
+
+        if (value.write_through) {
+            try writer.writeAll("- WRITE_THROUGH ");
+            something = true;
+        }
+
+        if (value.no_cache) {
+            try writer.writeAll("- NO_CACHE ");
+            something = true;
+        }
+
+        if (value.accessed) {
+            try writer.writeAll("- ACCESSED ");
+            something = true;
+        }
+
+        if (value.dirty) {
+            try writer.writeAll("- DIRTY ");
+            something = true;
+        }
+
+        if (value.huge_page) {
+            try writer.writeAll("- HUGE_PAGE ");
+            something = true;
+        }
+
+        if (value.global) {
+            try writer.writeAll("- GLOBAL ");
+            something = true;
+        }
+
+        if (value.global) {
+            try writer.writeAll("- GLOBAL ");
+            something = true;
+        }
+
+        if (value.no_execute) {
+            try writer.writeAll("- NO_EXECUTE ");
+            something = true;
+        }
+
+        if (!something) {
+            try writer.writeAll(" NONE ");
+        }
+
+        try writer.writeAll(")");
+    }
+
     // Create a blank/empty `PageTableFlags`
     pub inline fn init() PageTableFlags {
         return fromU64(0);
@@ -276,6 +331,10 @@ pub const PageTableFlags = packed struct {
         .bit_62 = true,
         .no_execute = true,
     });
+
+    test "" {
+        std.testing.refAllDecls(@This());
+    }
 };
 
 test "PageTableFlags" {
