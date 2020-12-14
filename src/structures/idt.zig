@@ -602,6 +602,38 @@ pub const PageFaultErrorCode = packed struct {
     pub fn fromU64(value: u64) PageFaultErrorCode {
         return @bitCast(PageFaultErrorCode, value);
     }
+
+    pub fn format(value: PageFaultErrorCode, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        try writer.writeAll("PageFaultErrorCode(");
+
+        if (value.protection_violation) {
+            try writer.writeAll(" PROTECTION_VIOLATION ");
+        } else {
+            try writer.writeAll(" NOT_PRESENT ");
+        }
+
+        if (value.malformed_table) {
+            try writer.writeAll("- MALFORMED_TABLE ");
+        }
+
+        if (value.instruction_fetch) {
+            try writer.writeAll("- INSTRUCTION_FETCH ");
+        }
+
+        if (value.caused_by_write) {
+            try writer.writeAll("- WRITE ");
+        } else {
+            try writer.writeAll("- READ ");
+        }
+
+        if (value.user_mode) {
+            try writer.writeAll("- USER ");
+        } else {
+            try writer.writeAll("- SUPER ");
+        }
+
+        try writer.writeAll(")");
+    }
 };
 
 test "PageFaultErrorCode" {

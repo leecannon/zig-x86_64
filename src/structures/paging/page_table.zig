@@ -107,6 +107,9 @@ pub const PageTableEntry = packed struct {
 };
 
 test "PageTableEntry" {
+    std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageTableEntry));
+    std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageTableEntry));
+
     var a = PageTableEntry.init();
 
     var addr = PhysAddr.init(0x000fffff_ffff2000);
@@ -276,7 +279,6 @@ pub const PageTableFlags = packed struct {
 };
 
 test "PageTableFlags" {
-    //std.debug.print("\nbit size:{}\nsize:{}\n", .{@bitSizeOf(PageTableFlags), @sizeOf(PageTableFlags)});
     std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageTableFlags));
     std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageTableFlags));
 }
