@@ -17,8 +17,12 @@ pub const KernelSpinLock = struct {
         spinlock: *Self,
 
         pub fn release(self: Held) void {
-            @atomicStore(State, &self.lock.locked, .Unlocked, .Release);
+            @atomicStore(State, &self.spinlock.state, .Unlocked, .Release);
             if (self.interrupts_enabled) instructions.interrupts.enable();
+        }
+
+        test "" {
+            std.testing.refAllDecls(@This());
         }
     };
 
@@ -73,7 +77,11 @@ pub const KernelSpinLockNoDisableInterrupts = struct {
         spinlock: *Self,
 
         pub inline fn release(self: Held) void {
-            @atomicStore(State, &self.lock.locked, .Unlocked, .Release);
+            @atomicStore(State, &self.spinlock.state, .Unlocked, .Release);
+        }
+
+        test "" {
+            std.testing.refAllDecls(@This());
         }
     };
 
