@@ -1,11 +1,11 @@
 /// Abstractions for page tables and other paging related structures.
 pub const paging = @import("paging/paging.zig");
 
-/// Types for accessing I/O ports.
-pub const port = @import("port.zig");
-
 /// Types for the Global Descriptor Table and segment selectors.
 pub const gdt = @import("gdt.zig");
+
+/// Types for accessing I/O ports.
+pub const port = @import("port.zig");
 
 /// Provides a type for the task state segment structure.
 pub const tss = @import("tss.zig");
@@ -18,15 +18,17 @@ pub const idt = @import("idt.zig");
 pub const DescriptorTablePointer = packed struct {
     /// bytes of the DT.
     limit: u16,
+
     /// Pointer to the memory region containing the DT.
     base: u64,
-};
 
-test "DescriptorTablePointer" {
-    const std = @import("std");
-    std.testing.expectEqual(80, @bitSizeOf(DescriptorTablePointer));
-    std.testing.expectEqual(10, @sizeOf(DescriptorTablePointer));
-}
+    test "" {
+        const std = @import("std");
+        std.testing.refAllDecls(@This());
+        std.testing.expectEqual(@bitSizeOf(u16) + @bitSizeOf(u64), @bitSizeOf(DescriptorTablePointer));
+        std.testing.expectEqual(@sizeOf(u16) + @sizeOf(u64), @sizeOf(DescriptorTablePointer));
+    }
+};
 
 test "" {
     const std = @import("std");

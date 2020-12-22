@@ -3,7 +3,7 @@ usingnamespace @import("../common.zig");
 /// Load a GDT.
 ///
 /// Use the `structures.gdt.GlobalDescriptorTable` struct for a high-level interface to loading a GDT.
-pub inline fn lgdt(gdt: *const structures.DescriptorTablePointer) void {
+pub fn lgdt(gdt: *const structures.DescriptorTablePointer) void {
     asm volatile ("lgdt (%[gdt])"
         :
         : [gdt] "r" (gdt)
@@ -14,7 +14,7 @@ pub inline fn lgdt(gdt: *const structures.DescriptorTablePointer) void {
 /// Load a IDT.
 ///
 /// Use the `structures.idt.InterruptDescriptorTable` struct for a high-level interface to loading a IDT.
-pub inline fn lidt(idt: *const structures.DescriptorTablePointer) void {
+pub fn lidt(idt: *const structures.DescriptorTablePointer) void {
     asm volatile ("lidt (%[idt])"
         :
         : [idt] "r" (idt)
@@ -23,10 +23,10 @@ pub inline fn lidt(idt: *const structures.DescriptorTablePointer) void {
 }
 
 /// Load the task state register using the `ltr` instruction.
-pub inline fn loadTss(sel: structures.gdt.SegmentSelector) void {
+pub fn loadTss(sel: structures.gdt.SegmentSelector) void {
     asm volatile ("ltr %[sel]"
         :
-        : [sel] "r" (sel.selector)
+        : [sel] "r" (sel.value)
     );
 }
 

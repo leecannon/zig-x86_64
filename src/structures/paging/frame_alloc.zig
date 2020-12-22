@@ -1,34 +1,37 @@
 usingnamespace @import("../../common.zig");
 
-/// A frame allocator interface. Page size 4 KiB
-pub const FrameAllocator = CreateFrameAllocator(structures.paging.PageSize.Size4KiB);
+const paging = structures.paging;
 
-/// A frame allocator interface. Page size 2 MiB
-pub const FrameAllocator2MiB = CreateFrameAllocator(structures.paging.PageSize.Size2MiB);
+pub const FrameAllocator = struct {
+    impl_allocateFrame: fn (frameAllocator: *FrameAllocator) ?paging.PhysFrame,
+    impl_allocateFrame2MiB: fn (frameAllocator: *FrameAllocator) ?paging.PhysFrame2MiB,
+    impl_allocateFrame1GiB: fn (frameAllocator: *FrameAllocator) ?paging.PhysFrame1GiB,
+    impl_deallocateFrame: fn (frameAllocator: *FrameAllocator, frame: paging.PhysFrame) void,
+    impl_deallocateFrame2MiB: fn (frameAllocator: *FrameAllocator, frame: paging.PhysFrame2MiB) void,
+    impl_deallocateFrame1GiB: fn (frameAllocator: *FrameAllocator, frame: paging.PhysFrame1GiB) void,
 
-/// A frame allocator interface. Page size 1 GiB
-pub const FrameAllocator1GiB = CreateFrameAllocator(structures.paging.PageSize.Size1GiB);
+    /// Allocate a frame of the appropriate size and return it if possible.
+    pub inline fn allocateFrame(frameAllocator: *FrameAllocator, comptime size: paging.PageSize) ?paging.CreatePhysFrame(size) {
+        return switch (size) {
+            .Size4KiB => frameAllocator.impl_allocateFrame(frameAllocator),
+            .Size2MiB => frameAllocator.impl_allocateFrame(frameAllocator),
+            .Size1GiB => frameAllocator.impl_allocateFrame(frameAllocator),
+        };
+    }
 
-fn CreateFrameAllocator(comptime page_size: structures.paging.PageSize) type {
-    const phys_frame_type = switch (page_size) {
-        .Size4KiB => structures.paging.PhysFrame,
-        .Size2MiB => structures.paging.PhysFrame2MiB,
-        .Size1GiB => structures.paging.PhysFrame1GiB,
-    };
-
-    return struct {
-        const Self = @This();
-
-        /// Allocate a frame of the appropriate size and return it if possible.
-        allocate_frame: fn (self: *Self) ?phys_frame_type,
-        /// Deallocate the given unused frame.
-        deallocate_frame: fn (self: *Self, frame: phys_frame_type) void,
-
-        test "" {
-            std.testing.refAllDecls(@This());
+    /// Deallocate the given unused frame.
+    pub inline fn deallocateFrame(frameAllocator: *FrameAllocator, comptime size: paging.PageSize, frame: paging.CreatePhysFrame(size)) void {
+        switch (size) {
+            .Size4KiB => frameAllocator.impl_deallocateFrame(frameAllocator, frame),
+            .Size2MiB => frameAllocator.impl_deallocateFrame2MiB(frameAllocator, frame),
+            .Size1GiB => frameAllocator.impl_deallocateFrame1GiB(frameAllocator, frame),
         }
-    };
-}
+    }
+
+    test "" {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 test "" {
     std.testing.refAllDecls(@This());

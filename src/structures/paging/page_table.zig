@@ -2,6 +2,9 @@ usingnamespace @import("../../common.zig");
 
 const PageSize = structures.paging.PageSize;
 
+/// The number of entries in a page table.
+pub const PAGE_TABLE_ENTRY_COUNT: usize = 512;
+
 /// The error returned by the `PageTableEntry::frame` method.
 pub const FrameError = error{
     /// The entry does not have the `present` flag set, so it isn't currently mapped to a frame.
@@ -16,31 +19,29 @@ pub const PageTableEntry = packed struct {
     entry: u64,
 
     /// Creates an unused page table entry.
-    pub inline fn init() PageTableEntry {
-        return PageTableEntry{ .entry = 0 };
+    pub fn init() PageTableEntry {
+        return .{ .entry = 0 };
     }
 
     /// Returns whether this entry is zero.
-    pub inline fn isUnused(self: PageTableEntry) bool {
+    pub fn isUnused(self: PageTableEntry) bool {
         return self.entry == 0;
     }
 
     /// Sets this entry to zero.
-    pub inline fn setUnused(self: *PageTableEntry) void {
+    pub fn setUnused(self: *PageTableEntry) void {
         self.entry = 0;
     }
 
     /// Returns the flags of this entry.
     pub fn getFlags(self: PageTableEntry) PageTableFlags {
-        // Clear out the addr part of the entry
-        var entry = self.entry;
-        setBits(&entry, 12, 40, 0);
-        return PageTableFlags.fromU64(entry);
+        return PageTableFlags.init(self.entry);
     }
 
     /// Returns the physical address mapped by this entry, might be zero.
-    pub inline fn getAddr(self: PageTableEntry) PhysAddr {
-        return PhysAddr.init(self.entry & 0x000fffff_fffff000);
+    pub fn getAddr(self: PageTableEntry) PhysAddr {
+        // Unchecked is used as the mask ensures validity
+        return PhysAddr.initUnchecked(self.entry & 0x000fffff_fffff000);
     }
 
     /// Returns the physical frame mapped by this entry.
@@ -53,11 +54,11 @@ pub const PageTableEntry = packed struct {
     pub fn getFrame(self: PageTableEntry) FrameError!structures.paging.PhysFrame {
         const flags = self.getFlags();
 
-        if (!flags.present) {
+        if (flags.value & PageTableFlags.PRESENT == 0) {
             return FrameError.FrameNotPresent;
         }
 
-        if (flags.huge_page) {
+        if (flags.value & PageTableFlags.HUGE_PAGE != 0) {
             return FrameError.HugeFrame;
         }
 
@@ -65,25 +66,26 @@ pub const PageTableEntry = packed struct {
     }
 
     /// Map the entry to the specified physical address
-    pub inline fn setAddr(self: *PageTableEntry, addr: PhysAddr) void {
+    pub fn setAddr(self: *PageTableEntry, addr: PhysAddr) void {
         std.debug.assert(addr.isAligned(PageSize.Size4KiB.bytes()));
-        self.entry = addr.value | self.getFlags().toU64();
+        self.entry = addr.value | self.getFlags().value;
     }
 
-    /// Map the entry to the specified physical frame with the specified flags.
-    pub inline fn setFrame(self: *PageTableEntry, frame: structures.paging.PhysFrame, flags: PageTableFlags) void {
-        std.debug.assert(!self.getFlags().huge_page);
-        self.setAddr(frame.start_address);
-        self.setFlags(flags);
-    }
+    // TODO: implement this over comptime PageSize
+    // Map the entry to the specified physical frame with the specified flags.
+    // pub fn setFrame(self: *PageTableEntry, frame: structures.paging.PhysFrame, flags: PageTableFlags) void {
+    //     std.debug.assert(self.getFlags().value & PageTableFlags.HUGE_PAGE == 0);
+    //     self.setAddr(frame.start_address);
+    //     self.setFlags(flags);
+    // }
 
     /// Sets the flags of this entry.
-    pub inline fn setFlags(self: *PageTableEntry, flags: PageTableFlags) void {
-        self.entry = self.getAddr().value | flags.toU64();
+    pub fn setFlags(self: *PageTableEntry, flags: PageTableFlags) void {
+        self.entry = self.getAddr().value | flags.value;
     }
 
     pub fn format(value: PageTableEntry, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        try writer.print("PageTableEntry(Addr = {x}, Flags = {})", .{ value.getAddr(), value.getFlags() });
+        try writer.print("PageTableEntry({}, Flags = 0b{b})", .{ value.getAddr(), value.getFlags().value });
     }
 
     test "" {
@@ -91,125 +93,131 @@ pub const PageTableEntry = packed struct {
     }
 };
 
-test "PageTableEntry" {
-    std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageTableEntry));
-    std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageTableEntry));
+pub const PageTableFlags = struct {
+    value: u64,
 
-    var a = PageTableEntry.init();
+    pub fn init(value: u64) PageTableFlags {
+        return .{ .value = value & ALL };
+    }
 
-    var addr = PhysAddr.init(0x000fffff_ffff2000);
-    var flags = PageTableFlags.init();
+    pub const ALL: u64 =
+        PRESENT | WRITABLE | USER_ACCESSIBLE | WRITE_THROUGH | NO_CACHE | ACCESSED |
+        DIRTY | HUGE_PAGE | GLOBAL | BIT_9 | BIT_10 | BIT_11 | BIT_52 | BIT_53 | BIT_54 |
+        BIT_55 | BIT_56 | BIT_57 | BIT_58 | BIT_59 | BIT_60 | BIT_61 | BIT_62 | NO_EXECUTE;
+    pub const NOT_ALL: u64 = ~ALL;
 
-    a.setAddr(addr);
-    a.setFlags(flags);
-
-    testing.expectEqual(@as(u64, 0x000fffff_ffff2000), a.getAddr().value);
-    testing.expectEqual(@as(u64, 0), a.getFlags().toU64());
-
-    flags.present = true;
-    testing.expectEqual(@as(u64, 0), a.getFlags().toU64());
-
-    a.setFlags(flags);
-    testing.expectEqual(@as(u64, 0x000fffff_ffff2000), a.getAddr().value);
-    testing.expectEqual(@as(u64, 1), a.getFlags().toU64());
-
-    addr.value = 0x000fffff_ffff3000;
-    testing.expectEqual(@as(u64, 0x000fffff_ffff2000), a.getAddr().value);
-
-    a.setAddr(addr);
-    testing.expectEqual(@as(u64, 0x000fffff_ffff3000), a.getAddr().value);
-    testing.expectEqual(@as(u64, 1), a.getFlags().toU64());
-}
-
-/// Possible flags for a page table entry.
-pub const PageTableFlags = packed struct {
     /// Specifies whether the mapped frame or page table is loaded in memory.
-    present: bool,
+    pub const PRESENT: u64 = 1;
+    pub const NOT_PRESENT: u64 = ~PRESENT;
+
     /// Controls whether writes to the mapped frames are allowed.
     ///
     /// If this bit is unset in a level 1 page table entry, the mapped frame is read-only.
     /// If this bit is unset in a higher level page table entry the complete range of mapped
     /// pages is read-only.
-    writable: bool,
+    pub const WRITABLE: u64 = 1 << 1;
+    pub const NOT_WRITABLE: u64 = ~WRITABLE;
+
     /// Controls whether accesses from userspace (i.e. ring 3) are permitted.
-    user_accessible: bool,
+    pub const USER_ACCESSIBLE: u64 = 1 << 2;
+    pub const NOT_USER_ACCESSIBLE: u64 = ~USER_ACCESSIBLE;
+
     /// If this bit is set, a “write-through” policy is used for the cache, else a “write-back”
     /// policy is used.
-    write_through: bool,
+    pub const WRITE_THROUGH: u64 = 1 << 3;
+    pub const NOT_WRITE_THROUGH: u64 = ~WRITE_THROUGH;
+
     /// Disables caching for the pointed entry is cacheable.
-    no_cache: bool,
+    pub const NO_CACHE: u64 = 1 << 4;
+    pub const NOT_NO_CACHE: u64 = ~NO_CACHE;
+
     /// Set by the CPU when the mapped frame or page table is accessed.
-    accessed: bool,
+    pub const ACCESSED: u64 = 1 << 5;
+    pub const NOT_ACCESSED: u64 = ~ACCESSED;
+
     /// Set by the CPU on a write to the mapped frame.
-    dirty: bool,
+    pub const DIRTY: u64 = 1 << 6;
+    pub const NOT_DIRTY: u64 = ~DIRTY;
+
     /// Specifies that the entry maps a huge frame instead of a page table. Only allowed in
     /// P2 or P3 tables.
-    huge_page: bool,
+    pub const HUGE_PAGE: u64 = 1 << 7;
+    pub const NOT_HUGE_PAGE: u64 = ~HUGE_PAGE;
+
     /// Indicates that the mapping is present in all address spaces, so it isn't flushed from
-    /// the TLB on an address space switch
-    global: bool,
-    /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_9: bool,
-    /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_10: bool,
-    /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_11: bool,
-
-    // I can't wait for better bitfields in Zig... this is a mess
-    // These bits are used to store the physical frame
-    _padding_1: u16,
-    _padding_2: u8,
-    _padding_31: bool,
-    _padding_32: bool,
-    _padding_33: bool,
-    _padding_34: bool,
-    _padding_35: bool,
-    _padding_36: bool,
-    _padding_37: bool,
-    _padding_38: bool,
-    _padding_41: bool,
-    _padding_42: bool,
-    _padding_43: bool,
-    _padding_44: bool,
-    _padding_45: bool,
-    _padding_46: bool,
-    _padding_47: bool,
-    _padding_48: bool,
+    /// the TLB on an address space switch.
+    pub const GLOBAL: u64 = 1 << 8;
+    pub const NOT_GLOBAL: u64 = ~GLOBAL;
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_52: bool,
+    pub const BIT_9: u64 = 1 << 9;
+    pub const NOT_BIT_9: u64 = ~BIT_9;
+
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_53: bool,
+    pub const BIT_10: u64 = 1 << 10;
+    pub const NOT_BIT_10: u64 = ~BIT_10;
+
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_54: bool,
+    pub const BIT_11: u64 = 1 << 11;
+    pub const NOT_BIT_11: u64 = ~BIT_11;
+
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_55: bool,
+    pub const BIT_52: u64 = 1 << 52;
+    pub const NOT_BIT_52: u64 = ~BIT_52;
+
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_56: bool,
+    pub const BIT_53: u64 = 1 << 53;
+    pub const NOT_BIT_53: u64 = ~BIT_53;
+
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_57: bool,
+    pub const BIT_54: u64 = 1 << 54;
+    pub const NOT_BIT_54: u64 = ~BIT_54;
+
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_58: bool,
+    pub const BIT_55: u64 = 1 << 55;
+    pub const NOT_BIT_55: u64 = ~BIT_55;
+
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_59: bool,
+    pub const BIT_56: u64 = 1 << 56;
+    pub const NOT_BIT_56: u64 = ~BIT_56;
+
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_60: bool,
+    pub const BIT_57: u64 = 1 << 57;
+    pub const NOT_BIT_57: u64 = ~BIT_57;
+
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_61: bool,
+    pub const BIT_58: u64 = 1 << 58;
+    pub const NOT_BIT_58: u64 = ~BIT_58;
+
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_62: bool,
+    pub const BIT_59: u64 = 1 << 59;
+    pub const NOT_BIT_59: u64 = ~BIT_59;
+
+    /// Available to the OS, can be used to store additional data, e.g. custom flags.
+    pub const BIT_60: u64 = 1 << 60;
+    pub const NOT_BIT_60: u64 = ~BIT_60;
+
+    /// Available to the OS, can be used to store additional data, e.g. custom flags.
+    pub const BIT_61: u64 = 1 << 61;
+    pub const NOT_BIT_61: u64 = ~BIT_61;
+
+    /// Available to the OS, can be used to store additional data, e.g. custom flags.
+    pub const BIT_62: u64 = 1 << 62;
+    pub const NOT_BIT_62: u64 = ~BIT_62;
+
     /// Forbid code execution from the mapped frames.
     ///
     /// Can be only used when the no-execute page protection feature is enabled in the EFER
     /// register.
-    no_execute: bool,
+    pub const NO_EXECUTE: u64 = 1 << 63;
+    pub const NOT_NO_EXECUTE: u64 = ~NO_EXECUTE;
 
     pub fn format(value: PageTableFlags, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         try writer.writeAll("PageTableFlags(");
 
         var something = false;
 
-        if (value.present) {
+        if (value.value & PRESENT != 0) {
             try writer.writeAll(" PRESENT ");
             something = true;
         } else {
@@ -217,52 +225,47 @@ pub const PageTableFlags = packed struct {
             something = true;
         }
 
-        if (value.writable) {
+        if (value.value & WRITABLE != 0) {
             try writer.writeAll("- WRITEABLE ");
             something = true;
         }
 
-        if (value.user_accessible) {
+        if (value.value & USER_ACCESSIBLE != 0) {
             try writer.writeAll("- USER_ACCESSIBLE ");
             something = true;
         }
 
-        if (value.write_through) {
+        if (value.value & WRITE_THROUGH != 0) {
             try writer.writeAll("- WRITE_THROUGH ");
             something = true;
         }
 
-        if (value.no_cache) {
+        if (value.value & NO_CACHE != 0) {
             try writer.writeAll("- NO_CACHE ");
             something = true;
         }
 
-        if (value.accessed) {
+        if (value.value & ACCESSED != 0) {
             try writer.writeAll("- ACCESSED ");
             something = true;
         }
 
-        if (value.dirty) {
+        if (value.value & DIRTY != 0) {
             try writer.writeAll("- DIRTY ");
             something = true;
         }
 
-        if (value.huge_page) {
+        if (value.value & HUGE_PAGE != 0) {
             try writer.writeAll("- HUGE_PAGE ");
             something = true;
         }
 
-        if (value.global) {
+        if (value.value & GLOBAL != 0) {
             try writer.writeAll("- GLOBAL ");
             something = true;
         }
 
-        if (value.global) {
-            try writer.writeAll("- GLOBAL ");
-            something = true;
-        }
-
-        if (value.no_execute) {
+        if (value.value & NO_EXECUTE != 0) {
             try writer.writeAll("- NO_EXECUTE ");
             something = true;
         }
@@ -274,96 +277,32 @@ pub const PageTableFlags = packed struct {
         try writer.writeAll(")");
     }
 
-    // Create a blank/empty `PageTableFlags`
-    pub inline fn init() PageTableFlags {
-        return fromU64(0);
-    }
-
-    pub inline fn fromU64(value: u64) PageTableFlags {
-        return @bitCast(PageTableFlags, value & NO_PADDING);
-    }
-
-    pub inline fn toU64(self: PageTableFlags) u64 {
-        return @bitCast(u64, self) & NO_PADDING;
-    }
-
-    const NO_PADDING: u64 = @bitCast(u64, PageTableFlags{
-        .present = true,
-        .writable = true,
-        .user_accessible = true,
-        .write_through = true,
-        .no_cache = true,
-        .accessed = true,
-        .dirty = true,
-        .huge_page = true,
-        .global = true,
-        .bit_9 = true,
-        .bit_10 = true,
-        .bit_11 = true,
-        ._padding_1 = 0,
-        ._padding_2 = 0,
-        ._padding_31 = false,
-        ._padding_32 = false,
-        ._padding_33 = false,
-        ._padding_34 = false,
-        ._padding_35 = false,
-        ._padding_36 = false,
-        ._padding_37 = false,
-        ._padding_38 = false,
-        ._padding_41 = false,
-        ._padding_42 = false,
-        ._padding_43 = false,
-        ._padding_44 = false,
-        ._padding_45 = false,
-        ._padding_46 = false,
-        ._padding_47 = false,
-        ._padding_48 = false,
-        .bit_52 = true,
-        .bit_53 = true,
-        .bit_54 = true,
-        .bit_55 = true,
-        .bit_56 = true,
-        .bit_57 = true,
-        .bit_58 = true,
-        .bit_59 = true,
-        .bit_60 = true,
-        .bit_61 = true,
-        .bit_62 = true,
-        .no_execute = true,
-    });
-
     test "" {
         std.testing.refAllDecls(@This());
     }
 };
 
-test "PageTableFlags" {
-    std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageTableFlags));
-    std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageTableFlags));
-}
-
-/// The number of entries in a page table.
-pub const ENTRY_COUNT: usize = 512;
-
 /// Represents a page table.
 /// Always page-sized.
 /// **IMPORTANT** Must be align(4096)
 pub const PageTable = extern struct {
-    entries: [ENTRY_COUNT]PageTableEntry,
+    entries: [PAGE_TABLE_ENTRY_COUNT]PageTableEntry,
 
     /// Creates an empty page table.
-    pub inline fn init() PageTable {
-        return PageTable{ .entries = [_]PageTableEntry{PageTableEntry.init()} ** ENTRY_COUNT };
+    pub fn init() PageTable {
+        return .{
+            .entries = [_]PageTableEntry{PageTableEntry.init()} ** PAGE_TABLE_ENTRY_COUNT,
+        };
     }
 
     /// Clears all entries.
-    pub inline fn zero(self: *PageTable) void {
+    pub fn zero(self: *PageTable) void {
         for (self.entries) |*entry| {
             entry.setUnused();
         }
     }
 
-    pub inline fn getAtIndex(self: *PageTable, index: PageTableIndex) *PageTableEntry {
+    pub fn getAtIndex(self: *PageTable, index: PageTableIndex) *PageTableEntry {
         return &self.entries[index.value];
     }
 
@@ -372,24 +311,17 @@ pub const PageTable = extern struct {
     }
 };
 
-test "" {
-    var a = PageTable.init();
-    a.zero();
-}
+/// A 9-bit index into a page table.
+pub const PageTableIndex = struct {
+    value: u9,
 
-/// A 12-bit offset into a 4KiB Page.
-pub const PageOffset = packed struct {
-    value: u16,
-
-    /// Creates a new offset from the given `u16`. Panics if the passed value is >=4096.
-    pub inline fn init(offset: u16) PageOffset {
-        std.debug.assert(offset < (1 << 12));
-        return PageOffset{ .value = offset };
+    /// Creates a new index from the given `u16`.
+    pub fn init(index: u9) PageTableIndex {
+        return .{ .value = index };
     }
 
-    /// Creates a new offset from the given `u16`. Throws away bits if the value is >=4096.
-    pub inline fn initTruncate(offset: u16) PageOffset {
-        return PageOffset{ .value = offset % (1 << 12) };
+    pub fn format(value: PageTableIndex, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        try writer.print("PageTableIndex({})", .{value.value});
     }
 
     test "" {
@@ -397,19 +329,17 @@ pub const PageOffset = packed struct {
     }
 };
 
-/// A 9-bit index into a page table.
-pub const PageTableIndex = packed struct {
-    value: u16,
+/// A 12-bit offset into a 4KiB Page.
+pub const PageOffset = struct {
+    value: u12,
 
-    /// Creates a new index from the given `u16`. Panics if the given value is >=ENTRY_COUNT.
-    pub inline fn init(index: u16) PageTableIndex {
-        std.debug.assert(@as(usize, index) < ENTRY_COUNT);
-        return PageTableIndex{ .value = index };
+    /// Creates a new offset from the given `u12`.
+    pub fn init(offset: u12) PageOffset {
+        return .{ .value = offset };
     }
 
-    /// Creates a new index from the given `u16`. Throws away bits if the value is >=ENTRY_COUNT.
-    pub inline fn initTruncate(index: u16) PageTableIndex {
-        return PageTableIndex{ .value = index % @as(u16, ENTRY_COUNT) };
+    pub fn format(value: PageOffset, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        try writer.print("PageOffset({})", .{value.value});
     }
 
     test "" {

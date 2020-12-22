@@ -1,90 +1,22 @@
 usingnamespace @import("../common.zig");
 
 /// Returns whether interrupts are enabled.
-pub inline fn areEnabled() bool {
-    return registers.rflags.RFlags.read().interrupt_flag;
+pub fn areEnabled() bool {
+    return (registers.RFlags.read().value & registers.RFlags.INTERRUPT_FLAG) == 1;
 }
 
 /// Enable interrupts.
 ///
 /// This is a wrapper around the `sti` instruction.
-pub inline fn enable() void {
+pub fn enable() void {
     asm volatile ("sti");
 }
 
 /// Disable interrupts.
 ///
 /// This is a wrapper around the `cli` instruction.
-pub inline fn disable() void {
+pub fn disable() void {
     asm volatile ("cli");
-}
-
-/// Run a function with disabled interrupts.
-///
-/// Run the given function, disabling interrupts before running it (if they aren't already disabled).
-/// Afterwards, interrupts are enabling again if they were enabled before.
-///
-/// If you have other `enable` and `disable` calls _within_ the function, things may not work as expected.
-pub fn withoutInterrupts(comptime func: fn () void) void {
-    const enabled = areEnabled();
-
-    if (enabled) disable();
-    defer {
-        if (enabled) enable();
-    }
-
-    func();
-}
-
-/// Run a function with disabled interrupts.
-///
-/// Run the given function, disabling interrupts before running it (if they aren't already disabled).
-/// Afterwards, interrupts are enabling again if they were enabled before.
-///
-/// If you have other `enable` and `disable` calls _within_ the function, things may not work as expected.
-pub fn withoutInterruptsArgument(comptime arg_type: type, comptime func: fn (arg_type) void, argument: arg_type) void {
-    const enabled = areEnabled();
-
-    if (enabled) disable();
-    defer {
-        if (enabled) enable();
-    }
-
-    func(argument);
-}
-
-/// Run a function with disabled interrupts and return its result.
-///
-/// Run the given function and return its result, disabling interrupts before running it (if they aren't already disabled).
-/// Afterwards, interrupts are enabling again if they were enabled before.
-///
-/// If you have other `enable` and `disable` calls _within_ the function, things may not work as expected.
-pub fn withoutInterruptsReturn(comptime ret_type: type, comptime func: fn () ret_type) ret_type {
-    const enabled = areEnabled();
-
-    if (enabled) disable();
-    defer {
-        if (enabled) enable();
-    }
-
-    return func();
-}
-
-/// Run a function with disabled interrupts and return its result.
-///
-/// Run the given function and return its result, disabling interrupts before running it (if they aren't already disabled).
-/// Afterwards, interrupts are enabling again if they were enabled before.
-///
-/// If you have other `enable` and `disable` calls _within_ the function, things may not work as expected.
-pub fn withoutInterruptsArgumentReturn(comptime arg_type: type, comptime ret_type: type, comptime func: fn (arg_type) ret_type, argument: arg_type) ret_type {
-    const enabled = areEnabled();
-
-    if (enabled) disable();
-    defer {
-        if (enabled) enable();
-    }
-
-    return func(argument);
 }
 
 /// Atomically enable interrupts and put the CPU to sleep
@@ -112,17 +44,17 @@ pub fn withoutInterruptsArgumentReturn(comptime arg_type: type, comptime ret_typ
 ///
 /// See <http://lkml.iu.edu/hypermail/linux/kernel/1009.2/01406.html> for more
 /// information.
-pub inline fn enableAndHlt() void {
+pub fn enableAndHlt() void {
     asm volatile ("sti; hlt");
 }
 
 /// Cause a breakpoint exception by invoking the `int3` instruction.
-pub inline fn int3() void {
+pub fn int3() void {
     asm volatile ("int3");
 }
 
 /// Generate a software interrupt by invoking the `int` instruction.
-pub inline fn softwareInterrupt(comptime num: usize) void {
+pub fn softwareInterrupt(comptime num: usize) void {
     asm volatile ("int %[num]"
         :
         : [num] "N" (num)

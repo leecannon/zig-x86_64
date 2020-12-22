@@ -1,17 +1,10 @@
 usingnamespace @import("../common.zig");
 
 /// An Interrupt Descriptor Table with 256 entries.
-/// **IMPORTANT** Must be align(16)
+/// ## **IMPORTANT** - must be align(16)
 ///
-/// The first 32 entries are used for CPU exceptions. These entries can be either accessed through
-/// fields on this struct or through an index operation, e.g. `idt[0]` returns the
-/// first entry, the entry for the `divide_error` exception. Note that the index access is
-/// not possible for entries for which an error code is pushed.
-///
-/// The remaining entries are used for interrupts. They can be accesed through index
-/// operations on the idt, e.g. `idt[32]` returns the first interrupt entry, which is the 32th IDT
-/// entry).
-pub const InterruptDescriptorTable = packed struct {
+/// The first 32 entries are used for CPU exceptions. The remaining entries are used for interrupts.
+pub const InterruptDescriptorTable = extern struct {
     /// A divide error (`#DE`) occurs when the denominator of a DIV instruction or
     /// an IDIV instruction is 0. A `#DE` also occurs if the result is too large to be
     /// represented in the destination.
@@ -251,10 +244,9 @@ pub const InterruptDescriptorTable = packed struct {
     /// The saved instruction pointer points to the instruction that caused the `#PF`.
     ///
     /// The page-fault error code is described by the `PageFaultErrorCode` struct.
-    /// Use `x86_64.structures.idt.PageFaultErrorCode.fromU64(error_code)`
     ///
     /// The vector number of the `#PF` exception is 14.
-    page_fault: HandlerWithErrorCodeFuncEntry,
+    page_fault: PageFaultHandlerFuncEntry,
 
     /// vector nr. 15
     reserved_1: HandlerFuncEntry,
@@ -344,7 +336,7 @@ pub const InterruptDescriptorTable = packed struct {
     interrupts: [256 - 32]HandlerFuncEntry,
 
     pub fn init() InterruptDescriptorTable {
-        return InterruptDescriptorTable{
+        return .{
             .divide_error = HandlerFuncEntry.missing(),
             .debug = HandlerFuncEntry.missing(),
             .non_maskable_interrupt = HandlerFuncEntry.missing(),
@@ -359,7 +351,7 @@ pub const InterruptDescriptorTable = packed struct {
             .segment_not_present = HandlerWithErrorCodeFuncEntry.missing(),
             .stack_segment_fault = HandlerWithErrorCodeFuncEntry.missing(),
             .general_protection_fault = HandlerWithErrorCodeFuncEntry.missing(),
-            .page_fault = HandlerWithErrorCodeFuncEntry.missing(),
+            .page_fault = PageFaultHandlerFuncEntry.missing(),
             .reserved_1 = HandlerFuncEntry.missing(),
             .x87_floating_point = HandlerFuncEntry.missing(),
             .alignment_check = HandlerWithErrorCodeFuncEntry.missing(),
@@ -374,7 +366,7 @@ pub const InterruptDescriptorTable = packed struct {
     }
 
     /// Resets all entries of this IDT in place.
-    pub inline fn reset(self: *InterruptDescriptorTable) void {
+    pub fn reset(self: *InterruptDescriptorTable) void {
         self.* = InterruptDescriptorTable.init();
     }
 
@@ -416,19 +408,19 @@ pub const InterruptDescriptorTable = packed struct {
 
     test "" {
         std.testing.refAllDecls(@This());
+        std.testing.expectEqual(@bitSizeOf(u64) * 2 * 256, @bitSizeOf(InterruptDescriptorTable));
+        std.testing.expectEqual(@sizeOf(u64) * 2 * 256, @sizeOf(InterruptDescriptorTable));
     }
 };
-
-test "InterruptDescriptorTable" {
-    std.testing.expectEqual(@bitSizeOf(u64) * 2 * 256, @bitSizeOf(InterruptDescriptorTable));
-    std.testing.expectEqual(@sizeOf(u64) * 2 * 256, @sizeOf(InterruptDescriptorTable));
-}
 
 pub const HandlerFunc = fn (interrupt_stack_frame: *InterruptStackFrame) callconv(.Interrupt) void;
 pub const HandlerFuncEntry = Entry(HandlerFunc);
 
 pub const HandlerWithErrorCodeFunc = fn (interrupt_stack_frame: *InterruptStackFrame, error_code: u64) callconv(.Interrupt) void;
 pub const HandlerWithErrorCodeFuncEntry = Entry(HandlerWithErrorCodeFunc);
+
+pub const PageFaultHandlerFunc = fn (interrupt_stack_frame: *InterruptStackFrame, error_code: PageFaultErrorCode) callconv(.Interrupt) void;
+pub const PageFaultHandlerFuncEntry = Entry(PageFaultHandlerFunc);
 
 pub const HandlerDivergingFunc = fn (interrupt_stack_frame: *InterruptStackFrame) callconv(.Interrupt) noreturn;
 pub const HandlerDivergingFuncEntry = Entry(HandlerDivergingFunc);
@@ -438,12 +430,17 @@ pub const HandlerDivergingWithErrorCodeFuncEntry = Entry(HandlerDivergingWithErr
 
 fn Entry(comptime handler_type: type) type {
     comptime {
-        if (handler_type != HandlerFunc and handler_type != HandlerWithErrorCodeFunc and handler_type != HandlerDivergingFunc and handler_type != HandlerDivergingWithErrorCodeFunc) {
+        if (handler_type != HandlerFunc and
+            handler_type != HandlerWithErrorCodeFunc and
+            handler_type != HandlerDivergingFunc and
+            handler_type != HandlerDivergingWithErrorCodeFunc and
+            handler_type != PageFaultHandlerFunc)
+        {
             @compileError("Non-Interupt handler func type given");
         }
     }
 
-    return packed struct {
+    return extern struct {
         const Self = @This();
 
         pointer_low: u16,
@@ -465,6 +462,9 @@ fn Entry(comptime handler_type: type) type {
             };
         }
 
+        /// Set the handler function for the IDT entry and sets the present bit.
+        ///
+        /// For the code selector field, this function uses the code segment selector currently active in the CPU.
         pub fn setHandler(self: *Self, handler: handler_type) void {
             const addr = @ptrToInt(handler);
 
@@ -472,13 +472,28 @@ fn Entry(comptime handler_type: type) type {
             self.pointer_middle = @truncate(u16, (addr >> 16));
             self.pointer_high = @truncate(u32, (addr >> 32));
 
-            self.gdt_selector = instructions.segmentation.getCs().selector;
+            self.gdt_selector = instructions.segmentation.getCs().value;
 
             self.options.setPresent(true);
         }
 
         test "" {
             std.testing.refAllDecls(@This());
+
+            std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerFuncEntry));
+            std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerFuncEntry));
+
+            std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerWithErrorCodeFuncEntry));
+            std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerWithErrorCodeFuncEntry));
+
+            std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerDivergingFuncEntry));
+            std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerDivergingFuncEntry));
+
+            std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerDivergingWithErrorCodeFuncEntry));
+            std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerDivergingWithErrorCodeFuncEntry));
+
+            std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(PageFaultHandlerFuncEntry));
+            std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(PageFaultHandlerFuncEntry));
         }
     };
 }
@@ -490,44 +505,30 @@ test "Entry" {
     a.setHandler(dummyFn);
 }
 
-test "EntrySize" {
-    std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerFuncEntry));
-    std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerFuncEntry));
-
-    std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerWithErrorCodeFuncEntry));
-    std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerWithErrorCodeFuncEntry));
-
-    std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerDivergingFuncEntry));
-    std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerDivergingFuncEntry));
-
-    std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerDivergingWithErrorCodeFuncEntry));
-    std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerDivergingWithErrorCodeFuncEntry));
-}
-
 /// Represents the options field of an IDT entry.
 pub const EntryOptions = packed struct {
     value: u16,
 
     /// Creates a minimal options field with all the must-be-one bits set.
-    pub inline fn minimal() EntryOptions {
+    pub fn minimal() EntryOptions {
         return EntryOptions{ .value = 0b1110_0000_0000 };
     }
 
     /// Set or reset the preset bit.
-    pub inline fn setPresent(self: *EntryOptions, present: bool) void {
+    pub fn setPresent(self: *EntryOptions, present: bool) void {
         setBit(&self.value, 15, present);
     }
 
     /// Let the CPU disable hardware interrupts when the handler is invoked. By default,
     /// interrupts are disabled on handler invocation.
-    pub inline fn disableInterrupts(self: *EntryOptions, disable: bool) void {
+    pub fn disableInterrupts(self: *EntryOptions, disable: bool) void {
         setBit(&self.value, 8, !disable);
     }
 
     /// Set the required privilege level (DPL) for invoking the handler. The DPL can be 0, 1, 2,
     /// or 3, the default is 0. If CPL < DPL, a general protection fault occurs.
-    pub inline fn setPrivledgeLevel(self: *EntryOptions, dpl: PrivilegeLevel) void {
-        setBits(&self.value, 13, 2, dpl.toU16());
+    pub fn setPrivledgeLevel(self: *EntryOptions, dpl: PrivilegeLevel) void {
+        setBits(&self.value, 13, 15, @as(u16, @enumToInt(dpl)));
     }
 
     /// Assigns a Interrupt Stack Table (IST) stack to this handler. The CPU will then always
@@ -536,7 +537,7 @@ pub const EntryOptions = packed struct {
     ///
     /// An IST stack is specified by an IST index between 0 and 6 (inclusive). Using the same
     /// stack for multiple interrupts can be dangerous when nested interrupts are possible.
-    pub inline fn setStackIndex(self: *EntryOptions, index: u16) void {
+    pub fn setStackIndex(self: *EntryOptions, index: u16) void {
         // The hardware IST index starts at 1, but our software IST index
         // starts at 0. Therefore we need to add 1 here.
         setBits(&self.value, 0, 3, index + 1);
@@ -544,16 +545,13 @@ pub const EntryOptions = packed struct {
 
     test "" {
         std.testing.refAllDecls(@This());
+        std.testing.expectEqual(@bitSizeOf(u16), @bitSizeOf(EntryOptions));
+        std.testing.expectEqual(@sizeOf(u16), @sizeOf(EntryOptions));
     }
 };
 
-test "EntryOptions" {
-    std.testing.expectEqual(@bitSizeOf(u16), @bitSizeOf(EntryOptions));
-    std.testing.expectEqual(@sizeOf(u16), @sizeOf(EntryOptions));
-}
-
 /// Represents the interrupt stack frame pushed by the CPU on interrupt or exception entry.
-pub const InterruptStackFrame = packed struct {
+pub const InterruptStackFrame = extern struct {
     /// The stack segment descriptor at the time of the interrupt (often zero in 64-bit mode).
     instruction_pointer: VirtAddr,
     code_segment: u64,
@@ -562,71 +560,83 @@ pub const InterruptStackFrame = packed struct {
     stack_segment: u64,
 
     pub fn format(value: InterruptStackFrame, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        try std.fmt.format(writer, "InterruptStackFrame( instruction_pointer: {}, code_segment: {}, cpu_flags: 0x{x}, stack_pointer: {}, stack_segment: {} )", .{ value.instruction_pointer, value.code_segment, value.cpu_flags, value.stack_pointer, value.stack_segment });
+        try writer.print(
+            "InterruptStackFrame(.instruction_pointer: {}, .code_segment: {}, .cpu_flags: 0x{x}, .stack_pointer: {}, .stack_segment: {})",
+            .{
+                value.instruction_pointer,
+                value.code_segment,
+                value.cpu_flags,
+                value.stack_pointer,
+                value.stack_segment,
+            },
+        );
+    }
+
+    test "" {
+        std.testing.refAllDecls(@This());
+        std.testing.expectEqual(@bitSizeOf(u64) * 5, @bitSizeOf(InterruptStackFrame));
+        std.testing.expectEqual(@sizeOf(u64) * 5, @sizeOf(InterruptStackFrame));
     }
 };
 
-test "InterruptStackFrame" {
-    std.testing.expectEqual(@bitSizeOf(u64) * 5, @bitSizeOf(InterruptStackFrame));
-    std.testing.expectEqual(@sizeOf(u64) * 5, @sizeOf(InterruptStackFrame));
-}
-
 /// Describes an page fault error code.
-pub const PageFaultErrorCode = packed struct {
+pub const PageFaultErrorCode = extern struct {
+    value: u64,
+
+    pub const ALL: u64 = PROTECTION_VIOLATION | CAUSED_BY_WRITE | USER_MODE | MALFORMED_TABLE | INSTRUCTION_FETCH;
+    pub const NOT_ALL: u64 = ~ALL;
+
     /// If this flag is set, the page fault was caused by a page-protection violation,
     /// else the page fault was caused by a not-present page.
-    protection_violation: bool,
+    pub const PROTECTION_VIOLATION: u64 = 1;
+    pub const NOT_PROTECTION_VIOLATION: u64 = ~PROTECTION_VIOLATION;
+
     /// If this flag is set, the memory access that caused the page fault was a write.
     /// Else the access that caused the page fault is a memory read. This bit does not
     /// necessarily indicate the cause of the page fault was a read or write violation.
-    caused_by_write: bool,
+    pub const CAUSED_BY_WRITE: u64 = 1 << 1;
+    pub const NOT_CAUSED_BY_WRITE: u64 = ~CAUSED_BY_WRITE;
+
     /// If this flag is set, an access in user mode (CPL=3) caused the page fault. Else
     /// an access in supervisor mode (CPL=0, 1, or 2) caused the page fault. This bit
     /// does not necessarily indicate the cause of the page fault was a privilege violation.
-    user_mode: bool,
+    pub const USER_MODE: u64 = 1 << 2;
+    pub const NOT_USER_MODE: u64 = ~USER_MODE;
+
     /// If this flag is set, the page fault is a result of the processor reading a 1 from
     /// a reserved field within a page-translation-table entry.
-    malformed_table: bool,
+    pub const MALFORMED_TABLE: u64 = 1 << 3;
+    pub const NOT_MALFORMED_TABLE: u64 = ~MALFORMED_TABLE;
+
     /// If this flag is set, it indicates that the access that caused the page fault was an
     /// instruction fetch.
-    instruction_fetch: bool,
-
-    _padding1: bool,
-    _padding2: bool,
-    _padding3: bool,
-
-    _padding_a: u8,
-    _padding_b: u16,
-    _padding_c: u32,
-
-    pub fn fromU64(value: u64) PageFaultErrorCode {
-        return @bitCast(PageFaultErrorCode, value);
-    }
+    pub const INSTRUCTION_FETCH: u64 = 1 << 4;
+    pub const NOT_INSTRUCTION_FETCH: u64 = ~INSTRUCTION_FETCH;
 
     pub fn format(value: PageFaultErrorCode, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         try writer.writeAll("PageFaultErrorCode(");
 
-        if (value.protection_violation) {
+        if (value.value & PROTECTION_VIOLATION != 0) {
             try writer.writeAll(" PROTECTION_VIOLATION ");
         } else {
             try writer.writeAll(" NOT_PRESENT ");
         }
 
-        if (value.malformed_table) {
+        if (value.value & MALFORMED_TABLE != 0) {
             try writer.writeAll("- MALFORMED_TABLE ");
         }
 
-        if (value.instruction_fetch) {
+        if (value.value & INSTRUCTION_FETCH != 0) {
             try writer.writeAll("- INSTRUCTION_FETCH ");
         }
 
-        if (value.caused_by_write) {
+        if (value.value & CAUSED_BY_WRITE != 0) {
             try writer.writeAll("- WRITE ");
         } else {
             try writer.writeAll("- READ ");
         }
 
-        if (value.user_mode) {
+        if (value.value & USER_MODE != 0) {
             try writer.writeAll("- USER ");
         } else {
             try writer.writeAll("- SUPER ");
@@ -634,12 +644,13 @@ pub const PageFaultErrorCode = packed struct {
 
         try writer.writeAll(")");
     }
-};
 
-test "PageFaultErrorCode" {
-    std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageFaultErrorCode));
-    std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageFaultErrorCode));
-}
+    test "" {
+        std.testing.refAllDecls(@This());
+        std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageFaultErrorCode));
+        std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageFaultErrorCode));
+    }
+};
 
 test "" {
     std.testing.refAllDecls(@This());

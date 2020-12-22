@@ -1,6 +1,7 @@
 usingnamespace @import("common.zig");
 
-pub const VirtAddrError = error{VirtAddrNotValid};
+const PageTableIndex = structures.paging.PageTableIndex;
+const PageOffset = structures.paging.PageOffset;
 
 /// A canonical 64-bit virtual memory address.
 ///
@@ -10,228 +11,257 @@ pub const VirtAddrError = error{VirtAddrNotValid};
 pub const VirtAddr = packed struct {
     value: u64,
 
-    /// Creates a new canonical virtual address.
-    ///
-    /// This function performs sign extension of bit 47 to make the address canonical. Panics
-    /// if the bits in the range 48 to 64 contain data (i.e. are not null and no sign extension).
-    pub inline fn init(addr: u64) VirtAddr {
-        return tryNew(addr) catch |_| {
-            @panic("addr must not contain any data in bits 48 to 64");
-        };
-    }
-
     /// Tries to create a new canonical virtual address.
     ///
-    /// This function tries to performs sign
-    /// extension of bit 47 to make the address canonical. It succeeds if bits 48 to 64 are
-    /// either a correct sign extension (i.e. copies of bit 47) or all null. Else, an error
-    /// is returned.
-    pub fn tryNew(addr: u64) VirtAddrError!VirtAddr {
-        return switch (getBits(addr, 48, 16)) {
-            0, 0xffff => VirtAddr{ .value = addr },
+    /// If required this function performs sign extension of bit 47 to make the address canonical.
+    pub fn init(addr: u64) error{VirtAddrNotValid}!VirtAddr {
+        return switch (getBits(addr, 47, 64)) {
+            0, 0x1ffff => VirtAddr{ .value = addr },
             1 => initTruncate(addr),
-            else => return VirtAddrError.VirtAddrNotValid,
+            else => return error.VirtAddrNotValid,
         };
     }
 
-    /// Creates new virtual address, without any checks.
+    /// Creates a new canonical virtual address.
     ///
-    /// You must make sure bits 48..64 are equal to bit 47.
-    pub inline fn initUnchecked(addr: u64) VirtAddr {
-        return .{ .value = addr };
-    }
-
-    /// Creates a virtual address that points to `0`
-    pub inline fn zero() VirtAddr {
-        return .{ .value = 0 };
+    /// If required this function performs sign extension of bit 47 to make the address canonical.
+    ///
+    /// ## Panics
+    /// This function panics if the bits in the range 48 to 64 contain data (i.e. are not null and no sign extension).
+    pub fn initPanic(addr: u64) VirtAddr {
+        return init(addr) catch @panic("address passed to VirtAddr.init_panic must not contain any data in bits 48 to 64");
     }
 
     /// Creates a new canonical virtual address, throwing out bits 48..64.
     ///
-    /// This function performs sign extension of bit 47 to make the address canonical, so
-    /// bits 48 to 64 are overwritten. If you want to check that these bits contain no data,
-    /// use `new` or `tryNew`.
-    pub inline fn initTruncate(addr: u64) VirtAddr {
-        return VirtAddr{ .value = @intCast(u64, @intCast(i64, (addr << 16)) >> 16) };
+    /// If required this function performs sign extension of bit 47 to make the address canonical.
+    pub fn initTruncate(addr: u64) VirtAddr {
+        // By doing the right shift as a signed operation (on a i64), it will
+        // sign extend the value, repeating the leftmost bit.
+
+        // Split into individual ops:
+        // const no_high_bits = addr << 16;
+        // const as_i64 = @bitCast(i64, no_high_bits);
+        // const sign_extend_high_bits = as_i64 >> 16;
+        // const value = @bitCast(u64, sign_extend_high_bits);
+        return VirtAddr{ .value = @bitCast(u64, @bitCast(i64, (addr << 16)) >> 16) };
+    }
+
+    /// Creates a new virtual address, without any checks.
+    pub fn initUnchecked(addr: u64) VirtAddr {
+        return .{ .value = addr };
+    }
+
+    /// Creates a virtual address that points to `0`.
+    pub fn zero() VirtAddr {
+        return .{ .value = 0 };
     }
 
     /// Convenience method for checking if a virtual address is null.
-    pub inline fn isNull(self: VirtAddr) bool {
+    pub fn isNull(self: VirtAddr) bool {
         return self.value == 0;
     }
 
     /// Creates a virtual address from the given pointer
-    pub inline fn fromPtr(ptr: anytype) VirtAddr {
-        comptime {
-            if (@typeInfo(@TypeOf(ptr)) != .Pointer) @compileError("not a pointer");
-        }
-        return VirtAddr.init(@ptrToInt(ptr));
+    /// Panics if the given pointer is not a valid virtual address, this should never happen in reality
+    pub fn fromPtr(ptr: anytype) VirtAddr {
+        comptime if (@typeInfo(@TypeOf(ptr)) != .Pointer) @compileError("not a pointer");
+        return initPanic(@ptrToInt(ptr));
     }
 
-    pub inline fn toPtr(self: VirtAddr, comptime ptr_type: type) ptr_type {
-        return @intToPtr(ptr_type, self.value);
+    /// Converts the address to a pointer.
+    pub fn toPtr(self: VirtAddr, comptime T: type) T {
+        return @intToPtr(T, self.value);
     }
 
     /// Aligns the virtual address upwards to the given alignment.
-    pub inline fn alignUp(self: VirtAddr, alignment: u64) VirtAddr {
-        return VirtAddr.init(rawAlignUp(self.value, alignment));
+    /// The alignment must be a power of 2 and greater than 0.
+    pub fn alignUp(self: VirtAddr, alignment: usize) VirtAddr {
+        return .{ .value = std.mem.alignForward(self.value, alignment) };
     }
 
     /// Aligns the virtual address downwards to the given alignment.
-    pub inline fn alignDown(self: VirtAddr, alignment: u64) VirtAddr {
-        return VirtAddr.init(rawAlignDown(self.value, alignment));
+    /// The alignment must be a power of 2 and greater than 0.
+    pub fn alignDown(self: VirtAddr, alignment: usize) VirtAddr {
+        return .{ .value = std.mem.alignBackward(self.value, alignment) };
     }
 
     /// Checks whether the virtual address has the given alignment.
-    pub inline fn isAligned(self: VirtAddr, alignment: u64) bool {
-        return rawAlignDown(self.value, alignment) == self.value;
+    /// The alignment must be a power of 2 and greater than 0.
+    pub fn isAligned(self: VirtAddr, alignment: usize) bool {
+        return std.mem.isAligned(self.value, alignment);
     }
 
     /// Returns the 12-bit page offset of this virtual address.
-    pub inline fn pageOffset(self: VirtAddr) structures.paging.PageOffset {
-        return structures.paging.PageOffset.initTruncate(@intCast(u16, self.value));
+    pub fn pageOffset(self: VirtAddr) PageOffset {
+        return PageOffset.init(@truncate(u12, self.value));
     }
 
     /// Returns the 9-bit level 1 page table index.
-    pub inline fn getP1Index(self: VirtAddr) structures.paging.PageTableIndex {
-        return structures.paging.PageTableIndex.initTruncate(@truncate(u16, self.value >> 12));
+    pub fn p1Index(self: VirtAddr) PageTableIndex {
+        return PageTableIndex.init(@truncate(u9, self.value >> 12));
     }
 
     /// Returns the 9-bit level 2 page table index.
-    pub inline fn getP2Index(self: VirtAddr) structures.paging.PageTableIndex {
-        return structures.paging.PageTableIndex.initTruncate(@truncate(u16, self.value >> 12 >> 9));
+    pub fn p2Index(self: VirtAddr) PageTableIndex {
+        return PageTableIndex.init(@truncate(u9, self.value >> 21));
     }
 
     /// Returns the 9-bit level 3 page table index.
-    pub inline fn getP3Index(self: VirtAddr) structures.paging.PageTableIndex {
-        return structures.paging.PageTableIndex.initTruncate(@truncate(u16, self.value >> 12 >> 9 >> 9));
+    pub fn p3Index(self: VirtAddr) PageTableIndex {
+        return PageTableIndex.init(@truncate(u9, self.value >> 30));
     }
 
     /// Returns the 9-bit level 4 page table index.
-    pub inline fn getP4Index(self: VirtAddr) structures.paging.PageTableIndex {
-        return structures.paging.PageTableIndex.initTruncate(@truncate(u16, self.value >> 12 >> 9 >> 9 >> 9));
+    pub fn p4Index(self: VirtAddr) PageTableIndex {
+        return PageTableIndex.init(@truncate(u9, self.value >> 39));
     }
 
     pub fn format(value: VirtAddr, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        try writer.writeAll("VirtAddr(0x");
+        try writer.print("VirtAddr(0x{x})", .{value.value});
+    }
 
-        try std.fmt.formatType(
-            value.value,
-            "x",
-            .{},
-            writer,
-            1,
-        );
-
-        try writer.writeAll(")");
+    test "" {
+        std.testing.refAllDecls(@This());
+        std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(VirtAddr));
+        std.testing.expectEqual(@sizeOf(u64), @sizeOf(VirtAddr));
     }
 };
 
-pub const PhysAddrError = error{PhysAddrNotValid};
+test "VirtAddr.initTruncate" {
+    var virtAddr = VirtAddr.initTruncate(0);
+    std.testing.expectEqual(@as(u64, 0), virtAddr.value);
+
+    virtAddr = VirtAddr.initTruncate(1 << 47);
+    std.testing.expectEqual(@as(u64, 0xfffff << 47), virtAddr.value);
+
+    virtAddr = VirtAddr.initTruncate(123);
+    std.testing.expectEqual(@as(u64, 123), virtAddr.value);
+
+    virtAddr = VirtAddr.initTruncate(123 << 47);
+    std.testing.expectEqual(@as(u64, 0xfffff << 47), virtAddr.value);
+}
+
+test "VirtAddr.init" {
+    var virtAddr = try VirtAddr.init(0);
+    std.testing.expectEqual(@as(u64, 0), virtAddr.value);
+
+    virtAddr = try VirtAddr.init(1 << 47);
+    std.testing.expectEqual(@as(u64, 0xfffff << 47), virtAddr.value);
+
+    virtAddr = try VirtAddr.init(123);
+    std.testing.expectEqual(@as(u64, 123), virtAddr.value);
+
+    std.testing.expectError(error.VirtAddrNotValid, VirtAddr.init(123 << 47));
+}
+
+test "VirtAddr.fromPtr" {
+    var something: usize = undefined;
+    var somethingelse: usize = undefined;
+
+    var virtAddr = VirtAddr.fromPtr(&something);
+    std.testing.expectEqual(@ptrToInt(&something), virtAddr.value);
+
+    virtAddr = VirtAddr.fromPtr(&somethingelse);
+    std.testing.expectEqual(@ptrToInt(&somethingelse), virtAddr.value);
+}
+
+test "VirtAddr.toPtr" {
+    var something: usize = undefined;
+
+    var virtAddr = VirtAddr.fromPtr(&something);
+    const ptr = virtAddr.toPtr(*usize);
+    ptr.* = 123;
+
+    std.testing.expectEqual(@as(usize, 123), something);
+}
+
+test "VirtAddr.pageOffset/Index" {
+    var something: usize = undefined;
+    var virtAddr = VirtAddr.fromPtr(&something);
+
+    std.testing.expectEqual(@intCast(u12, getBits(virtAddr.value, 0, 12)), virtAddr.pageOffset().value);
+    std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 12, 21)), virtAddr.p1Index().value);
+    std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 21, 30)), virtAddr.p2Index().value);
+    std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 30, 39)), virtAddr.p3Index().value);
+    std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 39, 48)), virtAddr.p4Index().value);
+}
 
 /// A 64-bit physical memory address.
 ///
 /// On `x86_64`, only the 52 lower bits of a physical address can be used. The top 12 bits need
 /// to be zero. This type guarantees that it always represents a valid physical address.
 pub const PhysAddr = packed struct {
-    const Zero = PhysAddr{ .value = 0 };
-
     value: u64,
-
-    /// Creates a new physical address.
-    ///
-    /// Panics if a bit in the range 52 to 64 is set.
-    pub inline fn init(addr: u64) PhysAddr {
-        return tryNew(addr) catch |_| @panic("addr must not contain any data in bits 52 to 64");
-    }
-
-    /// Creates new physical address, without any checks.
-    ///
-    /// You must make sure bits 52..64 are zero.
-    pub inline fn initUnchecked(addr: u64) PhysAddr {
-        return .{ .value = addr };
-    }
 
     /// Tries to create a new physical address.
     ///
     /// Fails if any bits in the range 52 to 64 are set.
-    pub fn tryNew(addr: u64) PhysAddrError!PhysAddr {
-        return switch (getBits(addr, 52, 12)) {
+    pub fn init(addr: u64) error{PhysAddrNotValid}!PhysAddr {
+        return switch (getBits(addr, 52, 64)) {
             0 => PhysAddr{ .value = addr },
-            else => return PhysAddrError.PhysAddrNotValid,
+            else => return error.PhysAddrNotValid,
         };
     }
 
-    /// Creates a new physical address, throwing bits 52..64 away.
-    pub inline fn initTruncate(addr: u64) PhysAddr {
-        return PhysAddr{ .value = addr & @as(u64, 1) << 52 };
+    /// Creates a new physical address.
+    ///
+    /// ## Panics
+    /// This function panics if a bit in the range 52 to 64 is set.
+    pub fn initPanic(addr: u64) PhysAddr {
+        return init(addr) catch @panic("physical addresses must not have any bits in the range 52 to 64 set");
     }
 
-    /// Creates a physical address that points to `0`
-    pub inline fn zero() PhysAddr {
+    const TRUNCATE_CONST: u64 = 1 << 52;
+
+    /// Creates a new physical address, throwing bits 52..64 away.
+    pub fn initTruncate(addr: u64) PhysAddr {
+        return PhysAddr{ .value = addr % TRUNCATE_CONST };
+    }
+
+    /// Creates a new physical address, without any checks.
+    pub fn initUnchecked(addr: u64) PhysAddr {
+        return .{ .value = addr };
+    }
+
+    /// Creates a physical address that points to `0`.
+    pub fn zero() PhysAddr {
         return .{ .value = 0 };
     }
 
     /// Convenience method for checking if a physical address is null.
-    pub inline fn isNull(self: PhysAddr) bool {
+    pub fn isNull(self: PhysAddr) bool {
         return self.value == 0;
     }
 
     /// Aligns the physical address upwards to the given alignment.
-    pub inline fn alignUp(self: PhysAddr, alignment: u64) PhysAddr {
-        return PhysAddr.init(rawAlignUp(self.value, alignment));
+    /// The alignment must be a power of 2 and greater than 0.
+    pub fn alignUp(self: PhysAddr, alignment: usize) PhysAddr {
+        return .{ .value = std.mem.alignForward(self.value, alignment) };
     }
 
     /// Aligns the physical address downwards to the given alignment.
-    pub inline fn alignDown(self: PhysAddr, alignment: u64) PhysAddr {
-        return PhysAddr.init(rawAlignDown(self.value, alignment));
+    /// The alignment must be a power of 2 and greater than 0.
+    pub fn alignDown(self: PhysAddr, alignment: usize) PhysAddr {
+        return .{ .value = std.mem.alignBackward(self.value, alignment) };
     }
 
     /// Checks whether the physical address has the given alignment.
-    pub inline fn isAligned(self: PhysAddr, alignment: u64) bool {
-        return rawAlignDown(self.value, alignment) == self.value;
+    /// The alignment must be a power of 2 and greater than 0.
+    pub fn isAligned(self: PhysAddr, alignment: usize) bool {
+        return std.mem.isAligned(self.value, alignment);
     }
 
     pub fn format(value: PhysAddr, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        try writer.writeAll("PhysAddr(0x");
+        try writer.print("PhysAddr(0x{x})", .{value.value});
+    }
 
-        try std.fmt.formatType(
-            value.value,
-            "x",
-            .{},
-            writer,
-            1,
-        );
-
-        try writer.writeAll(")");
+    test "" {
+        std.testing.refAllDecls(@This());
+        std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PhysAddr));
+        std.testing.expectEqual(@sizeOf(u64), @sizeOf(PhysAddr));
     }
 };
-
-/// Align address downwards.
-///
-/// Returns the greatest x with alignment `align` so that x <= addr. The alignment must be
-///  a power of 2.
-pub inline fn rawAlignDown(addr: u64, alignment: u64) u64 {
-    std.debug.assert(std.math.isPowerOfTwo(alignment));
-    return addr & ~(alignment - 1);
-}
-
-/// Align address upwards.
-///
-/// Returns the smallest x with alignment `align` so that x >= addr. The alignment must be
-/// a power of 2.
-pub inline fn rawAlignUp(addr: u64, alignment: u64) u64 {
-    std.debug.assert(std.math.isPowerOfTwo(alignment));
-
-    const align_mask = alignment - 1;
-
-    if (addr & align_mask == 0) {
-        // Already aligned
-        return addr;
-    }
-
-    return (addr | align_mask) + 1;
-}
 
 test "" {
     std.testing.refAllDecls(@This());

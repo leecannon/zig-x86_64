@@ -11,10 +11,6 @@ const testing = std.testing;
 /// testing.expect(!getBit(a, 0));
 /// testing.expect(getBit(a, 1));
 /// ```
-///
-/// ## Panics
-///
-/// This method will panic if the bit index is out of bounds of the bit field.
 pub fn getBit(target: anytype, comptime bit: comptime_int) bool {
     const target_type = @TypeOf(target);
     comptime {
@@ -24,31 +20,26 @@ pub fn getBit(target: anytype, comptime bit: comptime_int) bool {
     return target & (@as(target_type, 1) << bit) != 0;
 }
 
-/// Obtains the range of bits starting at `start_bit` of length `length`; note that index 0 is the least significant
-/// bit, while index `length() - 1` is the most significant bit.
+/// Obtains the range of bits starting at `start_bit` upto and excluding `end_bit`
+/// Where `start_bit` is of a lower significant bit than `end_bit`
 ///
 /// ```zig
 /// const a: u8 = 0b01101100;
-/// const b = getBits(a, 2, 4);
+/// const b = getBits(a, 2, 6);
 /// testing.expectEqual(@as(u8,0b00001011), b);
 /// ```
-///
-/// ## Panics
-///
-/// This method will panic if the start or end indexes of the range are out of bounds of the
-/// bit array, or if the range can't be contained by the bit field T.
-pub fn getBits(target: anytype, comptime start_bit: comptime_int, comptime length: comptime_int) @TypeOf(target) {
+pub fn getBits(target: anytype, comptime start_bit: comptime_int, comptime end_bit: comptime_int) @TypeOf(target) {
     const target_type = @TypeOf(target);
 
     comptime {
         if (@typeInfo(target_type) != .Int and @typeInfo(target_type) != .ComptimeInt) @compileError("not an integer");
-        if (length <= 0) @compileError("length must be greater than zero");
+        if (end_bit <= start_bit) @compileError("length must be greater than zero");
         if (start_bit >= @bitSizeOf(target_type)) @compileError("start_bit index is out of bounds of the bit field");
-        if (start_bit + length > @bitSizeOf(target_type)) @compileError("start_bit plus length is out of bounds of the bit field");
+        if (end_bit > @bitSizeOf(target_type)) @compileError("end_bit is out of bounds of the bit field");
     }
 
     // shift away high bits
-    const bits = target << (@bitSizeOf(target_type) - (start_bit + length)) >> (@bitSizeOf(target_type) - (start_bit + length));
+    const bits = target << (@bitSizeOf(target_type) - end_bit) >> (@bitSizeOf(target_type) - end_bit);
 
     // shift away low bits
     return bits >> start_bit;
@@ -64,10 +55,6 @@ pub fn getBits(target: anytype, comptime start_bit: comptime_int, comptime lengt
 /// setBit( &val, 0, true);
 /// testing.expect(getBit(val, 0));
 /// ```
-///
-/// ## Panics
-///
-/// This method will panic if the bit index is out of the bounds of the bit field.
 pub fn setBit(target: anytype, comptime bit: comptime_int, value: bool) void {
     const ptr_type_info: std.builtin.TypeInfo = @typeInfo(@TypeOf(target));
     comptime {
@@ -88,22 +75,19 @@ pub fn setBit(target: anytype, comptime bit: comptime_int, value: bool) void {
     }
 }
 
-/// Sets the range of bits starting at `start_bit` of length `length`; to be
+/// Sets the range of bits starting at `start_bit` upto and excluding `end_bit`; to be
 /// specific, if the range is N bits long, the N lower bits of `value` will be used; if any of
 /// the other bits in `value` are set to 1, this function will panic.
 ///
 /// ```zig
 /// var val: u8 = 0b10000000;
-/// setBits(&val, 2, 4, 0b00001101);
+/// setBits(&val, 2, 6, 0b00001101);
 /// testing.expectEqual(@as(u8, 0b10110100), val);
 /// ```
 ///
 /// ## Panics
-///
-/// This method will panic if the range is out of bounds of the bit array,
-/// if the range can't be contained by the bit field T, or if there are `1`s
-/// not in the lower N bits of `value`.
-pub fn setBits(target: anytype, comptime start_bit: comptime_int, comptime length: comptime_int, value: anytype) void {
+/// This method will panic if the `value` exceeds the bit range of the type of `target`
+pub fn setBits(target: anytype, comptime start_bit: comptime_int, comptime end_bit: comptime_int, value: anytype) void {
     const ptr_type_info: std.builtin.TypeInfo = @typeInfo(@TypeOf(target));
     comptime {
         if (ptr_type_info != .Pointer) @compileError("not a pointer");
@@ -113,20 +97,18 @@ pub fn setBits(target: anytype, comptime start_bit: comptime_int, comptime lengt
 
     comptime {
         if (@typeInfo(targetType) != .Int and @typeInfo(targetType) != .ComptimeInt) @compileError("not an integer");
-        if (length <= 0) @compileError("length must be greater than zero");
+        if (end_bit <= start_bit) @compileError("length must be greater than zero");
         if (start_bit >= @bitSizeOf(targetType)) @compileError("start_bit index is out of bounds of the bit field");
-        if (start_bit + length > @bitSizeOf(targetType)) @compileError("start_bit plus length is out of bounds of the bit field");
+        if (end_bit > @bitSizeOf(targetType)) @compileError("start_bit plus length is out of bounds of the bit field");
     }
 
     const peer_value = @as(targetType, value);
 
-    if (getBits(peer_value, 0, length) != peer_value) {
+    if (getBits(peer_value, 0, (end_bit - start_bit)) != peer_value) {
         @panic("value exceeds bit range");
     }
 
-    const end = start_bit + length;
-
-    const bitmask: targetType = ~(~@as(targetType, 0) << (@bitSizeOf(targetType) - end) >> (@bitSizeOf(targetType) - end) >> start_bit << start_bit);
+    const bitmask: targetType = comptime ~(~@as(targetType, 0) << (@bitSizeOf(targetType) - end_bit) >> (@bitSizeOf(targetType) - end_bit) >> start_bit << start_bit);
 
     target.* = (target.* & bitmask) | (peer_value << start_bit);
 }
@@ -147,7 +129,7 @@ test "getBit" {
 
 test "getBits" {
     const a: u8 = 0b01101100;
-    const b = getBits(a, 2, 4);
+    const b = getBits(a, 2, 6);
     testing.expectEqual(@as(u8, 0b00001011), b);
 }
 
@@ -162,7 +144,7 @@ test "setBit" {
 
 test "setBits" {
     var val: u8 = 0b10000000;
-    setBits(&val, 2, 4, 0b00001101);
+    setBits(&val, 2, 6, 0b00001101);
     testing.expectEqual(@as(u8, 0b10110100), val);
 }
 

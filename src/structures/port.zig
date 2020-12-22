@@ -15,8 +15,8 @@ const PortBitness = enum {
     u32,
 };
 
-fn Port(comptime bitness: PortBitness) type {
-    const int_type = switch (bitness) {
+fn Port(comptime portBitness: PortBitness) type {
+    const int_type = switch (portBitness) {
         .u8 => u8,
         .u16 => u16,
         .u32 => u32,
@@ -24,16 +24,18 @@ fn Port(comptime bitness: PortBitness) type {
 
     return struct {
         const Self = @This();
+
         port: u16,
 
-        /// Creates an I/O port with the given port number
-        pub inline fn init(port: u16) Self {
-            return Self{ .port = port };
+        pub fn init(port: u16) Self {
+            return .{
+                .port = port,
+            };
         }
 
         /// Read from the port
-        pub inline fn read(self: Self) int_type {
-            return switch (bitness) {
+        pub fn read(self: Self) int_type {
+            return switch (portBitness) {
                 .u8 => instructions.port.readU8(self.port),
                 .u16 => instructions.port.readU16(self.port),
                 .u32 => instructions.port.readU32(self.port),
@@ -41,8 +43,8 @@ fn Port(comptime bitness: PortBitness) type {
         }
 
         /// Write to the port
-        pub inline fn write(self: Self, value: int_type) void {
-            switch (bitness) {
+        pub fn write(self: Self, value: int_type) void {
+            switch (portBitness) {
                 .u8 => instructions.port.writeU8(self.port, value),
                 .u16 => instructions.port.writeU16(self.port, value),
                 .u32 => instructions.port.writeU32(self.port, value),

@@ -2,12 +2,11 @@ usingnamespace @import("../common.zig");
 
 /// Used to obtain random numbers using x86_64's RDRAND opcode
 pub const RdRand = struct {
-    /// Creates RdRand if RDRAND is supported
+    /// Creates a RdRand if RDRAND is supported, null otherwise
     pub fn init() ?RdRand {
         // RDRAND support indicated by CPUID page 01h, ecx bit 30
         // https://en.wikipedia.org/wiki/RdRand#Overview
-        const cpu_id = cpuid.cpuid(0x1);
-        if (cpu_id.ecx & (1 << 30) != 0) {
+        if (getBit(cpuid(0x1).ecx, 30)) {
             return RdRand{};
         }
         return null;
@@ -59,9 +58,7 @@ pub const RdSeed = struct {
     /// Creates RdSeed if RDSEED is supported
     pub fn init() ?RdSeed {
         // RDSEED support indicated by CPUID page 07h, ebx bit 18
-        // https://en.wikipedia.org/wiki/RdRand#Overview
-        const cpu_id = cpuid.cpuid(0x7);
-        if (cpu_id.ebx & (1 << 18) != 0) {
+        if (getBit(cpuid(0x7).ebx, 18)) {
             return RdSeed{};
         }
         return null;
