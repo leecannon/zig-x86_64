@@ -15,6 +15,11 @@ It includes a few additonal types in the `x86_64.additional` namespace:
 
 Download the repo somehow then either:
 
+### Use a package manager
+
+* [zigmod](https://github.com/nektro/zigmod)
+* [zkg](https://github.com/mattnite/zkg)
+
 ### Add as package in `build.zig`
 
 * To `build.zig` add:
