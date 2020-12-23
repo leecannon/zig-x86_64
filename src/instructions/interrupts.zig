@@ -2,7 +2,7 @@ usingnamespace @import("../common.zig");
 
 /// Returns whether interrupts are enabled.
 pub fn areEnabled() bool {
-    return (registers.RFlags.read().value & registers.RFlags.INTERRUPT_FLAG) == 1;
+    return (registers.RFlags.read().value & registers.RFlags.INTERRUPT_FLAG) != 0;
 }
 
 /// Enable interrupts.

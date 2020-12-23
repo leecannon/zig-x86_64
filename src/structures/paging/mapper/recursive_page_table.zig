@@ -602,7 +602,7 @@ pub const RecursivePageTable = struct {
         if (p4_entry.isUnused()) {
             return paging.TranslateError.PageNotMapped;
         }
-        if (p4_entry.getFlags().value & paging.PageTableFlags.HUGE_PAGE == 1) {
+        if (p4_entry.getFlags().value & paging.PageTableFlags.HUGE_PAGE != 0) {
             @panic("level 4 entry has huge page bit set");
         }
 
@@ -611,7 +611,7 @@ pub const RecursivePageTable = struct {
         const p3_entry = p3.getAtIndex(page.p3Index());
         if (p3_entry.isUnused()) return paging.TranslateError.PageNotMapped;
 
-        if (p3_entry.getFlags().value & paging.PageTableFlags.HUGE_PAGE == 1) {
+        if (p3_entry.getFlags().value & paging.PageTableFlags.HUGE_PAGE != 0) {
             return paging.TranslateResult{
                 .Frame1GiB = .{
                     .frame = paging.PhysFrame1GiB.containingAddress(p3_entry.getAddr()),
@@ -625,7 +625,7 @@ pub const RecursivePageTable = struct {
         const p2_entry = p2.getAtIndex(addr.p2Index());
         if (p2_entry.isUnused()) return paging.TranslateError.PageNotMapped;
 
-        if (p2_entry.getFlags().value & paging.PageTableFlags.HUGE_PAGE == 1) {
+        if (p2_entry.getFlags().value & paging.PageTableFlags.HUGE_PAGE != 0) {
             return paging.TranslateResult{
                 .Frame2MiB = .{
                     .frame = paging.PhysFrame2MiB.containingAddress(p2_entry.getAddr()),
@@ -639,7 +639,7 @@ pub const RecursivePageTable = struct {
         const p1_entry = p1.getAtIndex(addr.p1Index());
         if (p1_entry.isUnused()) return paging.TranslateError.PageNotMapped;
 
-        if (p1_entry.getFlags().value & paging.PageTableFlags.HUGE_PAGE == 1) {
+        if (p1_entry.getFlags().value & paging.PageTableFlags.HUGE_PAGE != 0) {
             @panic("level 1 entry has huge page bit set");
         }
 

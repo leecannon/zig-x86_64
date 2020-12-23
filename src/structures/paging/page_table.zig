@@ -90,6 +90,8 @@ pub const PageTableEntry = packed struct {
 
     test "" {
         std.testing.refAllDecls(@This());
+        std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageTableEntry));
+        std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageTableEntry));
     }
 };
 
