@@ -376,15 +376,19 @@ pub fn CreateTranslateResultContents(comptime page_size: paging.PageSize) type {
     };
 
     return struct {
-        /// The offset within the mapped frame.
-        frame: frame_type, offset: u64
+        /// The mapped frame.
+        frame: frame_type,
+        /// The offset whithin the mapped frame.
+        offset: u64,
+        /// The flags for the frame.
+        flags: paging.PageTableFlags,
     };
 }
 
 /// An error indicating that a `translate` call failed.
 pub const TranslateError = error{
     /// The given page is not mapped to a physical frame.
-    PageNotMapped,
+    NotMapped,
     /// The page table entry for the given page points to an invalid physical address.
     InvalidFrameAddress,
 };

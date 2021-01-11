@@ -7,15 +7,16 @@ pub const RFlags = @import("rflags.zig").RFlags;
 /// Functions to read and write model specific registers.
 pub const model_specific = @import("model_specific.zig");
 
+usingnamespace @import("../common.zig");
+
 /// Gets the current instruction pointer. Note that this is only approximate as it requires a few
 /// instructions to execute.
-pub fn readInstructionPointer() u64 {
-    return asm ("lea (%%rip), %[ret]"
+pub fn readInstructionPointer() VirtAddr {
+    return VirtAddr.initUnchecked(asm ("lea (%%rip), %[ret]"
         : [ret] "=r" (-> u64)
-    );
+    ));
 }
 
 test "" {
-    const std = @import("std");
     std.testing.refAllDecls(@This());
 }

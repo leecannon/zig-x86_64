@@ -6,11 +6,11 @@ const paging = structures.paging;
 /// A Mapper implementation that relies on a PhysAddr to VirtAddr conversion function.
 pub fn MappedPageTable(
     comptime context_type: type,
-    comptime phys_to_virt: fn (context_type, phys_frame: paging.PhysFrame) *paging.PageTable,
+    comptime frame_to_pointer: fn (context_type, phys_frame: paging.PhysFrame) *paging.PageTable,
 ) type {
     return struct {
         const Self = @This();
-        const page_table_walker = PageTableWalker(context_type, phys_to_virt);
+        const page_table_walker = PageTableWalker(context_type, frame_to_pointer);
 
         mapper: Mapper,
         level_4_table: *paging.PageTable,
@@ -132,12 +132,12 @@ pub fn MappedPageTable(
 
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return paging.TranslateError.InvalidFrameAddress,
-                PageTableWalkError.NotMapped => return paging.TranslateError.PageNotMapped,
+                PageTableWalkError.NotMapped => return paging.TranslateError.NotMapped,
             };
 
             const p3_entry = p3.getAtIndex(page.p3Index());
 
-            if (p3_entry.isUnused()) return paging.TranslateError.PageNotMapped;
+            if (p3_entry.isUnused()) return paging.TranslateError.NotMapped;
 
             return paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch |err| return paging.TranslateError.InvalidFrameAddress;
         }
@@ -281,16 +281,16 @@ pub fn MappedPageTable(
 
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return paging.TranslateError.InvalidFrameAddress,
-                PageTableWalkError.NotMapped => return paging.TranslateError.PageNotMapped,
+                PageTableWalkError.NotMapped => return paging.TranslateError.NotMapped,
             };
             const p2 = page_table_walker.nextTable(self.context, p3.getAtIndex(page.p3Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return paging.TranslateError.InvalidFrameAddress,
-                PageTableWalkError.NotMapped => return paging.TranslateError.PageNotMapped,
+                PageTableWalkError.NotMapped => return paging.TranslateError.NotMapped,
             };
 
             const p2_entry = p2.getAtIndex(page.p2Index());
 
-            if (p2_entry.isUnused()) return paging.TranslateError.PageNotMapped;
+            if (p2_entry.isUnused()) return paging.TranslateError.NotMapped;
 
             return paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch |err| return paging.TranslateError.InvalidFrameAddress;
         }
@@ -467,20 +467,20 @@ pub fn MappedPageTable(
 
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return paging.TranslateError.InvalidFrameAddress,
-                PageTableWalkError.NotMapped => return paging.TranslateError.PageNotMapped,
+                PageTableWalkError.NotMapped => return paging.TranslateError.NotMapped,
             };
             const p2 = page_table_walker.nextTable(self.context, p3.getAtIndex(page.p3Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return paging.TranslateError.InvalidFrameAddress,
-                PageTableWalkError.NotMapped => return paging.TranslateError.PageNotMapped,
+                PageTableWalkError.NotMapped => return paging.TranslateError.NotMapped,
             };
             const p1 = page_table_walker.nextTable(self.context, p2.getAtIndex(page.p2Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return paging.TranslateError.InvalidFrameAddress,
-                PageTableWalkError.NotMapped => return paging.TranslateError.PageNotMapped,
+                PageTableWalkError.NotMapped => return paging.TranslateError.NotMapped,
             };
 
             const p1_entry = p1.getAtIndex(page.p1Index());
 
-            if (p1_entry.isUnused()) return paging.TranslateError.PageNotMapped;
+            if (p1_entry.isUnused()) return paging.TranslateError.NotMapped;
 
             return paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return paging.TranslateError.InvalidFrameAddress;
         }
@@ -493,32 +493,46 @@ pub fn MappedPageTable(
 
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(addr.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => @panic("level 4 entry has huge page bit set"),
-                PageTableWalkError.NotMapped => return paging.TranslateError.PageNotMapped,
+                PageTableWalkError.NotMapped => return paging.TranslateError.NotMapped,
             };
 
             const p2 = page_table_walker.nextTable(self.context, p3.getAtIndex(addr.p3Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => {
-                    const frame = paging.PhysFrame1GiB.containingAddress(p3.getAtIndex(addr.p3Index()).getAddr());
+                    const entry = p3.getAtIndex(addr.p3Index());
+                    const frame = paging.PhysFrame1GiB.containingAddress(entry.getAddr());
                     const offset = addr.value & 0o777_777_7777;
-                    return paging.TranslateResult{ .Frame1GiB = .{ .frame = frame, .offset = offset } };
+                    return paging.TranslateResult{
+                        .Frame1GiB = .{
+                            .frame = frame,
+                            .offset = offset,
+                            .flags = entry.getFlags(),
+                        },
+                    };
                 },
-                PageTableWalkError.NotMapped => return paging.TranslateError.PageNotMapped,
+                PageTableWalkError.NotMapped => return paging.TranslateError.NotMapped,
             };
 
             const p1 = page_table_walker.nextTable(self.context, p2.getAtIndex(addr.p2Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => {
-                    const frame = paging.PhysFrame2MiB.containingAddress(p2.getAtIndex(addr.p2Index()).getAddr());
+                    const entry = p2.getAtIndex(addr.p2Index());
+                    const frame = paging.PhysFrame2MiB.containingAddress(entry.getAddr());
                     const offset = addr.value & 0o777_7777;
-                    return paging.TranslateResult{ .Frame2MiB = .{ .frame = frame, .offset = offset } };
+                    return paging.TranslateResult{
+                        .Frame2MiB = .{
+                            .frame = frame,
+                            .offset = offset,
+                            .flags = entry.getFlags(),
+                        },
+                    };
                 },
                 PageTableWalkError.NotMapped => {
-                    return paging.TranslateError.PageNotMapped;
+                    return paging.TranslateError.NotMapped;
                 },
             };
 
             const p1_entry = p1.getAtIndex(addr.p1Index());
 
-            if (p1_entry.isUnused()) return paging.TranslateError.PageNotMapped;
+            if (p1_entry.isUnused()) return paging.TranslateError.NotMapped;
 
             const frame = paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return paging.TranslateError.InvalidFrameAddress;
 
@@ -526,6 +540,7 @@ pub fn MappedPageTable(
                 .Frame4KiB = .{
                     .frame = frame,
                     .offset = @as(u64, addr.pageOffset().value),
+                    .flags = p1_entry.getFlags(),
                 },
             };
         }
@@ -562,14 +577,14 @@ pub fn MappedPageTable(
 
 fn PageTableWalker(
     comptime context_type: type,
-    comptime phys_to_virt: fn (context_type, phys_frame: paging.PhysFrame) *paging.PageTable,
+    comptime frame_to_pointer: fn (context_type, phys_frame: paging.PhysFrame) *paging.PageTable,
 ) type {
     return struct {
         const Self = @This();
 
         /// Internal helper function to get a reference to the page table of the next level.
         pub fn nextTable(context: context_type, entry: *paging.PageTableEntry) PageTableWalkError!*paging.PageTable {
-            return phys_to_virt(context, entry.getFrame() catch |err| switch (err) {
+            return frame_to_pointer(context, entry.getFrame() catch |err| switch (err) {
                 error.HugeFrame => return PageTableWalkError.MappedToHugePage,
                 error.FrameNotPresent => return PageTableWalkError.NotMapped,
             });

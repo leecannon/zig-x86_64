@@ -41,7 +41,7 @@ pub const PageTableEntry = packed struct {
     /// Returns the physical address mapped by this entry, might be zero.
     pub fn getAddr(self: PageTableEntry) PhysAddr {
         // Unchecked is used as the mask ensures validity
-        return PhysAddr.initUnchecked(self.entry & 0x000fffff_fffff000);
+        return PhysAddr.initUnchecked(self.entry & 0x000f_ffff_ffff_f000);
     }
 
     /// Returns the physical frame mapped by this entry.

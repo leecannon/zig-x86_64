@@ -95,6 +95,25 @@ pub const GlobalDescriptorTable = struct {
         };
     }
 
+    /// Create a GDT from a slice of `u64`.
+    /// The length of the slice must not exceed 8.
+    pub fn fromRawSlice(slice: []const u64) !GlobalDescriptorTable {
+        if (slice.len > 8) return error.SliceLenExceedsEight;
+
+        var table: [8]u64 = [_]u64{0} ** 8;
+
+        const next_free = @truncate(u16, slice.len);
+        var i: usize = 0;
+        while (i != next_free) : (i += 1) {
+            table[i] = slice[i];
+        }
+
+        return GlobalDescriptorTable{
+            .table = table,
+            .next_free = next_free,
+        };
+    }
+
     /// Adds the given segment descriptor to the GDT, returning the segment selector.
     ///
     /// Panics if the GDT has no free entries left.
@@ -118,7 +137,7 @@ pub const GlobalDescriptorTable = struct {
     /// `instructions.segmentation.loadSs`, `instructions.segmentation.setCs`
     pub fn load(self: *GlobalDescriptorTable) void {
         const ptr = structures.DescriptorTablePointer{
-            .base = @ptrToInt(&self.table),
+            .base = VirtAddr.fromPtr(&self.table),
             .limit = @as(u16, self.next_free * @sizeOf(u64) - 1),
         };
 

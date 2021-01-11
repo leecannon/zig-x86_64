@@ -13,6 +13,8 @@ pub const tss = @import("tss.zig");
 /// Provides types for the Interrupt Descriptor Table and its entries.
 pub const idt = @import("idt.zig");
 
+usingnamespace @import("../common.zig");
+
 /// A struct describing a pointer to a descriptor table (GDT / IDT).
 /// This is in a format suitable for giving to 'lgdt' or 'lidt'.
 pub const DescriptorTablePointer = packed struct {
@@ -20,10 +22,9 @@ pub const DescriptorTablePointer = packed struct {
     limit: u16,
 
     /// Pointer to the memory region containing the DT.
-    base: u64,
+    base: VirtAddr,
 
     test "" {
-        const std = @import("std");
         std.testing.refAllDecls(@This());
         std.testing.expectEqual(@bitSizeOf(u16) + @bitSizeOf(u64), @bitSizeOf(DescriptorTablePointer));
         std.testing.expectEqual(@sizeOf(u16) + @sizeOf(u64), @sizeOf(DescriptorTablePointer));
@@ -31,6 +32,5 @@ pub const DescriptorTablePointer = packed struct {
 };
 
 test "" {
-    const std = @import("std");
     std.testing.refAllDecls(@This());
 }

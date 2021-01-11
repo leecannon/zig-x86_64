@@ -3,6 +3,21 @@ usingnamespace @import("../../../common.zig");
 const Mapper = paging.Mapper;
 const paging = structures.paging;
 
+pub const InvalidPageTable = error{
+    /// The given page table was not at an recursive address.
+    ///
+    /// The page table address must be of the form `0o_xxx_xxx_xxx_xxx_0000` where `xxx`
+    /// is the recursive entry.
+    NotRecursive,
+
+    /// The given page table was not active on the CPU.
+    ///
+    /// The recursive page table design requires that the given level 4 table is active
+    /// on the CPU because otherwise it's not possible to access the other page tables
+    /// through recursive memory addresses.
+    NotActive,
+};
+
 /// A recursive page table is a last level page table with an entry mapped to the table itself.
 ///
 /// This recursive mapping allows accessing all page tables in the hierarchy:
@@ -24,12 +39,6 @@ pub const RecursivePageTable = struct {
     level_4_table: *paging.PageTable,
     recursive_index: paging.PageTableIndex,
 
-    pub const RecursivePageTableCreationError = error{
-        RecursiveIndexNotRepeated,
-        RecursiveFrameNotPresent,
-        PageTableNotActive,
-    };
-
     /// Creates a new RecursivePageTable from the passed level 4 PageTable.
     ///
     /// The page table must be recursively mapped, that means:
@@ -41,7 +50,7 @@ pub const RecursivePageTable = struct {
     /// - The page table must be active, i.e. the CR3 register must contain its physical address.
     ///
     /// Otherwise a `RecursivePageTableCreationError` is returned.
-    pub fn init(table: *paging.PageTable) RecursivePageTableCreationError!RecursivePageTable {
+    pub fn init(table: *paging.PageTable) InvalidPageTable!RecursivePageTable {
         const page = paging.Page.containingAddress(VirtAddr.initPanic(@ptrToInt(table)));
         const recursive_index = page.p4Index();
         const recursive_index_value = recursive_index.value;
@@ -50,12 +59,12 @@ pub const RecursivePageTable = struct {
             page.p2Index().value != recursive_index_value or
             page.p1Index().value != recursive_index_value)
         {
-            return RecursivePageTableCreationError.RecursiveIndexNotRepeated;
+            return InvalidPageTable.NotRecursive;
         }
 
-        const recursive_index_frame = table.getAtIndex(recursive_index).getFrame() catch return RecursivePageTableCreationError.RecursiveFrameNotPresent;
+        const recursive_index_frame = table.getAtIndex(recursive_index).getFrame() catch return InvalidPageTable.NotRecursive;
         if (registers.control.Cr3.read().physFrame.start_address.value != recursive_index_frame.start_address.value) {
-            return RecursivePageTableCreationError.PageTableNotActive;
+            return InvalidPageTable.NotActive;
         }
 
         return RecursivePageTable{
@@ -192,14 +201,14 @@ pub const RecursivePageTable = struct {
         var self = getSelfPtr(mapper);
 
         if (self.level_4_table.getAtIndex(page.p4Index()).isUnused()) {
-            return paging.TranslateError.PageNotMapped;
+            return paging.TranslateError.NotMapped;
         }
 
         const p3 = p3Ptr(.Size1GiB, page, self.recursive_index);
 
         const p3_entry = p3.getAtIndex(page.p3Index());
 
-        if (p3_entry.isUnused()) return paging.TranslateError.PageNotMapped;
+        if (p3_entry.isUnused()) return paging.TranslateError.NotMapped;
 
         return paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch |err| return paging.TranslateError.InvalidFrameAddress;
     }
@@ -355,20 +364,20 @@ pub const RecursivePageTable = struct {
         var self = getSelfPtr(mapper);
 
         if (self.level_4_table.getAtIndex(page.p4Index()).isUnused()) {
-            return paging.TranslateError.PageNotMapped;
+            return paging.TranslateError.NotMapped;
         }
 
         const p3 = p3Ptr(.Size2MiB, page, self.recursive_index);
 
         const p3_entry = p3.getAtIndex(page.p3Index());
 
-        if (p3_entry.isUnused()) return paging.TranslateError.PageNotMapped;
+        if (p3_entry.isUnused()) return paging.TranslateError.NotMapped;
 
         const p2 = p2Ptr(.Size2MiB, page, self.recursive_index);
 
         const p2_entry = p2.getAtIndex(page.p2Index());
 
-        if (p2_entry.isUnused()) return paging.TranslateError.PageNotMapped;
+        if (p2_entry.isUnused()) return paging.TranslateError.NotMapped;
 
         return paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch |err| return paging.TranslateError.InvalidFrameAddress;
     }
@@ -567,26 +576,26 @@ pub const RecursivePageTable = struct {
         var self = getSelfPtr(mapper);
 
         if (self.level_4_table.getAtIndex(page.p4Index()).isUnused()) {
-            return paging.TranslateError.PageNotMapped;
+            return paging.TranslateError.NotMapped;
         }
 
         const p3 = p3Ptr(.Size4KiB, page, self.recursive_index);
 
         const p3_entry = p3.getAtIndex(page.p3Index());
 
-        if (p3_entry.isUnused()) return paging.TranslateError.PageNotMapped;
+        if (p3_entry.isUnused()) return paging.TranslateError.NotMapped;
 
         const p2 = p2Ptr(.Size4KiB, page, self.recursive_index);
 
         const p2_entry = p2.getAtIndex(page.p2Index());
 
-        if (p2_entry.isUnused()) return paging.TranslateError.PageNotMapped;
+        if (p2_entry.isUnused()) return paging.TranslateError.NotMapped;
 
         const p1 = p1Ptr(.Size4KiB, page, self.recursive_index);
 
         const p1_entry = p1.getAtIndex(page.p1Index());
 
-        if (p1_entry.isUnused()) return paging.TranslateError.PageNotMapped;
+        if (p1_entry.isUnused()) return paging.TranslateError.NotMapped;
 
         return paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return paging.TranslateError.InvalidFrameAddress;
     }
@@ -600,7 +609,7 @@ pub const RecursivePageTable = struct {
 
         const p4_entry = self.level_4_table.getAtIndex(addr.p4Index());
         if (p4_entry.isUnused()) {
-            return paging.TranslateError.PageNotMapped;
+            return paging.TranslateError.NotMapped;
         }
         if (p4_entry.getFlags().value & paging.PageTableFlags.HUGE_PAGE != 0) {
             @panic("level 4 entry has huge page bit set");
@@ -609,13 +618,15 @@ pub const RecursivePageTable = struct {
         const p3 = p3Ptr(.Size4KiB, page, self.recursive_index);
 
         const p3_entry = p3.getAtIndex(page.p3Index());
-        if (p3_entry.isUnused()) return paging.TranslateError.PageNotMapped;
+        if (p3_entry.isUnused()) return paging.TranslateError.NotMapped;
 
-        if (p3_entry.getFlags().value & paging.PageTableFlags.HUGE_PAGE != 0) {
+        const p3_flags = p3_entry.getFlags();
+        if (p3_flags.value & paging.PageTableFlags.HUGE_PAGE != 0) {
             return paging.TranslateResult{
                 .Frame1GiB = .{
                     .frame = paging.PhysFrame1GiB.containingAddress(p3_entry.getAddr()),
                     .offset = addr.value & 0o777_777_7777,
+                    .flags = p3_flags,
                 },
             };
         }
@@ -623,13 +634,15 @@ pub const RecursivePageTable = struct {
         const p2 = p2Ptr(.Size4KiB, page, self.recursive_index);
 
         const p2_entry = p2.getAtIndex(addr.p2Index());
-        if (p2_entry.isUnused()) return paging.TranslateError.PageNotMapped;
+        if (p2_entry.isUnused()) return paging.TranslateError.NotMapped;
 
-        if (p2_entry.getFlags().value & paging.PageTableFlags.HUGE_PAGE != 0) {
+        const p2_flags = p2_entry.getFlags();
+        if (p2_flags.value & paging.PageTableFlags.HUGE_PAGE != 0) {
             return paging.TranslateResult{
                 .Frame2MiB = .{
                     .frame = paging.PhysFrame2MiB.containingAddress(p2_entry.getAddr()),
                     .offset = addr.value & 0o777_7777,
+                    .flags = p2_flags,
                 },
             };
         }
@@ -637,9 +650,10 @@ pub const RecursivePageTable = struct {
         const p1 = p2Ptr(.Size4KiB, page, self.recursive_index);
 
         const p1_entry = p1.getAtIndex(addr.p1Index());
-        if (p1_entry.isUnused()) return paging.TranslateError.PageNotMapped;
+        if (p1_entry.isUnused()) return paging.TranslateError.NotMapped;
 
-        if (p1_entry.getFlags().value & paging.PageTableFlags.HUGE_PAGE != 0) {
+        const p1_flags = p1_entry.getFlags();
+        if (p1_flags.value & paging.PageTableFlags.HUGE_PAGE != 0) {
             @panic("level 1 entry has huge page bit set");
         }
 
@@ -649,6 +663,7 @@ pub const RecursivePageTable = struct {
             .Frame4KiB = .{
                 .frame = frame,
                 .offset = @as(u64, addr.pageOffset().value),
+                .flags = p1_flags,
             },
         };
     }

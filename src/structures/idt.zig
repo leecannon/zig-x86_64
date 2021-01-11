@@ -373,7 +373,7 @@ pub const InterruptDescriptorTable = extern struct {
     /// Loads the IDT in the CPU using the `lidt` command.
     pub fn load(self: *InterruptDescriptorTable) void {
         const ptr = structures.DescriptorTablePointer{
-            .base = @ptrToInt(self),
+            .base = VirtAddr.fromPtr(self),
             .limit = @as(u16, @sizeOf(InterruptDescriptorTable) - 1),
         };
 
