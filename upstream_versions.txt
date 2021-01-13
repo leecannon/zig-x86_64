@@ -1,4 +1,4 @@
 This file is is used to track the latest version of each reimplemented crate, to make it easy to port changes.
 
-2020-12-28 8a54bcad4f9f072623e492a337f824320f6812fa https://github.com/rust-osdev/x86_64
+2020-12-29 4d5058c1a1c3873294b92a628be0bb151d37ca6a https://github.com/rust-osdev/x86_64
 2020-05-20 c3377fb8c1c92a8c042dd94ad9bfcd9a20470ff9 https://github.com/emk/toyos-rs/tree/master/crates/pic8259_simple

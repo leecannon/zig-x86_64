@@ -136,16 +136,21 @@ pub const Cr3Flags = struct {
 
 /// Contains the physical address of the level 4 page table.
 pub const Cr3 = struct {
-    physFrame: structures.paging.PhysFrame,
-    cr3Flags: Cr3Flags,
+    pub const Contents = struct {
+        physFrame: structures.paging.PhysFrame,
+        cr3Flags: Cr3Flags,
+    };
+
+    pub const PcidContents = struct {
+        physFrame: structures.paging.PhysFrame,
+        pcid: instructions.tlb.Pcid,
+    };
 
     /// Read the current P4 table address from the CR3 register.
-    pub fn read() Cr3 {
-        const value = asm ("mov %%cr3, %[value]"
-            : [value] "=r" (-> u64)
-        );
+    pub fn read() Contents {
+        const value = readRaw();
 
-        return Cr3{
+        return .{
             .physFrame = structures.paging.PhysFrame.containingAddress(
                 // unchecked is fine as the mask ensures validity
                 PhysAddr.initUnchecked(value & 0x000f_ffff_ffff_f000),
@@ -156,11 +161,47 @@ pub const Cr3 = struct {
         };
     }
 
+    /// Read the raw value from the CR3 register
+    pub fn readRaw() u64 {
+        return asm ("mov %%cr3, %[value]"
+            : [value] "=r" (-> u64)
+        );
+    }
+
+    /// Read the current P4 table address from the CR3 register along with PCID.
+    /// The correct functioning of this requires CR4.PCIDE = 1.
+    /// See [`Cr4Flags::PCID`]
+    pub fn readPcid() PcidContents {
+        const value = readRaw();
+
+        return .{
+            .physFrame = structures.paging.PhysFrame.containingAddress(
+                // unchecked is fine as the mask ensures validity
+                PhysAddr.initUnchecked(value & 0x000f_ffff_ffff_f000),
+            ),
+            .pcid = instructions.tlb.Pcid.init(@truncate(u12, value & 0xFFF)),
+        };
+    }
+
     /// Write a new P4 table address into the CR3 register.
-    pub fn write(self: Cr3) void {
+    pub fn write(contents: Contents) void {
+        writeRaw(contents.physFrame.start_address.value | contents.cr3Flags.value);
+    }
+
+    /// Write a new P4 table address into the CR3 register.
+    ///
+    /// ## Safety
+    /// Changing the level 4 page table is unsafe, because it's possible to violate memory safety by
+    /// changing the page mapping.
+    /// [`Cr4Flags::PCID`] must be set before calling this method.
+    pub fn writePcid(pcidContents: PcidContents) void {
+        writeRaw(pcidContents.physFrame.start_address.value | @as(u64, pcidContents.pcid.value));
+    }
+
+    pub fn writeRaw(value: u64) void {
         asm volatile ("mov %[value], %%cr3"
             :
-            : [value] "r" (self.physFrame.start_address.value | self.cr3Flags.value)
+            : [value] "r" (value)
             : "memory"
         );
     }
