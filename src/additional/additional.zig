@@ -1,6 +1,3 @@
-/// Kernel-space locks.
-pub const lock = @import("lock.zig");
-
 /// Types for UART serial ports.
 pub const serial_port = @import("serial_port.zig");
 
