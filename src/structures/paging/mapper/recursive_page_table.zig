@@ -89,7 +89,7 @@ pub const RecursivePageTable = struct {
         };
     }
 
-    inline fn getSelfPtr(mapper: *Mapper) *RecursivePageTable {
+    fn getSelfPtr(mapper: *Mapper) callconv(.Inline) *RecursivePageTable {
         return @fieldParentPtr(RecursivePageTable, "mapper", mapper);
     }
 

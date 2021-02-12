@@ -77,7 +77,7 @@ pub const SimplePic = struct {
         };
     }
 
-    inline fn handlesInterrupt(offset: u8, interrupt_id: u8) bool {
+    fn handlesInterrupt(offset: u8, interrupt_id: u8) callconv(.Inline) bool {
         return offset <= interrupt_id and interrupt_id < offset + 8;
     }
 
@@ -131,7 +131,7 @@ pub const SimplePic = struct {
         };
     }
 
-    inline fn isPrimaryPic(interrupt: PicInterrupt) bool {
+    fn isPrimaryPic(interrupt: PicInterrupt) callconv(.Inline) bool {
         return switch (interrupt) {
             .Timer, .Keyboard, .Chain, .SerialPort2, .SerialPort1, .ParallelPort23, .FloppyDisk, .ParallelPort1 => true,
             else => false,
@@ -204,19 +204,19 @@ pub const PicPrimaryInterruptMask = packed struct {
     floppy_disk: bool,
     parallel_port_1: bool,
 
-    pub inline fn noneMasked() PicPrimaryInterruptMask {
+    pub fn noneMasked() callconv(.Inline) PicPrimaryInterruptMask {
         return fromU8(0);
     }
 
-    pub inline fn allMasked() PicPrimaryInterruptMask {
+    pub fn allMasked() callconv(.Inline) PicPrimaryInterruptMask {
         return fromU8(0b11111111);
     }
 
-    pub inline fn toU8(value: PicPrimaryInterruptMask) u8 {
+    pub fn toU8(value: PicPrimaryInterruptMask) callconv(.Inline) u8 {
         return @bitCast(u8, value);
     }
 
-    pub inline fn fromU8(value: u8) PicPrimaryInterruptMask {
+    pub fn fromU8(value: u8) callconv(.Inline) PicPrimaryInterruptMask {
         return @bitCast(PicPrimaryInterruptMask, value);
     }
 
@@ -236,19 +236,19 @@ pub const PicSecondaryInterruptMask = packed struct {
     primary_ata: bool,
     secondary_ata: bool,
 
-    pub inline fn noneMasked() PicSecondaryInterruptMask {
+    pub fn noneMasked() callconv(.Inline) PicSecondaryInterruptMask {
         return fromU8(0);
     }
 
-    pub inline fn allMasked() PicSecondaryInterruptMask {
+    pub fn allMasked() callconv(.Inline) PicSecondaryInterruptMask {
         return fromU8(0b11111111);
     }
 
-    pub inline fn toU8(value: PicSecondaryInterruptMask) u8 {
+    pub fn toU8(value: PicSecondaryInterruptMask) callconv(.Inline) u8 {
         return @bitCast(u8, value);
     }
 
-    pub inline fn fromU8(value: u8) PicSecondaryInterruptMask {
+    pub fn fromU8(value: u8) callconv(.Inline) PicSecondaryInterruptMask {
         return @bitCast(PicSecondaryInterruptMask, value);
     }
 

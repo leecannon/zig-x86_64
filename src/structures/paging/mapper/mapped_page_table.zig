@@ -24,7 +24,7 @@ pub fn MappedPageTable(
             };
         }
 
-        inline fn getSelfPtr(mapper: *Mapper) *Self {
+        fn getSelfPtr(mapper: *Mapper) callconv(.Inline) *Self {
             return @fieldParentPtr(Self, "mapper", mapper);
         }
 

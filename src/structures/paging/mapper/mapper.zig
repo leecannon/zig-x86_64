@@ -145,14 +145,14 @@ pub const Mapper = struct {
     /// even if they are not set in `PageTableFlags`.
     ///
     /// The `mapToWithTableFlags` method gives explicit control over the parent page table flags.
-    pub inline fn mapTo(
+    pub fn mapTo(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
         frame: paging.CreatePhysFrame(size),
         flags: paging.PageTableFlags,
         frame_allocator: *paging.FrameAllocator,
-    ) paging.MapToError!paging.CreateMapperFlush(size) {
+    ) callconv(.Inline) paging.MapToError!paging.CreateMapperFlush(size) {
         const parent_table_flags = paging.PageTableFlags.init(
             flags.value &
                 (paging.PageTableFlags.PRESENT | paging.PageTableFlags.WRITABLE | paging.PageTableFlags.USER_ACCESSIBLE),
@@ -201,19 +201,19 @@ pub const Mapper = struct {
     ///
     /// If the given address has a valid mapping, the mapped frame and the offset within that
     /// frame is returned. Otherwise an error value is returned.
-    pub inline fn translate(
+    pub fn translate(
         mapper: *Mapper,
         addr: VirtAddr,
-    ) paging.TranslateError!paging.TranslateResult {
+    ) callconv(.Inline) paging.TranslateError!paging.TranslateResult {
         return mapper.impl_translate(mapper, addr);
     }
 
     /// Return the frame that the specified page is mapped to.
-    pub inline fn translatePage(
+    pub fn translatePage(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
-    ) paging.TranslateError!paging.CreatePhysFrame(size) {
+    ) callconv(.Inline) paging.TranslateError!paging.CreatePhysFrame(size) {
         return switch (size) {
             .Size4KiB => mapper.impl_translatePage(mapper, page),
             .Size2MiB => mapper.impl_translatePage2MiB(mapper, page),
@@ -222,12 +222,12 @@ pub const Mapper = struct {
     }
 
     /// Set the flags of an existing page table level 2 entry
-    pub inline fn setFlagsP2Entry(
+    pub fn setFlagsP2Entry(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
         flags: paging.PageTableFlags,
-    ) paging.FlagUpdateError!paging.MapperFlushAll {
+    ) callconv(.Inline) paging.FlagUpdateError!paging.MapperFlushAll {
         return switch (size) {
             .Size4KiB => mapper.impl_setFlagsP2Entry(mapper, page, flags),
             .Size2MiB => paging.FlagUpdateError.ParentEntryHugePage,
@@ -236,12 +236,12 @@ pub const Mapper = struct {
     }
 
     /// Set the flags of an existing page table level 3 entry
-    pub inline fn setFlagsP3Entry(
+    pub fn setFlagsP3Entry(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
         flags: paging.PageTableFlags,
-    ) paging.FlagUpdateError!paging.MapperFlushAll {
+    ) callconv(.Inline) paging.FlagUpdateError!paging.MapperFlushAll {
         return switch (size) {
             .Size4KiB => mapper.impl_setFlagsP3Entry(mapper, page, flags),
             .Size2MiB => mapper.impl_setFlagsP3Entry2MiB(mapper, page, flags),
@@ -250,12 +250,12 @@ pub const Mapper = struct {
     }
 
     /// Set the flags of an existing page table level 4 entry
-    pub inline fn setFlagsP4Entry(
+    pub fn setFlagsP4Entry(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
         flags: paging.PageTableFlags,
-    ) paging.FlagUpdateError!paging.MapperFlushAll {
+    ) callconv(.Inline) paging.FlagUpdateError!paging.MapperFlushAll {
         return switch (size) {
             .Size4KiB => mapper.impl_setFlagsP4Entry(mapper, page, flags),
             .Size2MiB => mapper.impl_setFlagsP4Entry2MiB(mapper, page, flags),
@@ -264,12 +264,12 @@ pub const Mapper = struct {
     }
 
     /// Updates the flags of an existing mapping.
-    pub inline fn updateFlags(
+    pub fn updateFlags(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
         flags: paging.PageTableFlags,
-    ) paging.FlagUpdateError!paging.CreateMapperFlush(size) {
+    ) callconv(.Inline) paging.FlagUpdateError!paging.CreateMapperFlush(size) {
         return switch (size) {
             .Size4KiB => mapper.impl_updateFlags(mapper, page, flags),
             .Size2MiB => mapper.impl_updateFlags2MiB(mapper, page, flags),
@@ -280,11 +280,11 @@ pub const Mapper = struct {
     /// Removes a mapping from the page table and returns the frame that used to be mapped.
     ///
     /// Note that no page tables or pages are deallocated.
-    pub inline fn unmap(
+    pub fn unmap(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
-    ) paging.UnmapError!paging.CreateUnmapResult(size) {
+    ) callconv(.Inline) paging.UnmapError!paging.CreateUnmapResult(size) {
         return switch (size) {
             .Size4KiB => mapper.impl_unmap(mapper, page),
             .Size2MiB => mapper.impl_unmap2MiB(mapper, page),
@@ -302,7 +302,7 @@ pub const Mapper = struct {
     ///
     /// Depending on the used mapper implementation, the `PRESENT` and `WRITABLE` flags might
     /// be set for parent tables, even if they are not specified in `parent_table_flags`.
-    pub inline fn mapToWithTableFlags(
+    pub fn mapToWithTableFlags(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
@@ -310,7 +310,7 @@ pub const Mapper = struct {
         flags: paging.PageTableFlags,
         parent_table_flags: paging.PageTableFlags,
         frame_allocator: *paging.FrameAllocator,
-    ) paging.MapToError!paging.CreateMapperFlush(size) {
+    ) callconv(.Inline) paging.MapToError!paging.CreateMapperFlush(size) {
         return switch (size) {
             .Size4KiB => mapper.impl_mapToWithTableFlags(mapper, page, frame, flags, parent_table_flags, frame_allocator),
             .Size2MiB => mapper.impl_mapToWithTableFlags2MiB(mapper, page, frame, flags, parent_table_flags, frame_allocator),

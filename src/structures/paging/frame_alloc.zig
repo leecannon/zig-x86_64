@@ -11,7 +11,7 @@ pub const FrameAllocator = struct {
     impl_deallocateFrame1GiB: fn (frameAllocator: *FrameAllocator, frame: paging.PhysFrame1GiB) void,
 
     /// Allocate a frame of the appropriate size and return it if possible.
-    pub inline fn allocateFrame(frameAllocator: *FrameAllocator, comptime size: paging.PageSize) ?paging.CreatePhysFrame(size) {
+    pub fn allocateFrame(frameAllocator: *FrameAllocator, comptime size: paging.PageSize) callconv(.Inline) ?paging.CreatePhysFrame(size) {
         return switch (size) {
             .Size4KiB => frameAllocator.impl_allocateFrame(frameAllocator),
             .Size2MiB => frameAllocator.impl_allocateFrame(frameAllocator),
@@ -20,7 +20,7 @@ pub const FrameAllocator = struct {
     }
 
     /// Deallocate the given unused frame.
-    pub inline fn deallocateFrame(frameAllocator: *FrameAllocator, comptime size: paging.PageSize, frame: paging.CreatePhysFrame(size)) void {
+    pub fn deallocateFrame(frameAllocator: *FrameAllocator, comptime size: paging.PageSize, frame: paging.CreatePhysFrame(size)) callconv(.Inline) void {
         switch (size) {
             .Size4KiB => frameAllocator.impl_deallocateFrame(frameAllocator, frame),
             .Size2MiB => frameAllocator.impl_deallocateFrame2MiB(frameAllocator, frame),
