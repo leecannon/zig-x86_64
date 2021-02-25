@@ -48,6 +48,12 @@ pub fn enableAndHlt() void {
     asm volatile ("sti; hlt");
 }
 
+pub fn disableAndHlt() noreturn {
+    while (true) {
+        asm volatile ("cli; hlt");
+    }
+}
+
 /// Cause a breakpoint exception by invoking the `int3` instruction.
 pub fn int3() void {
     asm volatile ("int3");
