@@ -345,9 +345,7 @@ pub fn CreateUnmapResult(comptime page_size: paging.PageSize) type {
         .Size1GiB => MapperFlush1GiB,
     };
 
-    return struct {
-        frame: frame_type, flush: flush_type
-    };
+    return struct { frame: frame_type, flush: flush_type };
 }
 
 pub const TranslateResultType = enum {

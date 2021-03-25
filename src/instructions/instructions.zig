@@ -38,11 +38,7 @@ pub fn bochsBreakpoint() void {
 }
 
 pub fn pause() void {
-    asm volatile ("pause"
-        :
-        :
-        : "memory"
-    );
+    asm volatile ("pause" ::: "memory");
 }
 
 test "" {

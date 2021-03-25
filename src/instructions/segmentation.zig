@@ -61,11 +61,7 @@ pub fn loadGs(sel: structures.gdt.SegmentSelector) void {
 
 /// Swap `KernelGsBase` MSR and `GsBase` MSR.
 pub fn swapGs() void {
-    asm volatile ("swapgs"
-        :
-        :
-        : "memory"
-    );
+    asm volatile ("swapgs" ::: "memory");
 }
 
 /// Returns the current value of the code segment register.
