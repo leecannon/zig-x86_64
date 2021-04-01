@@ -19,7 +19,7 @@ pub const TaskStateSegment = packed struct {
         return @bitCast(TaskStateSegment, @as(std.meta.Int(.unsigned, @bitSizeOf(TaskStateSegment)), 0));
     }
 
-    comptime {
+    test {
         std.testing.refAllDecls(@This());
         std.testing.expectEqual(@bitSizeOf(u32) * 26, @bitSizeOf(TaskStateSegment));
         std.testing.expectEqual(@sizeOf(u32) * 26, @sizeOf(TaskStateSegment));

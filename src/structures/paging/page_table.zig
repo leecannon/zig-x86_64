@@ -88,7 +88,7 @@ pub const PageTableEntry = packed struct {
         try writer.print("PageTableEntry({}, Flags = 0b{b})", .{ value.getAddr(), value.getFlags().value });
     }
 
-    comptime {
+    test {
         std.testing.refAllDecls(@This());
         std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageTableEntry));
         std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageTableEntry));

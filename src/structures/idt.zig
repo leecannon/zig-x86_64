@@ -406,7 +406,7 @@ pub const InterruptDescriptorTable = extern struct {
         };
     }
 
-    comptime {
+    test {
         std.testing.refAllDecls(@This());
         std.testing.expectEqual(@bitSizeOf(u64) * 2 * 256, @bitSizeOf(InterruptDescriptorTable));
         std.testing.expectEqual(@sizeOf(u64) * 2 * 256, @sizeOf(InterruptDescriptorTable));
@@ -477,7 +477,7 @@ fn Entry(comptime handler_type: type) type {
             self.options.setPresent(true);
         }
 
-        comptime {
+        test {
             std.testing.refAllDecls(@This());
 
             std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerFuncEntry));
@@ -543,7 +543,7 @@ pub const EntryOptions = packed struct {
         setBits(&self.value, 0, 3, index + 1);
     }
 
-    comptime {
+    test {
         std.testing.refAllDecls(@This());
         std.testing.expectEqual(@bitSizeOf(u16), @bitSizeOf(EntryOptions));
         std.testing.expectEqual(@sizeOf(u16), @sizeOf(EntryOptions));
@@ -572,7 +572,7 @@ pub const InterruptStackFrame = extern struct {
         );
     }
 
-    comptime {
+    test {
         std.testing.refAllDecls(@This());
         std.testing.expectEqual(@bitSizeOf(u64) * 5, @bitSizeOf(InterruptStackFrame));
         std.testing.expectEqual(@sizeOf(u64) * 5, @sizeOf(InterruptStackFrame));
@@ -645,7 +645,7 @@ pub const PageFaultErrorCode = extern struct {
         try writer.writeAll(")");
     }
 
-    comptime {
+    test {
         std.testing.refAllDecls(@This());
         std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageFaultErrorCode));
         std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageFaultErrorCode));
