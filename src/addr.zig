@@ -121,7 +121,7 @@ pub const VirtAddr = packed struct {
         try writer.print("VirtAddr(0x{x})", .{value.value});
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
         std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(VirtAddr));
         std.testing.expectEqual(@sizeOf(u64), @sizeOf(VirtAddr));
@@ -256,13 +256,13 @@ pub const PhysAddr = packed struct {
         try writer.print("PhysAddr(0x{x})", .{value.value});
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
         std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PhysAddr));
         std.testing.expectEqual(@sizeOf(u64), @sizeOf(PhysAddr));
     }
 };
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

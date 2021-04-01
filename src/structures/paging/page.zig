@@ -107,7 +107,7 @@ pub fn CreatePage(comptime page_size: PageSize) type {
         }
 
         // This is disabled to stop testings failing to compile due to `p1Index`, the compileError fires
-        // test "" {
+        // comptime {
         //     std.testing.refAllDecls(@This());
         // }
     };
@@ -178,7 +178,7 @@ fn CreatePageRange(comptime page_type: type) type {
             return null;
         }
 
-        test "" {
+        comptime {
             std.testing.refAllDecls(@This());
         }
     };
@@ -222,7 +222,7 @@ fn CreatePageRangeInclusive(comptime page_type: type) type {
             return null;
         }
 
-        test "" {
+        comptime {
             std.testing.refAllDecls(@This());
         }
     };
@@ -263,7 +263,7 @@ fn CreatePageIterator(comptime page_type: type) type {
             return page_range_inclusive_type{ .start = start, .end = end };
         }
 
-        test "" {
+        comptime {
             std.testing.refAllDecls(@This());
         }
     };
@@ -301,6 +301,6 @@ test "PageIterator" {
     std.testing.expect(inclusive_iterator.isEmpty());
 }
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

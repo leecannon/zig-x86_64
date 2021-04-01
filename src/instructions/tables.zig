@@ -30,6 +30,6 @@ pub fn loadTss(sel: structures.gdt.SegmentSelector) void {
     );
 }
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

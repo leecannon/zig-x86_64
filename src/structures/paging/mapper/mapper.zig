@@ -318,7 +318,7 @@ pub const Mapper = struct {
         };
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -445,7 +445,7 @@ pub fn CreateMapperFlush(comptime page_size: paging.PageSize) type {
             instructions.tlb.flush(self.page.start_address);
         }
 
-        test "" {
+        comptime {
             std.testing.refAllDecls(@This());
         }
     };
@@ -493,7 +493,6 @@ pub const TranslatePageError = error{
     InvalidFrameAddress,
 };
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
-    const offsetPageTable = OffsetPageTable().init(VirtAddr.zero(), @intToPtr(*paging.PageTable, 4096));
 }

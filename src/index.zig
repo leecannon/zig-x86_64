@@ -112,7 +112,7 @@ pub fn getCurrentCpuId() u16 {
     return @truncate(u16, bits.getBits(cpuid(0x1).ebx, 24, 32));
 }
 
-test "" {
+comptime {
     const std = @import("std");
     std.testing.refAllDecls(@This());
 }

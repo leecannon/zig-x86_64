@@ -67,6 +67,6 @@ pub fn softwareInterrupt(comptime num: usize) void {
     );
 }
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

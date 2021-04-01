@@ -48,7 +48,7 @@ pub const RdRand = struct {
         return if (carry == 0) null else num;
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -100,11 +100,11 @@ pub const RdSeed = struct {
         return if (carry == 0) null else num;
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

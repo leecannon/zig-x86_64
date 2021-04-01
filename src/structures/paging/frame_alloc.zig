@@ -28,11 +28,11 @@ pub const FrameAllocator = struct {
         }
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

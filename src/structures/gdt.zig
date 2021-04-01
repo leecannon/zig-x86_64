@@ -49,7 +49,7 @@ pub const SegmentSelector = struct {
         try writer.print("SegmentSelector(.index = {}, .rpl = {})", .{ value.getIndex(), value.getRpl() });
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -155,7 +155,7 @@ pub const GlobalDescriptorTable = struct {
         @panic("GDT full");
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -311,11 +311,11 @@ pub const Descriptor = union(enum) {
         std.testing.expectEqual(0x00cff3000000ffff, Descriptor.USER_DATA);
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

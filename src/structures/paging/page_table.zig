@@ -88,7 +88,7 @@ pub const PageTableEntry = packed struct {
         try writer.print("PageTableEntry({}, Flags = 0b{b})", .{ value.getAddr(), value.getFlags().value });
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
         std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageTableEntry));
         std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageTableEntry));
@@ -279,7 +279,7 @@ pub const PageTableFlags = struct {
         try writer.writeAll(")");
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -308,7 +308,7 @@ pub const PageTable = extern struct {
         return &self.entries[index.value];
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -326,7 +326,7 @@ pub const PageTableIndex = struct {
         try writer.print("PageTableIndex({})", .{value.value});
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -344,11 +344,11 @@ pub const PageOffset = struct {
         try writer.print("PageOffset({})", .{value.value});
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

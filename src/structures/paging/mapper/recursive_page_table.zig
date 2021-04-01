@@ -692,7 +692,7 @@ pub const RecursivePageTable = struct {
         };
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -812,6 +812,6 @@ fn p1Page(
     );
 }
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

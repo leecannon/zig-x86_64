@@ -131,11 +131,11 @@ pub const RFlags = struct {
     pub const CARRY_FLAG: u64 = 1;
     pub const NOT_CARRY_FLAG: u64 = ~CARRY_FLAG;
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

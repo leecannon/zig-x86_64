@@ -3,6 +3,6 @@ pub usingnamespace @import("bits.zig");
 
 pub const std = @import("std");
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

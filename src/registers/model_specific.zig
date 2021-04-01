@@ -69,7 +69,7 @@ pub const Efer = struct {
     pub const TRANSLATION_CACHE_EXTENSION: u64 = 1 << 15;
     pub const NOT_TRANSLATION_CACHE_EXTENSION: u64 = ~TRANSLATION_CACHE_EXTENSION;
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -89,7 +89,7 @@ pub const FsBase = struct {
         REGISTER.write(addr.value);
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -109,7 +109,7 @@ pub const GsBase = struct {
         REGISTER.write(addr.value);
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -129,7 +129,7 @@ pub const KernelGsBase = struct {
         REGISTER.write(addr.value);
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -225,7 +225,7 @@ pub const Star = struct {
         REGISTER.write(value);
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -247,7 +247,7 @@ pub const LStar = struct {
         REGISTER.write(addr.value);
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -278,7 +278,7 @@ pub const SFMask = struct {
         REGISTER.write(value.value & registers.RFlags.ALL);
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -309,12 +309,12 @@ fn Msr(comptime register: u32) type {
             );
         }
 
-        test "" {
+        comptime {
             std.testing.refAllDecls(@This());
         }
     };
 }
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

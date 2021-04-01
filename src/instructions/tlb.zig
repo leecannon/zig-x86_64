@@ -84,6 +84,6 @@ pub fn flushPcid(command: InvPicCommand) void {
     );
 }
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

@@ -51,12 +51,12 @@ fn Port(comptime portBitness: PortBitness) type {
             }
         }
 
-        test "" {
+        comptime {
             std.testing.refAllDecls(@This());
         }
     };
 }
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

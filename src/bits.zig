@@ -148,6 +148,6 @@ test "setBits" {
     testing.expectEqual(@as(u8, 0b10110100), val);
 }
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

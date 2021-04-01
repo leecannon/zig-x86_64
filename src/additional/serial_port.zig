@@ -96,11 +96,11 @@ pub const SerialPort = struct {
         return .{ .context = self };
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

@@ -45,6 +45,6 @@ pub fn writeU32(port: u16, value: u32) void {
     );
 }
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

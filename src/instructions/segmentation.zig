@@ -126,6 +126,6 @@ pub fn rdgsbase() u64 {
     );
 }
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

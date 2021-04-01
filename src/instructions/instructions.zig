@@ -41,7 +41,7 @@ pub fn pause() void {
     asm volatile ("pause" ::: "memory");
 }
 
-test "" {
+comptime {
     const std = @import("std");
     std.testing.refAllDecls(@This());
 }

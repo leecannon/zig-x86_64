@@ -569,7 +569,7 @@ pub fn MappedPageTable(
             };
         }
 
-        test "" {
+        comptime {
             std.testing.refAllDecls(@This());
         }
     };
@@ -627,7 +627,7 @@ fn PageTableWalker(
             return page_table;
         }
 
-        test "" {
+        comptime {
             std.testing.refAllDecls(@This());
         }
     };
@@ -643,6 +643,6 @@ const PageTableCreateError = error{
     FrameAllocationFailed,
 };
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

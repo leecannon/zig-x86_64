@@ -170,7 +170,7 @@ pub const SimplePic = struct {
         }
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -220,7 +220,7 @@ pub const PicPrimaryInterruptMask = packed struct {
         return @bitCast(PicPrimaryInterruptMask, value);
     }
 
-    test "" {
+    comptime {
         std.testing.expectEqual(@bitSizeOf(u8), @bitSizeOf(PicPrimaryInterruptMask));
         std.testing.expectEqual(@sizeOf(u8), @sizeOf(PicPrimaryInterruptMask));
     }
@@ -252,12 +252,12 @@ pub const PicSecondaryInterruptMask = packed struct {
         return @bitCast(PicSecondaryInterruptMask, value);
     }
 
-    test "" {
+    comptime {
         std.testing.expectEqual(@bitSizeOf(u8), @bitSizeOf(PicSecondaryInterruptMask));
         std.testing.expectEqual(@sizeOf(u8), @sizeOf(PicSecondaryInterruptMask));
     }
 };
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

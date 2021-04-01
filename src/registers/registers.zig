@@ -17,6 +17,6 @@ pub fn readInstructionPointer() VirtAddr {
     ));
 }
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

@@ -89,7 +89,7 @@ pub const Cr0 = struct {
     pub const PAGING: u64 = 1 << 31;
     pub const NOT_PAGING: u64 = ~PAGING;
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -106,7 +106,7 @@ pub const Cr2 = struct {
         ));
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -129,7 +129,7 @@ pub const Cr3Flags = struct {
     pub const PAGE_LEVEL_CACHE_DISABLE: u64 = 1 << 4;
     const NOT_PAGE_LEVEL_CACHE_DISABLE: u64 = ~PAGE_LEVEL_CACHE_DISABLE;
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -206,7 +206,7 @@ pub const Cr3 = struct {
         );
     }
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
@@ -351,11 +351,11 @@ pub const Cr4 = struct {
     pub const PROTECTION_KEY: u64 = 1 << 22;
     pub const NOT_PROTECTION_KEY: u64 = ~PROTECTION_KEY;
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
     }
 };
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

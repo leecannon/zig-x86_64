@@ -24,13 +24,13 @@ pub const DescriptorTablePointer = packed struct {
     /// Pointer to the memory region containing the DT.
     base: VirtAddr,
 
-    test "" {
+    comptime {
         std.testing.refAllDecls(@This());
         std.testing.expectEqual(@bitSizeOf(u16) + @bitSizeOf(u64), @bitSizeOf(DescriptorTablePointer));
         std.testing.expectEqual(@sizeOf(u16) + @sizeOf(u64), @sizeOf(DescriptorTablePointer));
     }
 };
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }

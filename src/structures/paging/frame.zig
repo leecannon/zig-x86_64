@@ -50,7 +50,7 @@ pub fn CreatePhysFrame(comptime page_size: structures.paging.PageSize) type {
             try writer.print("PhysFrame[" ++ size.sizeString() ++ "](0x{x})", .{value.start_address.value});
         }
 
-        test "" {
+        comptime {
             std.testing.refAllDecls(@This());
         }
     };
@@ -91,7 +91,7 @@ fn CreatePhysFrameIterator(comptime phys_frame_type: type) type {
             return phys_frame_range_inclusive_type{ .start = start, .end = end };
         }
 
-        test "" {
+        comptime {
             std.testing.refAllDecls(@This());
         }
     };
@@ -148,7 +148,7 @@ fn CreatePhysFrameRange(comptime phys_frame_type: type) type {
             return null;
         }
 
-        test "" {
+        comptime {
             std.testing.refAllDecls(@This());
         }
     };
@@ -205,7 +205,7 @@ fn CreatePhysFrameRangeInclusive(comptime phys_frame_type: type) type {
             return null;
         }
 
-        test "" {
+        comptime {
             std.testing.refAllDecls(@This());
         }
     };
@@ -243,6 +243,6 @@ test "PhysFrameIterator" {
     std.testing.expect(inclusive_iterator.isEmpty());
 }
 
-test "" {
+comptime {
     std.testing.refAllDecls(@This());
 }
