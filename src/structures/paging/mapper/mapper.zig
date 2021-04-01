@@ -18,7 +18,7 @@ const paging = structures.paging;
 pub const Mapper = struct {
     // This is the most annoying code ive ever written...
     // All just to have something that is trivial in most languages; an interface
-    impl_mapToWithTableFlags1GiB: fn (
+    z_impl_mapToWithTableFlags1GiB: fn (
         mapper: *Mapper,
         page: paging.Page1GiB,
         frame: paging.PhysFrame1GiB,
@@ -27,29 +27,29 @@ pub const Mapper = struct {
         frame_allocator: *paging.FrameAllocator,
     ) paging.MapToError!paging.MapperFlush1GiB,
 
-    impl_unmap1GiB: fn (
+    z_impl_unmap1GiB: fn (
         mapper: *Mapper,
         page: paging.Page1GiB,
     ) paging.UnmapError!paging.UnmapResult1GiB,
 
-    impl_updateFlags1GiB: fn (
+    z_impl_updateFlags1GiB: fn (
         mapper: *Mapper,
         page: paging.Page1GiB,
         flags: paging.PageTableFlags,
     ) paging.FlagUpdateError!paging.MapperFlush1GiB,
 
-    impl_setFlagsP4Entry1GiB: fn (
+    z_impl_setFlagsP4Entry1GiB: fn (
         mapper: *Mapper,
         page: paging.Page1GiB,
         flags: paging.PageTableFlags,
     ) paging.FlagUpdateError!paging.MapperFlushAll,
 
-    impl_translatePage1GiB: fn (
+    z_impl_translatePage1GiB: fn (
         mapper: *Mapper,
         page: paging.Page1GiB,
     ) paging.TranslateError!paging.PhysFrame1GiB,
 
-    impl_mapToWithTableFlags2MiB: fn (
+    z_impl_mapToWithTableFlags2MiB: fn (
         mapper: *Mapper,
         page: paging.Page2MiB,
         frame: paging.PhysFrame2MiB,
@@ -58,35 +58,35 @@ pub const Mapper = struct {
         frame_allocator: *paging.FrameAllocator,
     ) paging.MapToError!paging.MapperFlush2MiB,
 
-    impl_unmap2MiB: fn (
+    z_impl_unmap2MiB: fn (
         mapper: *Mapper,
         page: paging.Page2MiB,
     ) paging.UnmapError!paging.UnmapResult2MiB,
 
-    impl_updateFlags2MiB: fn (
+    z_impl_updateFlags2MiB: fn (
         mapper: *Mapper,
         page: paging.Page2MiB,
         flags: paging.PageTableFlags,
     ) paging.FlagUpdateError!paging.MapperFlush2MiB,
 
-    impl_setFlagsP4Entry2MiB: fn (
+    z_impl_setFlagsP4Entry2MiB: fn (
         mapper: *Mapper,
         page: paging.Page2MiB,
         flags: paging.PageTableFlags,
     ) paging.FlagUpdateError!paging.MapperFlushAll,
 
-    impl_setFlagsP3Entry2MiB: fn (
+    z_impl_setFlagsP3Entry2MiB: fn (
         mapper: *Mapper,
         page: paging.Page2MiB,
         flags: paging.PageTableFlags,
     ) paging.FlagUpdateError!paging.MapperFlushAll,
 
-    impl_translatePage2MiB: fn (
+    z_impl_translatePage2MiB: fn (
         mapper: *Mapper,
         page: paging.Page2MiB,
     ) paging.TranslateError!paging.PhysFrame2MiB,
 
-    impl_mapToWithTableFlags: fn (
+    z_impl_mapToWithTableFlags: fn (
         mapper: *Mapper,
         page: paging.Page,
         frame: paging.PhysFrame,
@@ -95,41 +95,41 @@ pub const Mapper = struct {
         frame_allocator: *paging.FrameAllocator,
     ) paging.MapToError!paging.MapperFlush,
 
-    impl_unmap: fn (
+    z_impl_unmap: fn (
         mapper: *Mapper,
         page: paging.Page,
     ) paging.UnmapError!paging.UnmapResult,
 
-    impl_updateFlags: fn (
+    z_impl_updateFlags: fn (
         mapper: *Mapper,
         page: paging.Page,
         flags: paging.PageTableFlags,
     ) paging.FlagUpdateError!paging.MapperFlush,
 
-    impl_setFlagsP4Entry: fn (
+    z_impl_setFlagsP4Entry: fn (
         mapper: *Mapper,
         page: paging.Page,
         flags: paging.PageTableFlags,
     ) paging.FlagUpdateError!paging.MapperFlushAll,
 
-    impl_setFlagsP3Entry: fn (
+    z_impl_setFlagsP3Entry: fn (
         mapper: *Mapper,
         page: paging.Page,
         flags: paging.PageTableFlags,
     ) paging.FlagUpdateError!paging.MapperFlushAll,
 
-    impl_setFlagsP2Entry: fn (
+    z_impl_setFlagsP2Entry: fn (
         mapper: *Mapper,
         page: paging.Page,
         flags: paging.PageTableFlags,
     ) paging.FlagUpdateError!paging.MapperFlushAll,
 
-    impl_translatePage: fn (
+    z_impl_translatePage: fn (
         mapper: *Mapper,
         page: paging.Page,
     ) paging.TranslateError!paging.PhysFrame,
 
-    impl_translate: fn (
+    z_impl_translate: fn (
         mapper: *Mapper,
         addr: VirtAddr,
     ) paging.TranslateError!paging.TranslateResult,
@@ -159,9 +159,9 @@ pub const Mapper = struct {
         );
 
         return switch (size) {
-            .Size4KiB => mapper.impl_mapToWithTableFlags(mapper, page, frame, flags, parent_table_flags, frame_allocator),
-            .Size2MiB => mapper.impl_mapToWithTableFlags2MiB(mapper, page, frame, flags, parent_table_flags, frame_allocator),
-            .Size1GiB => mapper.impl_mapToWithTableFlags1GiB(mapper, page, frame, flags, parent_table_flags, frame_allocator),
+            .Size4KiB => mapper.z_impl_mapToWithTableFlags(mapper, page, frame, flags, parent_table_flags, frame_allocator),
+            .Size2MiB => mapper.z_impl_mapToWithTableFlags2MiB(mapper, page, frame, flags, parent_table_flags, frame_allocator),
+            .Size1GiB => mapper.z_impl_mapToWithTableFlags1GiB(mapper, page, frame, flags, parent_table_flags, frame_allocator),
         };
     }
 
@@ -205,7 +205,7 @@ pub const Mapper = struct {
         mapper: *Mapper,
         addr: VirtAddr,
     ) callconv(.Inline) paging.TranslateError!paging.TranslateResult {
-        return mapper.impl_translate(mapper, addr);
+        return mapper.z_impl_translate(mapper, addr);
     }
 
     /// Return the frame that the specified page is mapped to.
@@ -215,9 +215,9 @@ pub const Mapper = struct {
         page: paging.CreatePage(size),
     ) callconv(.Inline) paging.TranslateError!paging.CreatePhysFrame(size) {
         return switch (size) {
-            .Size4KiB => mapper.impl_translatePage(mapper, page),
-            .Size2MiB => mapper.impl_translatePage2MiB(mapper, page),
-            .Size1GiB => mapper.impl_translatePage1GiB(mapper, page),
+            .Size4KiB => mapper.z_impl_translatePage(mapper, page),
+            .Size2MiB => mapper.z_impl_translatePage2MiB(mapper, page),
+            .Size1GiB => mapper.z_impl_translatePage1GiB(mapper, page),
         };
     }
 
@@ -229,7 +229,7 @@ pub const Mapper = struct {
         flags: paging.PageTableFlags,
     ) callconv(.Inline) paging.FlagUpdateError!paging.MapperFlushAll {
         return switch (size) {
-            .Size4KiB => mapper.impl_setFlagsP2Entry(mapper, page, flags),
+            .Size4KiB => mapper.z_impl_setFlagsP2Entry(mapper, page, flags),
             .Size2MiB => paging.FlagUpdateError.ParentEntryHugePage,
             .Size1GiB => paging.FlagUpdateError.ParentEntryHugePage,
         };
@@ -243,8 +243,8 @@ pub const Mapper = struct {
         flags: paging.PageTableFlags,
     ) callconv(.Inline) paging.FlagUpdateError!paging.MapperFlushAll {
         return switch (size) {
-            .Size4KiB => mapper.impl_setFlagsP3Entry(mapper, page, flags),
-            .Size2MiB => mapper.impl_setFlagsP3Entry2MiB(mapper, page, flags),
+            .Size4KiB => mapper.z_impl_setFlagsP3Entry(mapper, page, flags),
+            .Size2MiB => mapper.z_impl_setFlagsP3Entry2MiB(mapper, page, flags),
             .Size1GiB => paging.FlagUpdateError.ParentEntryHugePage,
         };
     }
@@ -257,9 +257,9 @@ pub const Mapper = struct {
         flags: paging.PageTableFlags,
     ) callconv(.Inline) paging.FlagUpdateError!paging.MapperFlushAll {
         return switch (size) {
-            .Size4KiB => mapper.impl_setFlagsP4Entry(mapper, page, flags),
-            .Size2MiB => mapper.impl_setFlagsP4Entry2MiB(mapper, page, flags),
-            .Size1GiB => mapper.impl_setFlagsP4Entry1GiB(mapper, page, flags),
+            .Size4KiB => mapper.z_impl_setFlagsP4Entry(mapper, page, flags),
+            .Size2MiB => mapper.z_impl_setFlagsP4Entry2MiB(mapper, page, flags),
+            .Size1GiB => mapper.z_impl_setFlagsP4Entry1GiB(mapper, page, flags),
         };
     }
 
@@ -271,9 +271,9 @@ pub const Mapper = struct {
         flags: paging.PageTableFlags,
     ) callconv(.Inline) paging.FlagUpdateError!paging.CreateMapperFlush(size) {
         return switch (size) {
-            .Size4KiB => mapper.impl_updateFlags(mapper, page, flags),
-            .Size2MiB => mapper.impl_updateFlags2MiB(mapper, page, flags),
-            .Size1GiB => mapper.impl_updateFlags1GiB(mapper, page, flags),
+            .Size4KiB => mapper.z_impl_updateFlags(mapper, page, flags),
+            .Size2MiB => mapper.z_impl_updateFlags2MiB(mapper, page, flags),
+            .Size1GiB => mapper.z_impl_updateFlags1GiB(mapper, page, flags),
         };
     }
 
@@ -286,9 +286,9 @@ pub const Mapper = struct {
         page: paging.CreatePage(size),
     ) callconv(.Inline) paging.UnmapError!paging.CreateUnmapResult(size) {
         return switch (size) {
-            .Size4KiB => mapper.impl_unmap(mapper, page),
-            .Size2MiB => mapper.impl_unmap2MiB(mapper, page),
-            .Size1GiB => mapper.impl_unmap1GiB(mapper, page),
+            .Size4KiB => mapper.z_impl_unmap(mapper, page),
+            .Size2MiB => mapper.z_impl_unmap2MiB(mapper, page),
+            .Size1GiB => mapper.z_impl_unmap1GiB(mapper, page),
         };
     }
 
@@ -312,9 +312,9 @@ pub const Mapper = struct {
         frame_allocator: *paging.FrameAllocator,
     ) callconv(.Inline) paging.MapToError!paging.CreateMapperFlush(size) {
         return switch (size) {
-            .Size4KiB => mapper.impl_mapToWithTableFlags(mapper, page, frame, flags, parent_table_flags, frame_allocator),
-            .Size2MiB => mapper.impl_mapToWithTableFlags2MiB(mapper, page, frame, flags, parent_table_flags, frame_allocator),
-            .Size1GiB => mapper.impl_mapToWithTableFlags1GiB(mapper, page, frame, flags, parent_table_flags, frame_allocator),
+            .Size4KiB => mapper.z_impl_mapToWithTableFlags(mapper, page, frame, flags, parent_table_flags, frame_allocator),
+            .Size2MiB => mapper.z_impl_mapToWithTableFlags2MiB(mapper, page, frame, flags, parent_table_flags, frame_allocator),
+            .Size1GiB => mapper.z_impl_mapToWithTableFlags1GiB(mapper, page, frame, flags, parent_table_flags, frame_allocator),
         };
     }
 
