@@ -14,8 +14,8 @@ pub const FrameAllocator = struct {
     pub fn allocateFrame(frameAllocator: *FrameAllocator, comptime size: paging.PageSize) callconv(.Inline) ?paging.CreatePhysFrame(size) {
         return switch (size) {
             .Size4KiB => frameAllocator.z_impl_allocateFrame(frameAllocator),
-            .Size2MiB => frameAllocator.z_impl_allocateFrame(frameAllocator),
-            .Size1GiB => frameAllocator.z_impl_allocateFrame(frameAllocator),
+            .Size2MiB => frameAllocator.z_impl_allocateFrame2MiB(frameAllocator),
+            .Size1GiB => frameAllocator.z_impl_allocateFrame1GiB(frameAllocator),
         };
     }
 
