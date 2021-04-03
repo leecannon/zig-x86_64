@@ -3,16 +3,6 @@ usingnamespace @import("../../../common.zig");
 pub usingnamespace @import("mapped_page_table.zig");
 pub usingnamespace @import("recursive_page_table.zig");
 
-const physToVirt = struct {
-    pub fn physToVirt(offset: VirtAddr, phys_frame: paging.PhysFrame) *paging.PageTable {
-        return VirtAddr.initPanic(offset.value + phys_frame.start_address.value).toPtr(*paging.PageTable);
-    }
-}.physToVirt;
-
-pub fn OffsetPageTable() type {
-    return MappedPageTable(VirtAddr, physToVirt);
-}
-
 const paging = structures.paging;
 
 pub const Mapper = struct {

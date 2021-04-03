@@ -3,6 +3,14 @@ usingnamespace @import("../../../common.zig");
 const Mapper = paging.Mapper;
 const paging = structures.paging;
 
+const physToVirt = struct {
+    pub fn physToVirt(offset: VirtAddr, phys_frame: paging.PhysFrame) *paging.PageTable {
+        return VirtAddr.initPanic(offset.value + phys_frame.start_address.value).toPtr(*paging.PageTable);
+    }
+}.physToVirt;
+
+pub const OffsetPageTable = MappedPageTable(VirtAddr, physToVirt);
+
 /// A Mapper implementation that relies on a PhysAddr to VirtAddr conversion function.
 pub fn MappedPageTable(
     comptime context_type: type,
