@@ -84,7 +84,7 @@ pub fn MappedPageTable(
             const flags = p3_entry.getFlags();
 
             if (flags.value & paging.PageTableFlags.PRESENT == 0) return paging.UnmapError.PageNotMapped;
-            if (flags.value & paging.PageTableFlags.HUGE_PAGE == 0) return paging.UnmapError.ParentEntryHugePage;
+            if (flags.value & paging.PageTableFlags.HUGE_PAGE != 0) return paging.UnmapError.ParentEntryHugePage;
 
             const frame = paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch |err| return paging.UnmapError.InvalidFrameAddress;
 
@@ -211,7 +211,7 @@ pub fn MappedPageTable(
             const flags = p2_entry.getFlags();
 
             if (flags.value & paging.PageTableFlags.PRESENT == 0) return paging.UnmapError.PageNotMapped;
-            if (flags.value & paging.PageTableFlags.HUGE_PAGE == 0) return paging.UnmapError.ParentEntryHugePage;
+            if (flags.value & paging.PageTableFlags.HUGE_PAGE != 0) return paging.UnmapError.ParentEntryHugePage;
 
             const frame = paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch |err| return paging.UnmapError.InvalidFrameAddress;
 
@@ -373,7 +373,7 @@ pub fn MappedPageTable(
             const flags = p1_entry.getFlags();
 
             if (flags.value & paging.PageTableFlags.PRESENT == 0) return paging.UnmapError.PageNotMapped;
-            if (flags.value & paging.PageTableFlags.HUGE_PAGE == 0) return paging.UnmapError.ParentEntryHugePage;
+            if (flags.value & paging.PageTableFlags.HUGE_PAGE != 0) return paging.UnmapError.ParentEntryHugePage;
 
             const frame = paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return paging.UnmapError.InvalidFrameAddress;
 
