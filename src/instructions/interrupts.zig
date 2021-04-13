@@ -1,21 +1,21 @@
 usingnamespace @import("../common.zig");
 
 /// Returns whether interrupts are enabled.
-pub fn areEnabled() bool {
+pub fn areEnabled() callconv(.Inline) bool {
     return (registers.RFlags.read().value & registers.RFlags.INTERRUPT_FLAG) != 0;
 }
 
 /// Enable interrupts.
 ///
 /// This is a wrapper around the `sti` instruction.
-pub fn enable() void {
+pub fn enable() callconv(.Inline) void {
     asm volatile ("sti");
 }
 
 /// Disable interrupts.
 ///
 /// This is a wrapper around the `cli` instruction.
-pub fn disable() void {
+pub fn disable() callconv(.Inline) void {
     asm volatile ("cli");
 }
 

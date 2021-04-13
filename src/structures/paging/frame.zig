@@ -30,7 +30,7 @@ pub fn CreatePhysFrame(comptime page_size: structures.paging.PageSize) type {
 
         /// Returns the frame that starts at the given physical address.
         /// Without validaing the addresses alignment
-        pub fn fromStartAddressUnchecked(address: PhysAddr) Self {
+        pub fn fromStartAddressUnchecked(address: PhysAddr) callconv(.Inline) Self {
             return .{ .start_address = address };
         }
 
@@ -42,7 +42,7 @@ pub fn CreatePhysFrame(comptime page_size: structures.paging.PageSize) type {
         }
 
         /// Returns the size of the frame (4KB, 2MB or 1GB).
-        pub fn sizeOf(self: Self) u64 {
+        pub fn sizeOf(self: Self) callconv(.Inline) u64 {
             return size.bytes();
         }
 
@@ -82,12 +82,12 @@ fn CreatePhysFrameIterator(comptime phys_frame_type: type) type {
 
     return struct {
         /// Returns a range of frames, exclusive `end`.
-        pub fn range(start: phys_frame_type, end: phys_frame_type) phy_frame_range_type {
+        pub fn range(start: phys_frame_type, end: phys_frame_type) callconv(.Inline) phy_frame_range_type {
             return phy_frame_range_type{ .start = start, .end = end };
         }
 
         /// Returns a range of frames, inclusive `end`.
-        pub fn rangeInclusive(start: phys_frame_type, end: phys_frame_type) phys_frame_range_inclusive_type {
+        pub fn rangeInclusive(start: phys_frame_type, end: phys_frame_type) callconv(.Inline) phys_frame_range_inclusive_type {
             return phys_frame_range_inclusive_type{ .start = start, .end = end };
         }
 

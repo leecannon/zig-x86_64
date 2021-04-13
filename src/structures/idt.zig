@@ -510,7 +510,7 @@ pub const EntryOptions = packed struct {
     value: u16,
 
     /// Creates a minimal options field with all the must-be-one bits set.
-    pub fn minimal() EntryOptions {
+    pub fn minimal() callconv(.Inline) EntryOptions {
         return EntryOptions{ .value = 0b1110_0000_0000 };
     }
 
@@ -573,7 +573,7 @@ pub const InterruptStackFrame = extern struct {
 
     /// `volatile` is used because LLVM optimizations remove non-volatile
     /// modifications of the interrupt stack frame.
-    pub fn asMut(self: *const InterruptStackFrame) *volatile InterruptStackFrame {
+    pub fn asMut(self: *const InterruptStackFrame) callconv(.Inline) *volatile InterruptStackFrame {
         return @intToPtr(*volatile InterruptStackFrame, @ptrToInt(self));
     }
 
@@ -608,53 +608,68 @@ pub const PageFaultErrorCode = extern struct {
     /// else the page fault was caused by a not-present page.
     pub const PROTECTION_VIOLATION: u64 = 1;
     pub const NOT_PROTECTION_VIOLATION: u64 = ~PROTECTION_VIOLATION;
+    pub fn isPROTECTION_VIOLATION(self: PageFaultErrorCode) callconv(.Inline) bool {
+        return self.value & PROTECTION_VIOLATION != 0;
+    }
 
     /// If this flag is set, the memory access that caused the page fault was a write.
     /// Else the access that caused the page fault is a memory read. This bit does not
     /// necessarily indicate the cause of the page fault was a read or write violation.
     pub const CAUSED_BY_WRITE: u64 = 1 << 1;
     pub const NOT_CAUSED_BY_WRITE: u64 = ~CAUSED_BY_WRITE;
+    pub fn isCAUSED_BY_WRITE(self: PageFaultErrorCode) callconv(.Inline) bool {
+        return self.value & CAUSED_BY_WRITE != 0;
+    }
 
     /// If this flag is set, an access in user mode (CPL=3) caused the page fault. Else
     /// an access in supervisor mode (CPL=0, 1, or 2) caused the page fault. This bit
     /// does not necessarily indicate the cause of the page fault was a privilege violation.
     pub const USER_MODE: u64 = 1 << 2;
     pub const NOT_USER_MODE: u64 = ~USER_MODE;
+    pub fn isUSER_MODE(self: PageFaultErrorCode) callconv(.Inline) bool {
+        return self.value & USER_MODE != 0;
+    }
 
     /// If this flag is set, the page fault is a result of the processor reading a 1 from
     /// a reserved field within a page-translation-table entry.
     pub const MALFORMED_TABLE: u64 = 1 << 3;
     pub const NOT_MALFORMED_TABLE: u64 = ~MALFORMED_TABLE;
+    pub fn isMALFORMED_TABLE(self: PageFaultErrorCode) callconv(.Inline) bool {
+        return self.value & MALFORMED_TABLE != 0;
+    }
 
     /// If this flag is set, it indicates that the access that caused the page fault was an
     /// instruction fetch.
     pub const INSTRUCTION_FETCH: u64 = 1 << 4;
     pub const NOT_INSTRUCTION_FETCH: u64 = ~INSTRUCTION_FETCH;
+    pub fn isINSTRUCTION_FETCH(self: PageFaultErrorCode) callconv(.Inline) bool {
+        return self.value & INSTRUCTION_FETCH != 0;
+    }
 
     pub fn format(value: PageFaultErrorCode, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         try writer.writeAll("PageFaultErrorCode(");
 
-        if (value.value & PROTECTION_VIOLATION != 0) {
+        if (value.isPROTECTION_VIOLATION()) {
             try writer.writeAll(" PROTECTION_VIOLATION ");
         } else {
             try writer.writeAll(" NOT_PRESENT ");
         }
 
-        if (value.value & MALFORMED_TABLE != 0) {
+        if (value.isMALFORMED_TABLE()) {
             try writer.writeAll("- MALFORMED_TABLE ");
         }
 
-        if (value.value & INSTRUCTION_FETCH != 0) {
+        if (value.isINSTRUCTION_FETCH()) {
             try writer.writeAll("- INSTRUCTION_FETCH ");
         }
 
-        if (value.value & CAUSED_BY_WRITE != 0) {
+        if (value.isCAUSED_BY_WRITE()) {
             try writer.writeAll("- WRITE ");
         } else {
             try writer.writeAll("- READ ");
         }
 
-        if (value.value & USER_MODE != 0) {
+        if (value.isUSER_MODE()) {
             try writer.writeAll("- USER ");
         } else {
             try writer.writeAll("- SUPER ");

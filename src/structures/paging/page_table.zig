@@ -19,27 +19,27 @@ pub const PageTableEntry = packed struct {
     entry: u64,
 
     /// Creates an unused page table entry.
-    pub fn init() PageTableEntry {
+    pub fn init() callconv(.Inline) PageTableEntry {
         return .{ .entry = 0 };
     }
 
     /// Returns whether this entry is zero.
-    pub fn isUnused(self: PageTableEntry) bool {
+    pub fn isUnused(self: PageTableEntry) callconv(.Inline) bool {
         return self.entry == 0;
     }
 
     /// Sets this entry to zero.
-    pub fn setUnused(self: *PageTableEntry) void {
+    pub fn setUnused(self: *PageTableEntry) callconv(.Inline) void {
         self.entry = 0;
     }
 
     /// Returns the flags of this entry.
-    pub fn getFlags(self: PageTableEntry) PageTableFlags {
+    pub fn getFlags(self: PageTableEntry) callconv(.Inline) PageTableFlags {
         return PageTableFlags.init(self.entry);
     }
 
     /// Returns the physical address mapped by this entry, might be zero.
-    pub fn getAddr(self: PageTableEntry) PhysAddr {
+    pub fn getAddr(self: PageTableEntry) callconv(.Inline) PhysAddr {
         // Unchecked is used as the mask ensures validity
         return PhysAddr.initUnchecked(self.entry & 0x000f_ffff_ffff_f000);
     }
@@ -80,7 +80,7 @@ pub const PageTableEntry = packed struct {
     // }
 
     /// Sets the flags of this entry.
-    pub fn setFlags(self: *PageTableEntry, flags: PageTableFlags) void {
+    pub fn setFlags(self: *PageTableEntry, flags: PageTableFlags) callconv(.Inline) void {
         self.entry = self.getAddr().value | flags.value;
     }
 
@@ -98,7 +98,7 @@ pub const PageTableEntry = packed struct {
 pub const PageTableFlags = struct {
     value: u64,
 
-    pub fn init(value: u64) PageTableFlags {
+    pub fn init(value: u64) callconv(.Inline) PageTableFlags {
         return .{ .value = value & ALL };
     }
 
@@ -111,6 +111,9 @@ pub const PageTableFlags = struct {
     /// Specifies whether the mapped frame or page table is loaded in memory.
     pub const PRESENT: u64 = 1;
     pub const NOT_PRESENT: u64 = ~PRESENT;
+    pub fn isPRESENT(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & PRESENT != 0;
+    }
 
     /// Controls whether writes to the mapped frames are allowed.
     ///
@@ -119,93 +122,159 @@ pub const PageTableFlags = struct {
     /// pages is read-only.
     pub const WRITABLE: u64 = 1 << 1;
     pub const NOT_WRITABLE: u64 = ~WRITABLE;
+    pub fn isWRITABLE(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & WRITABLE != 0;
+    }
 
     /// Controls whether accesses from userspace (i.e. ring 3) are permitted.
     pub const USER_ACCESSIBLE: u64 = 1 << 2;
     pub const NOT_USER_ACCESSIBLE: u64 = ~USER_ACCESSIBLE;
+    pub fn isUSER_ACCESSIBLE(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & USER_ACCESSIBLE != 0;
+    }
 
     /// If this bit is set, a “write-through” policy is used for the cache, else a “write-back”
     /// policy is used.
     pub const WRITE_THROUGH: u64 = 1 << 3;
     pub const NOT_WRITE_THROUGH: u64 = ~WRITE_THROUGH;
+    pub fn isWRITE_THROUGH(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & WRITE_THROUGH != 0;
+    }
 
     /// Disables caching for the pointed entry is cacheable.
     pub const NO_CACHE: u64 = 1 << 4;
     pub const NOT_NO_CACHE: u64 = ~NO_CACHE;
+    pub fn isNO_CACHE(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & NO_CACHE != 0;
+    }
 
     /// Set by the CPU when the mapped frame or page table is accessed.
     pub const ACCESSED: u64 = 1 << 5;
     pub const NOT_ACCESSED: u64 = ~ACCESSED;
+    pub fn isACCESSED(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & ACCESSED != 0;
+    }
 
     /// Set by the CPU on a write to the mapped frame.
     pub const DIRTY: u64 = 1 << 6;
     pub const NOT_DIRTY: u64 = ~DIRTY;
+    pub fn isDIRTY(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & DIRTY != 0;
+    }
 
     /// Specifies that the entry maps a huge frame instead of a page table. Only allowed in
     /// P2 or P3 tables.
     pub const HUGE_PAGE: u64 = 1 << 7;
     pub const NOT_HUGE_PAGE: u64 = ~HUGE_PAGE;
+    pub fn isHUGE_PAGE(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & HUGE_PAGE != 0;
+    }
 
     /// Indicates that the mapping is present in all address spaces, so it isn't flushed from
     /// the TLB on an address space switch.
     pub const GLOBAL: u64 = 1 << 8;
     pub const NOT_GLOBAL: u64 = ~GLOBAL;
+    pub fn isGLOBAL(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & GLOBAL != 0;
+    }
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
     pub const BIT_9: u64 = 1 << 9;
     pub const NOT_BIT_9: u64 = ~BIT_9;
+    pub fn isBIT_9(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & BIT_9 != 0;
+    }
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
     pub const BIT_10: u64 = 1 << 10;
     pub const NOT_BIT_10: u64 = ~BIT_10;
+    pub fn isBIT_10(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & BIT_10 != 0;
+    }
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
     pub const BIT_11: u64 = 1 << 11;
     pub const NOT_BIT_11: u64 = ~BIT_11;
+    pub fn isBIT_11(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & BIT_11 != 0;
+    }
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
     pub const BIT_52: u64 = 1 << 52;
     pub const NOT_BIT_52: u64 = ~BIT_52;
+    pub fn isBIT_52(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & BIT_52 != 0;
+    }
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
     pub const BIT_53: u64 = 1 << 53;
     pub const NOT_BIT_53: u64 = ~BIT_53;
+    pub fn isBIT_53(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & BIT_53 != 0;
+    }
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
     pub const BIT_54: u64 = 1 << 54;
     pub const NOT_BIT_54: u64 = ~BIT_54;
+    pub fn isBIT_54(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & BIT_54 != 0;
+    }
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
     pub const BIT_55: u64 = 1 << 55;
     pub const NOT_BIT_55: u64 = ~BIT_55;
+    pub fn isBIT_55(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & BIT_55 != 0;
+    }
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
     pub const BIT_56: u64 = 1 << 56;
     pub const NOT_BIT_56: u64 = ~BIT_56;
+    pub fn isBIT_56(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & BIT_56 != 0;
+    }
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
     pub const BIT_57: u64 = 1 << 57;
     pub const NOT_BIT_57: u64 = ~BIT_57;
+    pub fn isBIT_57(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & BIT_57 != 0;
+    }
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
     pub const BIT_58: u64 = 1 << 58;
     pub const NOT_BIT_58: u64 = ~BIT_58;
+    pub fn isBIT_58(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & BIT_58 != 0;
+    }
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
     pub const BIT_59: u64 = 1 << 59;
     pub const NOT_BIT_59: u64 = ~BIT_59;
+    pub fn isBIT_59(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & BIT_59 != 0;
+    }
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
     pub const BIT_60: u64 = 1 << 60;
     pub const NOT_BIT_60: u64 = ~BIT_60;
+    pub fn isBIT_60(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & BIT_60 != 0;
+    }
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
     pub const BIT_61: u64 = 1 << 61;
     pub const NOT_BIT_61: u64 = ~BIT_61;
+    pub fn isBIT_61(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & BIT_61 != 0;
+    }
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
     pub const BIT_62: u64 = 1 << 62;
     pub const NOT_BIT_62: u64 = ~BIT_62;
+    pub fn isBIT_62(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & BIT_62 != 0;
+    }
 
     /// Forbid code execution from the mapped frames.
     ///
@@ -213,13 +282,16 @@ pub const PageTableFlags = struct {
     /// register.
     pub const NO_EXECUTE: u64 = 1 << 63;
     pub const NOT_NO_EXECUTE: u64 = ~NO_EXECUTE;
+    pub fn isNO_EXECUTE(self: PageTableFlags) callconv(.Inline) bool {
+        return self.value & NO_EXECUTE != 0;
+    }
 
     pub fn format(value: PageTableFlags, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         try writer.writeAll("PageTableFlags(");
 
         var something = false;
 
-        if (value.value & PRESENT != 0) {
+        if (value.isPRESENT()) {
             try writer.writeAll(" PRESENT ");
             something = true;
         } else {
@@ -227,47 +299,47 @@ pub const PageTableFlags = struct {
             something = true;
         }
 
-        if (value.value & WRITABLE != 0) {
+        if (value.isWRITABLE()) {
             try writer.writeAll("- WRITEABLE ");
             something = true;
         }
 
-        if (value.value & USER_ACCESSIBLE != 0) {
+        if (value.isUSER_ACCESSIBLE()) {
             try writer.writeAll("- USER_ACCESSIBLE ");
             something = true;
         }
 
-        if (value.value & WRITE_THROUGH != 0) {
+        if (value.isWRITE_THROUGH()) {
             try writer.writeAll("- WRITE_THROUGH ");
             something = true;
         }
 
-        if (value.value & NO_CACHE != 0) {
+        if (value.isNO_CACHE()) {
             try writer.writeAll("- NO_CACHE ");
             something = true;
         }
 
-        if (value.value & ACCESSED != 0) {
+        if (value.isACCESSED()) {
             try writer.writeAll("- ACCESSED ");
             something = true;
         }
 
-        if (value.value & DIRTY != 0) {
+        if (value.isDIRTY()) {
             try writer.writeAll("- DIRTY ");
             something = true;
         }
 
-        if (value.value & HUGE_PAGE != 0) {
+        if (value.isHUGE_PAGE()) {
             try writer.writeAll("- HUGE_PAGE ");
             something = true;
         }
 
-        if (value.value & GLOBAL != 0) {
+        if (value.isGLOBAL()) {
             try writer.writeAll("- GLOBAL ");
             something = true;
         }
 
-        if (value.value & NO_EXECUTE != 0) {
+        if (value.isNO_CACHE()) {
             try writer.writeAll("- NO_EXECUTE ");
             something = true;
         }
@@ -304,7 +376,7 @@ pub const PageTable = extern struct {
         }
     }
 
-    pub fn getAtIndex(self: *PageTable, index: PageTableIndex) *PageTableEntry {
+    pub fn getAtIndex(self: *PageTable, index: PageTableIndex) callconv(.Inline) *PageTableEntry {
         return &self.entries[index.value];
     }
 
@@ -318,7 +390,7 @@ pub const PageTableIndex = struct {
     value: u9,
 
     /// Creates a new index from the given `u16`.
-    pub fn init(index: u9) PageTableIndex {
+    pub fn init(index: u9) callconv(.Inline) PageTableIndex {
         return .{ .value = index };
     }
 
@@ -336,7 +408,7 @@ pub const PageOffset = struct {
     value: u12,
 
     /// Creates a new offset from the given `u12`.
-    pub fn init(offset: u12) PageOffset {
+    pub fn init(offset: u12) callconv(.Inline) PageOffset {
         return .{ .value = offset };
     }
 

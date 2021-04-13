@@ -70,7 +70,7 @@ pub const SerialPort = struct {
     }
 
     /// Write a single char
-    fn writeChar(self: SerialPort, char: u8) callconv(.Inline) void {
+    fn writeChar(self: SerialPort, char: u8) void {
         // Prevent bad llvm optimization
         while (true) {
             if (self.line_status_port.read() & 0x20 != 0) break;

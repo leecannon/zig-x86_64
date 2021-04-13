@@ -16,7 +16,7 @@ pub const SegmentSelector = struct {
     }
 
     // Returns the GDT index.
-    pub fn getIndex(self: SegmentSelector) u16 {
+    pub fn getIndex(self: SegmentSelector) callconv(.Inline) u16 {
         return self.value >> 3;
     }
 
@@ -169,25 +169,25 @@ test "GlobalDescriptorTable" {
 
 /// Creates a segment descriptor for a 64-bit kernel code segment.
 /// Suitable for use with `syscall` or 64-bit `sysenter`.
-pub fn createKernelCodeSegment() Descriptor {
+pub fn createKernelCodeSegment() callconv(.Inline) Descriptor {
     return .{ .UserSegment = Descriptor.KERNEL_CODE64 };
 }
 
 /// Creates a segment descriptor for a ring 0 data segment (32-bit or 64-bit).
 /// Suitable for use with `syscall` or 64-bit `sysenter`.
-pub fn createKernelDataSegment() Descriptor {
+pub fn createKernelDataSegment() callconv(.Inline) Descriptor {
     return .{ .UserSegment = Descriptor.KERNEL_DATA };
 }
 
 /// Creates a segment descriptor for a ring 3 data segment (32-bit or 64-bit).
 /// Suitable for use with `sysret` or `sysexit`.
-pub fn createUserDataSegment() Descriptor {
+pub fn createUserDataSegment() callconv(.Inline) Descriptor {
     return .{ .UserSegment = Descriptor.USER_DATA };
 }
 
 /// Creates a segment descriptor for a 64-bit ring 3 code segment. #
 /// Suitable for use with `sysret` or `sysexit`.
-pub fn createUserCodeSegment() Descriptor {
+pub fn createUserCodeSegment() callconv(.Inline) Descriptor {
     return .{ .UserSegment = Descriptor.USER_CODE64 };
 }
 

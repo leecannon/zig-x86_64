@@ -27,14 +27,14 @@ fn Port(comptime portBitness: PortBitness) type {
 
         port: u16,
 
-        pub fn init(port: u16) Self {
+        pub fn init(port: u16) callconv(.Inline) Self {
             return .{
                 .port = port,
             };
         }
 
         /// Read from the port
-        pub fn read(self: Self) int_type {
+        pub fn read(self: Self) callconv(.Inline) int_type {
             return switch (portBitness) {
                 .u8 => instructions.port.readU8(self.port),
                 .u16 => instructions.port.readU16(self.port),
@@ -43,7 +43,7 @@ fn Port(comptime portBitness: PortBitness) type {
         }
 
         /// Write to the port
-        pub fn write(self: Self, value: int_type) void {
+        pub fn write(self: Self, value: int_type) callconv(.Inline) void {
             switch (portBitness) {
                 .u8 => instructions.port.writeU8(self.port, value),
                 .u16 => instructions.port.writeU16(self.port, value),

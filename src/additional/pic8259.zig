@@ -91,19 +91,19 @@ pub const SimplePic = struct {
         }
     }
 
-    pub fn rawGetPrimaryInterruptMask() PicPrimaryInterruptMask {
+    pub fn rawGetPrimaryInterruptMask() callconv(.Inline) PicPrimaryInterruptMask {
         return PicPrimaryInterruptMask.fromU8(PRIMARY_DATA_PORT.read());
     }
 
-    pub fn rawSetPrimaryInterruptMask(mask: PicPrimaryInterruptMask) void {
+    pub fn rawSetPrimaryInterruptMask(mask: PicPrimaryInterruptMask) callconv(.Inline) void {
         PRIMARY_DATA_PORT.write(mask.toU8());
     }
 
-    pub fn rawGetSecondaryInterruptMask() PicSecondaryInterruptMask {
+    pub fn rawGetSecondaryInterruptMask() callconv(.Inline) PicSecondaryInterruptMask {
         return PicSecondaryInterruptMask.fromU8(SECONDARY_DATA_PORT.read());
     }
 
-    pub fn rawSetSecondaryInterruptMask(mask: PicSecondaryInterruptMask) void {
+    pub fn rawSetSecondaryInterruptMask(mask: PicSecondaryInterruptMask) callconv(.Inline) void {
         SECONDARY_DATA_PORT.write(mask.toU8());
     }
 
