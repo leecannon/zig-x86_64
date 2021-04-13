@@ -413,19 +413,19 @@ pub const InterruptDescriptorTable = extern struct {
     }
 };
 
-pub const HandlerFunc = fn (interrupt_stack_frame: *InterruptStackFrame) callconv(.Interrupt) void;
+pub const HandlerFunc = fn (interrupt_stack_frame: InterruptStackFrame) callconv(.Interrupt) void;
 pub const HandlerFuncEntry = Entry(HandlerFunc);
 
-pub const HandlerWithErrorCodeFunc = fn (interrupt_stack_frame: *InterruptStackFrame, error_code: u64) callconv(.Interrupt) void;
+pub const HandlerWithErrorCodeFunc = fn (interrupt_stack_frame: InterruptStackFrame, error_code: u64) callconv(.Interrupt) void;
 pub const HandlerWithErrorCodeFuncEntry = Entry(HandlerWithErrorCodeFunc);
 
-pub const PageFaultHandlerFunc = fn (interrupt_stack_frame: *InterruptStackFrame, error_code: PageFaultErrorCode) callconv(.Interrupt) void;
+pub const PageFaultHandlerFunc = fn (interrupt_stack_frame: InterruptStackFrame, error_code: PageFaultErrorCode) callconv(.Interrupt) void;
 pub const PageFaultHandlerFuncEntry = Entry(PageFaultHandlerFunc);
 
-pub const HandlerDivergingFunc = fn (interrupt_stack_frame: *InterruptStackFrame) callconv(.Interrupt) noreturn;
+pub const HandlerDivergingFunc = fn (interrupt_stack_frame: InterruptStackFrame) callconv(.Interrupt) noreturn;
 pub const HandlerDivergingFuncEntry = Entry(HandlerDivergingFunc);
 
-pub const HandlerDivergingWithErrorCodeFunc = fn (interrupt_stack_frame: *InterruptStackFrame, error_code: u64) callconv(.Interrupt) noreturn;
+pub const HandlerDivergingWithErrorCodeFunc = fn (interrupt_stack_frame: InterruptStackFrame, error_code: u64) callconv(.Interrupt) noreturn;
 pub const HandlerDivergingWithErrorCodeFuncEntry = Entry(HandlerDivergingWithErrorCodeFunc);
 
 fn Entry(comptime handler_type: type) type {
@@ -498,7 +498,7 @@ fn Entry(comptime handler_type: type) type {
     };
 }
 
-fn dummyFn(interrupt_stack_frame: *InterruptStackFrame) callconv(.Interrupt) void {}
+fn dummyFn(interrupt_stack_frame: InterruptStackFrame) callconv(.Interrupt) void {}
 
 test "Entry" {
     var a = HandlerFuncEntry.missing();
@@ -552,12 +552,30 @@ pub const EntryOptions = packed struct {
 
 /// Represents the interrupt stack frame pushed by the CPU on interrupt or exception entry.
 pub const InterruptStackFrame = extern struct {
-    /// The stack segment descriptor at the time of the interrupt (often zero in 64-bit mode).
+    /// This value points to the instruction that should be executed when the interrupt
+    /// handler returns. For most interrupts, this value points to the instruction immediately
+    /// following the last executed instruction. However, for some exceptions (e.g., page faults),
+    /// this value points to the faulting instruction, so that the instruction is restarted on
+    /// return.
     instruction_pointer: VirtAddr,
+
+    /// The code segment selector, padded with zeros.
     code_segment: u64,
+
+    /// The flags register before the interrupt handler was invoked.
     cpu_flags: u64,
+
+    /// The stack pointer at the time of the interrupt.
     stack_pointer: VirtAddr,
+
+    /// The stack segment descriptor at the time of the interrupt (often zero in 64-bit mode).
     stack_segment: u64,
+
+    /// `volatile` is used because LLVM optimizations remove non-volatile
+    /// modifications of the interrupt stack frame.
+    pub fn asMut(self: *const InterruptStackFrame) *volatile InterruptStackFrame {
+        return @intToPtr(*volatile InterruptStackFrame, @ptrToInt(self));
+    }
 
     pub fn format(value: InterruptStackFrame, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         try writer.print(

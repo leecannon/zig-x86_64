@@ -1,6 +1,9 @@
 /// Functions to read and write control registers.
 pub const control = @import("control.zig");
 
+/// Access to various extended system registers
+pub const xcontrol = @import("xcontrol.zig");
+
 /// Processor state stored in the RFLAGS register.
 pub const RFlags = @import("rflags.zig").RFlags;
 
