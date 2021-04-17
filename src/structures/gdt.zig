@@ -9,7 +9,7 @@ pub const SegmentSelector = struct {
     value: u16,
 
     /// Creates a new SegmentSelector
-    pub fn init(index: u16, rpl: PrivilegeLevel) SegmentSelector {
+    pub fn init(index: u16, rpl: x86_64.PrivilegeLevel) SegmentSelector {
         return .{
             .value = index << 3 | @as(u16, @enumToInt(rpl)),
         };
@@ -21,18 +21,18 @@ pub const SegmentSelector = struct {
     }
 
     /// Set the privilege level for this Segment selector.
-    pub fn setRpl(self: *SegmentSelector, rpl: PrivilegeLevel) void {
+    pub fn setRpl(self: *SegmentSelector, rpl: x86_64.PrivilegeLevel) void {
         setBits(&self.value, 0, 2, @as(u16, @enumToInt(rpl)));
     }
 
     /// Returns the requested privilege level.
     /// Returns `error.InvalidPrivilegeLevel` if the privledge level bits are out of range of the `PrivilegeLevel` enum
-    pub fn getRpl(self: SegmentSelector) error{InvalidPrivilegeLevel}!PrivilegeLevel {
+    pub fn getRpl(self: SegmentSelector) error{InvalidPrivilegeLevel}!x86_64.PrivilegeLevel {
         switch (getBits(self.value, 0, 2)) {
-            0 => return PrivilegeLevel.Ring0,
-            1 => return PrivilegeLevel.Ring1,
-            2 => return PrivilegeLevel.Ring2,
-            3 => return PrivilegeLevel.Ring3,
+            0 => return x86_64.PrivilegeLevel.Ring0,
+            1 => return x86_64.PrivilegeLevel.Ring1,
+            2 => return x86_64.PrivilegeLevel.Ring2,
+            3 => return x86_64.PrivilegeLevel.Ring3,
             else => return error.InvalidPrivilegeLevel,
         }
     }
@@ -41,8 +41,8 @@ pub const SegmentSelector = struct {
     ///
     /// ## Panic
     /// Will panic if the privledge level bits are out of range of the `PrivilegeLevel` enum
-    pub fn getRplPanic(self: SegmentSelector) PrivilegeLevel {
-        return @intToEnum(PrivilegeLevel, @truncate(u8, getBits(self.value, 0, 2)));
+    pub fn getRplPanic(self: SegmentSelector) x86_64.PrivilegeLevel {
+        return @intToEnum(x86_64.PrivilegeLevel, @truncate(u8, getBits(self.value, 0, 2)));
     }
 
     pub fn format(value: SegmentSelector, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
@@ -57,10 +57,10 @@ pub const SegmentSelector = struct {
 test "SegmentSelector" {
     var a = SegmentSelector.init(1, .Ring0);
     std.testing.expectEqual(@as(u16, 1), a.getIndex());
-    std.testing.expectEqual(PrivilegeLevel.Ring0, try a.getRpl());
+    std.testing.expectEqual(x86_64.PrivilegeLevel.Ring0, try a.getRpl());
     a.setRpl(.Ring3);
     std.testing.expectEqual(@as(u16, 1), a.getIndex());
-    std.testing.expectEqual(PrivilegeLevel.Ring3, try a.getRpl());
+    std.testing.expectEqual(x86_64.PrivilegeLevel.Ring3, try a.getRpl());
 }
 
 /// A 64-bit mode global descriptor table (GDT).
@@ -120,13 +120,13 @@ pub const GlobalDescriptorTable = struct {
     pub fn addEntry(self: *GlobalDescriptorTable, entry: Descriptor) SegmentSelector {
         switch (entry) {
             .UserSegment => |value| {
-                const rpl = if (value & Descriptor.DPL_RING_3 != 0) PrivilegeLevel.Ring3 else PrivilegeLevel.Ring0;
+                const rpl = if (value & Descriptor.DPL_RING_3 != 0) x86_64.PrivilegeLevel.Ring3 else x86_64.PrivilegeLevel.Ring0;
                 return SegmentSelector.init(self.push(value), rpl);
             },
             .SystemSegment => |systemSegmentData| {
                 const index = self.push(systemSegmentData.low);
                 _ = self.push(systemSegmentData.high);
-                return SegmentSelector.init(index, PrivilegeLevel.Ring0);
+                return SegmentSelector.init(index, x86_64.PrivilegeLevel.Ring0);
             },
         }
     }
@@ -136,12 +136,12 @@ pub const GlobalDescriptorTable = struct {
     /// This does **not** alter any of the segment registers; you **must** (re)load them yourself using the appropriate functions:
     /// `instructions.segmentation.loadSs`, `instructions.segmentation.setCs`
     pub fn load(self: *GlobalDescriptorTable) void {
-        const ptr = structures.DescriptorTablePointer{
-            .base = VirtAddr.fromPtr(&self.table),
+        const ptr = x86_64.structures.DescriptorTablePointer{
+            .base = x86_64.VirtAddr.fromPtr(&self.table),
             .limit = @as(u16, self.next_free * @sizeOf(u64) - 1),
         };
 
-        instructions.tables.lgdt(&ptr);
+        x86_64.instructions.tables.lgdt(&ptr);
     }
 
     fn push(self: *GlobalDescriptorTable, value: u64) u16 {
@@ -192,7 +192,7 @@ pub fn createUserCodeSegment() callconv(.Inline) Descriptor {
 }
 
 /// Creates a TSS system descriptor for the given TSS.
-pub fn tssSegment(tss: *structures.tss.TaskStateSegment) Descriptor {
+pub fn tssSegment(tss: *x86_64.structures.tss.TaskStateSegment) Descriptor {
     const ptr = @ptrToInt(tss);
 
     var low = Descriptor.PRESENT;
@@ -202,7 +202,7 @@ pub fn tssSegment(tss: *structures.tss.TaskStateSegment) Descriptor {
     setBits(&low, 56, 64, getBits(ptr, 24, 32));
 
     // limit (the `-1` in needed since the bound is inclusive)
-    setBits(&low, 0, 16, @as(u64, @sizeOf(structures.tss.TaskStateSegment) - 1));
+    setBits(&low, 0, 16, @as(u64, @sizeOf(x86_64.structures.tss.TaskStateSegment) - 1));
 
     // type (0b1001 = available 64-bit tss)
     setBits(&low, 40, 44, 0b1001);

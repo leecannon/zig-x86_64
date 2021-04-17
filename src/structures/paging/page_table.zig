@@ -1,6 +1,6 @@
 usingnamespace @import("../../common.zig");
 
-const PageSize = structures.paging.PageSize;
+const PageSize = x86_64.structures.paging.PageSize;
 
 /// The number of entries in a page table.
 pub const PAGE_TABLE_ENTRY_COUNT: usize = 512;
@@ -39,9 +39,9 @@ pub const PageTableEntry = packed struct {
     }
 
     /// Returns the physical address mapped by this entry, might be zero.
-    pub fn getAddr(self: PageTableEntry) callconv(.Inline) PhysAddr {
+    pub fn getAddr(self: PageTableEntry) callconv(.Inline) x86_64.PhysAddr {
         // Unchecked is used as the mask ensures validity
-        return PhysAddr.initUnchecked(self.entry & 0x000f_ffff_ffff_f000);
+        return x86_64.PhysAddr.initUnchecked(self.entry & 0x000f_ffff_ffff_f000);
     }
 
     /// Returns the physical frame mapped by this entry.
@@ -51,7 +51,7 @@ pub const PageTableEntry = packed struct {
     /// - `FrameError::FrameNotPresent` if the entry doesn't have the `present` flag set.
     /// - `FrameError::HugeFrame` if the entry has the `huge_page` flag set (for huge pages the
     ///    `addr` function must be used)
-    pub fn getFrame(self: PageTableEntry) FrameError!structures.paging.PhysFrame {
+    pub fn getFrame(self: PageTableEntry) FrameError!x86_64.structures.paging.PhysFrame {
         const flags = self.getFlags();
 
         if (flags.value & PageTableFlags.PRESENT == 0) {
@@ -62,18 +62,18 @@ pub const PageTableEntry = packed struct {
             return FrameError.HugeFrame;
         }
 
-        return structures.paging.PhysFrame.containingAddress(self.getAddr());
+        return x86_64.structures.paging.PhysFrame.containingAddress(self.getAddr());
     }
 
     /// Map the entry to the specified physical address
-    pub fn setAddr(self: *PageTableEntry, addr: PhysAddr) void {
+    pub fn setAddr(self: *PageTableEntry, addr: x86_64.PhysAddr) void {
         std.debug.assert(addr.isAligned(PageSize.Size4KiB.bytes()));
         self.entry = addr.value | self.getFlags().value;
     }
 
     // TODO: implement this over comptime PageSize
     // Map the entry to the specified physical frame with the specified flags.
-    // pub fn setFrame(self: *PageTableEntry, frame: structures.paging.PhysFrame, flags: PageTableFlags) void {
+    // pub fn setFrame(self: *PageTableEntry, frame: x86_64.structures.paging.PhysFrame, flags: PageTableFlags) void {
     //     std.debug.assert(self.getFlags().value & PageTableFlags.HUGE_PAGE == 0);
     //     self.setAddr(frame.start_address);
     //     self.setFlags(flags);

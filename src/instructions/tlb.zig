@@ -1,7 +1,7 @@
 usingnamespace @import("../common.zig");
 
 /// Invalidate the given address in the TLB using the `invlpg` instruction.
-pub fn flush(addr: VirtAddr) callconv(.Inline) void {
+pub fn flush(addr: x86_64.VirtAddr) callconv(.Inline) void {
     asm volatile ("invlpg (%[addr])"
         :
         : [addr] "r" (addr.value)
@@ -11,12 +11,12 @@ pub fn flush(addr: VirtAddr) callconv(.Inline) void {
 
 /// Invalidate the TLB completely by reloading the CR3 register.
 pub fn flushAll() callconv(.Inline) void {
-    registers.control.Cr3.write(registers.control.Cr3.read());
+    x86_64.registers.control.Cr3.write(x86_64.registers.control.Cr3.read());
 }
 
 /// The Invalidate PCID Command to execute.
 pub const InvPicCommand = union(enum) {
-    pub const AddressCommand = struct { virtAddr: VirtAddr, pcid: Pcid };
+    pub const AddressCommand = struct { virtAddr: x86_64.VirtAddr, pcid: Pcid };
 
     /// The logical processor invalidates mappings—except global translations—for the linear address and PCID specified.
     address: AddressCommand,

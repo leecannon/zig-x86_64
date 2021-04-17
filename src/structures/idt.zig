@@ -372,12 +372,12 @@ pub const InterruptDescriptorTable = extern struct {
 
     /// Loads the IDT in the CPU using the `lidt` command.
     pub fn load(self: *InterruptDescriptorTable) void {
-        const ptr = structures.DescriptorTablePointer{
-            .base = VirtAddr.fromPtr(self),
+        const ptr = x86_64.structures.DescriptorTablePointer{
+            .base = x86_64.VirtAddr.fromPtr(self),
             .limit = @as(u16, @sizeOf(InterruptDescriptorTable) - 1),
         };
 
-        instructions.tables.lidt(&ptr);
+        x86_64.instructions.tables.lidt(&ptr);
     }
 
     /// Returns the IDT entry with the specified index.
@@ -472,7 +472,7 @@ fn Entry(comptime handler_type: type) type {
             self.pointer_middle = @truncate(u16, (addr >> 16));
             self.pointer_high = @truncate(u32, (addr >> 32));
 
-            self.gdt_selector = instructions.segmentation.getCs().value;
+            self.gdt_selector = x86_64.instructions.segmentation.getCs().value;
 
             self.options.setPresent(true);
         }
@@ -527,7 +527,7 @@ pub const EntryOptions = packed struct {
 
     /// Set the required privilege level (DPL) for invoking the handler. The DPL can be 0, 1, 2,
     /// or 3, the default is 0. If CPL < DPL, a general protection fault occurs.
-    pub fn setPrivledgeLevel(self: *EntryOptions, dpl: PrivilegeLevel) void {
+    pub fn setPrivledgeLevel(self: *EntryOptions, dpl: x86_64.PrivilegeLevel) void {
         setBits(&self.value, 13, 15, @as(u16, @enumToInt(dpl)));
     }
 
@@ -557,7 +557,7 @@ pub const InterruptStackFrame = extern struct {
     /// following the last executed instruction. However, for some exceptions (e.g., page faults),
     /// this value points to the faulting instruction, so that the instruction is restarted on
     /// return.
-    instruction_pointer: VirtAddr,
+    instruction_pointer: x86_64.VirtAddr,
 
     /// The code segment selector, padded with zeros.
     code_segment: u64,
@@ -566,7 +566,7 @@ pub const InterruptStackFrame = extern struct {
     cpu_flags: u64,
 
     /// The stack pointer at the time of the interrupt.
-    stack_pointer: VirtAddr,
+    stack_pointer: x86_64.VirtAddr,
 
     /// The stack segment descriptor at the time of the interrupt (often zero in 64-bit mode).
     stack_segment: u64,

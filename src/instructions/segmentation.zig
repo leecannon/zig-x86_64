@@ -6,7 +6,7 @@ usingnamespace @import("../common.zig");
 /// to %cs. Instead we push the new segment selector
 /// and return value on the stack and use lretq
 /// to reload cs and continue at 1:.
-pub fn setCs(sel: structures.gdt.SegmentSelector) void {
+pub fn setCs(sel: x86_64.structures.gdt.SegmentSelector) void {
     asm volatile ("pushq %[sel]; leaq 1f(%%rip), %%rax; pushq %%rax; lretq; 1:"
         :
         : [sel] "ri" (@as(u64, sel.value))
@@ -15,7 +15,7 @@ pub fn setCs(sel: structures.gdt.SegmentSelector) void {
 }
 
 /// Reload stack segment register.
-pub fn loadSs(sel: structures.gdt.SegmentSelector) callconv(.Inline) void {
+pub fn loadSs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void {
     asm volatile ("movw %[sel], %%ss"
         :
         : [sel] "r" (sel.value)
@@ -24,7 +24,7 @@ pub fn loadSs(sel: structures.gdt.SegmentSelector) callconv(.Inline) void {
 }
 
 /// Reload data segment register.
-pub fn loadDs(sel: structures.gdt.SegmentSelector) callconv(.Inline) void {
+pub fn loadDs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void {
     asm volatile ("movw %[sel], %%ds"
         :
         : [sel] "r" (sel.value)
@@ -33,7 +33,7 @@ pub fn loadDs(sel: structures.gdt.SegmentSelector) callconv(.Inline) void {
 }
 
 /// Reload es segment register.
-pub fn loadEs(sel: structures.gdt.SegmentSelector) callconv(.Inline) void {
+pub fn loadEs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void {
     asm volatile ("movw %[sel], %%es"
         :
         : [sel] "r" (sel.value)
@@ -42,7 +42,7 @@ pub fn loadEs(sel: structures.gdt.SegmentSelector) callconv(.Inline) void {
 }
 
 /// Reload fs segment register.
-pub fn loadFs(sel: structures.gdt.SegmentSelector) callconv(.Inline) void {
+pub fn loadFs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void {
     asm volatile ("movw %[sel], %%fs"
         :
         : [sel] "r" (sel.value)
@@ -51,7 +51,7 @@ pub fn loadFs(sel: structures.gdt.SegmentSelector) callconv(.Inline) void {
 }
 
 /// Reload gs segment register.
-pub fn loadGs(sel: structures.gdt.SegmentSelector) callconv(.Inline) void {
+pub fn loadGs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void {
     asm volatile ("movw %[sel], %%gs"
         :
         : [sel] "r" (sel.value)
@@ -65,7 +65,7 @@ pub fn swapGs() callconv(.Inline) void {
 }
 
 /// Returns the current value of the code segment register.
-pub fn getCs() callconv(.Inline) structures.gdt.SegmentSelector {
+pub fn getCs() callconv(.Inline) x86_64.structures.gdt.SegmentSelector {
     return .{
         .value = asm ("mov %%cs, %[ret]"
             : [ret] "=r" (-> u16)

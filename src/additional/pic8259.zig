@@ -1,6 +1,6 @@
 usingnamespace @import("../common.zig");
 
-const port = structures.port.Portu8;
+const port = x86_64.structures.port.Portu8;
 
 /// Command sent to begin PIC initialization.
 const CMD_INIT: u8 = 0x11;

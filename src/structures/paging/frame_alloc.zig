@@ -1,6 +1,6 @@
 usingnamespace @import("../../common.zig");
 
-const paging = structures.paging;
+const paging = x86_64.structures.paging;
 
 pub const FrameAllocator = struct {
     z_impl_allocateFrame: fn (frameAllocator: *FrameAllocator) ?paging.PhysFrame,

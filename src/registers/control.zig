@@ -129,9 +129,9 @@ pub const Cr0 = struct {
 /// When page fault occurs, the CPU sets this register to the accessed address.
 pub const Cr2 = struct {
     /// Read the current page fault linear address from the CR2 register.
-    pub fn read() callconv(.Inline) VirtAddr {
+    pub fn read() callconv(.Inline) x86_64.VirtAddr {
         // We can use unchecked as this virtual address is set by the CPU itself
-        return VirtAddr.initUnchecked(asm ("mov %%cr2, %[ret]"
+        return x86_64.VirtAddr.initUnchecked(asm ("mov %%cr2, %[ret]"
             : [ret] "=r" (-> u64)
         ));
     }
@@ -173,13 +173,13 @@ pub const Cr3Flags = struct {
 /// Contains the physical address of the level 4 page table.
 pub const Cr3 = struct {
     pub const Contents = struct {
-        physFrame: structures.paging.PhysFrame,
+        physFrame: x86_64.structures.paging.PhysFrame,
         cr3Flags: Cr3Flags,
     };
 
     pub const PcidContents = struct {
-        physFrame: structures.paging.PhysFrame,
-        pcid: instructions.tlb.Pcid,
+        physFrame: x86_64.structures.paging.PhysFrame,
+        pcid: x86_64.instructions.tlb.Pcid,
     };
 
     /// Read the current P4 table address from the CR3 register.
@@ -187,9 +187,9 @@ pub const Cr3 = struct {
         const value = readRaw();
 
         return .{
-            .physFrame = structures.paging.PhysFrame.containingAddress(
+            .physFrame = x86_64.structures.paging.PhysFrame.containingAddress(
                 // unchecked is fine as the mask ensures validity
-                PhysAddr.initUnchecked(value & 0x000f_ffff_ffff_f000),
+                x86_64.PhysAddr.initUnchecked(value & 0x000f_ffff_ffff_f000),
             ),
             .cr3Flags = .{
                 .value = value & Cr3Flags.ALL,
@@ -211,11 +211,11 @@ pub const Cr3 = struct {
         const value = readRaw();
 
         return .{
-            .physFrame = structures.paging.PhysFrame.containingAddress(
+            .physFrame = x86_64.structures.paging.PhysFrame.containingAddress(
                 // unchecked is fine as the mask ensures validity
-                PhysAddr.initUnchecked(value & 0x000f_ffff_ffff_f000),
+                x86_64.PhysAddr.initUnchecked(value & 0x000f_ffff_ffff_f000),
             ),
-            .pcid = instructions.tlb.Pcid.init(@truncate(u12, value & 0xFFF)),
+            .pcid = x86_64.instructions.tlb.Pcid.init(@truncate(u12, value & 0xFFF)),
         };
     }
 
@@ -316,7 +316,7 @@ pub const Cr4 = struct {
         return self.value & TIMESTAMP_DISABLE != 0;
     }
 
-    /// Enables I/O breakpoint capability and enforces treatment of DR4 and DR5 registers
+    /// Enables I/O breakpoint capability and enforces treatment of DR4 and DR5 x86_64.registers
     /// as reserved.
     pub const DEBUGGING_EXTENSIONS: u64 = 1 << 3;
     pub const NOT_DEBUGGING_EXTENSIONS: u64 = ~DEBUGGING_EXTENSIONS;

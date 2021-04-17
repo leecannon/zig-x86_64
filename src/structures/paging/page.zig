@@ -1,6 +1,6 @@
 usingnamespace @import("../../common.zig");
 
-const PageTableIndex = structures.paging.PageTableIndex;
+const PageTableIndex = x86_64.structures.paging.PageTableIndex;
 
 const SIZE_4KiB_STR: []const u8 = "4KiB";
 const SIZE_2MiB_STR: []const u8 = "2MiB";
@@ -48,12 +48,12 @@ pub fn CreatePage(comptime page_size: PageSize) type {
         const Self = @This();
         const bytes: u64 = page_size.bytes();
 
-        start_address: VirtAddr,
+        start_address: x86_64.VirtAddr,
 
         /// Returns the page that starts at the given virtual address.
         ///
         /// Returns an error if the address is not correctly aligned (i.e. is not a valid page start).
-        pub fn fromStartAddress(address: VirtAddr) PageError!Self {
+        pub fn fromStartAddress(address: x86_64.VirtAddr) PageError!Self {
             if (!address.isAligned(page_size.bytes())) {
                 return PageError.AddressNotAligned;
             }
@@ -61,12 +61,12 @@ pub fn CreatePage(comptime page_size: PageSize) type {
         }
 
         /// Returns the page that starts at the given virtual address.
-        pub fn fromStartAddressUnchecked(address: VirtAddr) callconv(.Inline) Self {
+        pub fn fromStartAddressUnchecked(address: x86_64.VirtAddr) callconv(.Inline) Self {
             return .{ .start_address = address };
         }
 
         /// Returns the page that contains the given virtual address.
-        pub fn containingAddress(address: VirtAddr) Self {
+        pub fn containingAddress(address: x86_64.VirtAddr) Self {
             return .{ .start_address = address.alignDown(page_size.bytes()) };
         }
 
@@ -118,7 +118,7 @@ pub fn pageFromTableIndices1gib(p4_index: PageTableIndex, p3_index: PageTableInd
     var addr: u64 = 0;
     setBits(&addr, 39, 48, @as(u64, p4_index.value));
     setBits(&addr, 30, 39, @as(u64, p3_index.value));
-    return Page1GiB.containingAddress(VirtAddr.initPanic(addr));
+    return Page1GiB.containingAddress(x86_64.VirtAddr.initPanic(addr));
 }
 
 /// Returns the 2MiB memory page with the specified page table indices.
@@ -127,7 +127,7 @@ pub fn pageFromTableIndices2mib(p4_index: PageTableIndex, p3_index: PageTableInd
     setBits(&addr, 39, 48, @as(u64, p4_index.value));
     setBits(&addr, 30, 39, @as(u64, p3_index.value));
     setBits(&addr, 21, 30, @as(u64, p2_index.value));
-    return Page2MiB.containingAddress(VirtAddr.initPanic(addr));
+    return Page2MiB.containingAddress(x86_64.VirtAddr.initPanic(addr));
 }
 
 /// Returns the 4KiB memory page p4_index the specified page table indices.
@@ -137,7 +137,7 @@ pub fn pageFromTableIndices(p4_index: PageTableIndex, p3_index: PageTableIndex, 
     setBits(&addr, 30, 39, @as(u64, p3_index.value));
     setBits(&addr, 21, 30, @as(u64, p2_index.value));
     setBits(&addr, 12, 21, @as(u64, p1_index.value));
-    return Page.containingAddress(VirtAddr.initPanic(addr));
+    return Page.containingAddress(x86_64.VirtAddr.initPanic(addr));
 }
 
 /// An range of pages, exclusive the upper bound. Page size 4 KiB
@@ -216,7 +216,7 @@ fn CreatePageRangeInclusive(comptime page_type: type) type {
         pub fn next(self: *Self) ?page_type {
             if (self.start.start_address.value <= self.end.start_address.value) {
                 const page = self.start;
-                self.start = page_type.containingAddress(VirtAddr{ .value = self.start.start_address.value + page_type.bytes });
+                self.start = page_type.containingAddress(x86_64.VirtAddr{ .value = self.start.start_address.value + page_type.bytes });
                 return page;
             }
             return null;
@@ -270,11 +270,11 @@ fn CreatePageIterator(comptime page_type: type) type {
 }
 
 test "PageIterator" {
-    var virtAddrA = VirtAddr.initPanic(0x00000FFFFFFF0000);
-    virtAddrA = virtAddrA.alignDown(structures.paging.PageSize.Size4KiB.bytes());
+    var virtAddrA = x86_64.VirtAddr.initPanic(0x00000FFFFFFF0000);
+    virtAddrA = virtAddrA.alignDown(x86_64.structures.paging.PageSize.Size4KiB.bytes());
 
-    var virtAddrB = VirtAddr.initPanic(0x00000FFFFFFFFFFF);
-    virtAddrB = virtAddrB.alignDown(structures.paging.PageSize.Size4KiB.bytes());
+    var virtAddrB = x86_64.VirtAddr.initPanic(0x00000FFFFFFFFFFF);
+    virtAddrB = virtAddrB.alignDown(x86_64.structures.paging.PageSize.Size4KiB.bytes());
 
     const a = try Page.fromStartAddress(virtAddrA);
     const b = try Page.fromStartAddress(virtAddrB);

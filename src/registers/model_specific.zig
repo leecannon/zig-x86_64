@@ -103,13 +103,13 @@ pub const FsBase = struct {
     const REGISTER = Msr(0xC000_0100);
 
     /// Read the current FsBase register.
-    pub fn read() callconv(.Inline) VirtAddr {
+    pub fn read() callconv(.Inline) x86_64.VirtAddr {
         // We use unchecked here as we assume that the write function did not write an invalid address
-        return VirtAddr.initUnchecked(REGISTER.read());
+        return x86_64.VirtAddr.initUnchecked(REGISTER.read());
     }
 
     /// Write a given virtual address to the FS.Base register.
-    pub fn write(addr: VirtAddr) callconv(.Inline) void {
+    pub fn write(addr: x86_64.VirtAddr) callconv(.Inline) void {
         REGISTER.write(addr.value);
     }
 
@@ -123,13 +123,13 @@ pub const GsBase = struct {
     const REGISTER = Msr(0xC000_0101);
 
     /// Read the current GsBase register.
-    pub fn read() callconv(.Inline) VirtAddr {
+    pub fn read() callconv(.Inline) x86_64.VirtAddr {
         // We use unchecked here as we assume that the write function did not write an invalid address
-        return VirtAddr.initUnchecked(REGISTER.read());
+        return x86_64.VirtAddr.initUnchecked(REGISTER.read());
     }
 
     /// Write a given virtual address to the GS.Base register.
-    pub fn write(addr: VirtAddr) callconv(.Inline) void {
+    pub fn write(addr: x86_64.VirtAddr) callconv(.Inline) void {
         REGISTER.write(addr.value);
     }
 
@@ -143,13 +143,13 @@ pub const KernelGsBase = struct {
     const REGISTER = Msr(0xC000_0102);
 
     /// Read the current KernelGsBase register.
-    pub fn read() callconv(.Inline) VirtAddr {
+    pub fn read() callconv(.Inline) x86_64.VirtAddr {
         // We use unchecked here as we assume that the write function did not write an invalid address
-        return VirtAddr.initUnchecked(REGISTER.read());
+        return x86_64.VirtAddr.initUnchecked(REGISTER.read());
     }
 
     /// Write a given virtual address to the KernelGsBase register.
-    pub fn write(addr: VirtAddr) callconv(.Inline) void {
+    pub fn write(addr: x86_64.VirtAddr) callconv(.Inline) void {
         REGISTER.write(addr.value);
     }
 
@@ -160,10 +160,10 @@ pub const KernelGsBase = struct {
 
 /// Syscall Register: STAR
 pub const Star = struct {
-    sysretCsSelector: structures.gdt.SegmentSelector,
-    sysretSsSelector: structures.gdt.SegmentSelector,
-    syscallCsSelector: structures.gdt.SegmentSelector,
-    syscallSsSelector: structures.gdt.SegmentSelector,
+    sysretCsSelector: x86_64.structures.gdt.SegmentSelector,
+    sysretSsSelector: x86_64.structures.gdt.SegmentSelector,
+    syscallCsSelector: x86_64.structures.gdt.SegmentSelector,
+    syscallSsSelector: x86_64.structures.gdt.SegmentSelector,
 
     const REGISTER = Msr(0xC000_0081);
 
@@ -260,14 +260,14 @@ pub const LStar = struct {
 
     /// Read the current LStar register.
     /// This holds the target RIP of a syscall.
-    pub fn read() callconv(.Inline) VirtAddr {
+    pub fn read() callconv(.Inline) x86_64.VirtAddr {
         // We use unchecked here as we assume that the write function did not write an invalid address
-        return VirtAddr.initUnchecked(REGISTER.read());
+        return x86_64.VirtAddr.initUnchecked(REGISTER.read());
     }
 
     /// Write a given virtual address to the LStar register.
     /// This holds the target RIP of a syscall.
-    pub fn write(addr: VirtAddr) callconv(.Inline) void {
+    pub fn write(addr: x86_64.VirtAddr) callconv(.Inline) void {
         REGISTER.write(addr.value);
     }
 
@@ -287,8 +287,8 @@ pub const SFMask = struct {
     /// executed. If a bit in SFMASK is set to 1, the corresponding
     /// bit in RFLAGS is cleared to 0. If a bit in SFMASK is cleared
     /// to 0, the corresponding rFLAGS bit is not modified.
-    pub fn read() callconv(.Inline) registers.RFlags {
-        return .{ .value = REGISTER.read() & registers.RFlags.ALL };
+    pub fn read() callconv(.Inline) x86_64.registers.RFlags {
+        return .{ .value = REGISTER.read() & x86_64.registers.RFlags.ALL };
     }
 
     /// Write to the SFMask register.
@@ -298,8 +298,8 @@ pub const SFMask = struct {
     /// executed. If a bit in SFMASK is set to 1, the corresponding
     /// bit in RFLAGS is cleared to 0. If a bit in SFMASK is cleared
     /// to 0, the corresponding rFLAGS bit is not modified.
-    pub fn write(value: registers.RFlags) callconv(.Inline) void {
-        REGISTER.write(value.value & registers.RFlags.ALL);
+    pub fn write(value: x86_64.registers.RFlags) callconv(.Inline) void {
+        REGISTER.write(value.value & x86_64.registers.RFlags.ALL);
     }
 
     comptime {

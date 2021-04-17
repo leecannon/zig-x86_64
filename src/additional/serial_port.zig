@@ -1,7 +1,7 @@
 usingnamespace @import("../common.zig");
 
-usingnamespace instructions.port;
-usingnamespace structures.port;
+const Portu8 = x86_64.structures.port.Portu8;
+const writeU8 = x86_64.instructions.port.writeU8;
 
 pub const COMPort = enum {
     COM1,

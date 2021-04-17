@@ -14,8 +14,8 @@ usingnamespace @import("../common.zig");
 
 /// Gets the current instruction pointer. Note that this is only approximate as it requires a few
 /// instructions to execute.
-pub fn readInstructionPointer() callconv(.Inline) VirtAddr {
-    return VirtAddr.initUnchecked(asm ("lea (%%rip), %[ret]"
+pub fn readInstructionPointer() callconv(.Inline) x86_64.VirtAddr {
+    return x86_64.VirtAddr.initUnchecked(asm ("lea (%%rip), %[ret]"
         : [ret] "=r" (-> u64)
     ));
 }

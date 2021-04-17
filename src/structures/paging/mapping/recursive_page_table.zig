@@ -1,22 +1,8 @@
 usingnamespace @import("../../../common.zig");
 
-const Mapper = paging.Mapper;
-const paging = structures.paging;
-
-pub const InvalidPageTable = error{
-    /// The given page table was not at an recursive address.
-    ///
-    /// The page table address must be of the form `0o_xxx_xxx_xxx_xxx_0000` where `xxx`
-    /// is the recursive entry.
-    NotRecursive,
-
-    /// The given page table was not active on the CPU.
-    ///
-    /// The recursive page table design requires that the given level 4 table is active
-    /// on the CPU because otherwise it's not possible to access the other page tables
-    /// through recursive memory addresses.
-    NotActive,
-};
+const paging = x86_64.structures.paging;
+const mapping = paging.mapping;
+const Mapper = mapping.Mapper;
 
 /// A recursive page table is a last level page table with an entry mapped to the table itself.
 ///
@@ -35,6 +21,21 @@ pub const InvalidPageTable = error{
 /// The page table flags `PRESENT` and `WRITABLE` are always set for higher level page table
 /// entries, even if not specified, because the design of the recursive page table requires it.
 pub const RecursivePageTable = struct {
+    pub const InvalidPageTable = error{
+        /// The given page table was not at an recursive address.
+        ///
+        /// The page table address must be of the form `0o_xxx_xxx_xxx_xxx_0000` where `xxx`
+        /// is the recursive entry.
+        NotRecursive,
+
+        /// The given page table was not active on the CPU.
+        ///
+        /// The recursive page table design requires that the given level 4 table is active
+        /// on the CPU because otherwise it's not possible to access the other page tables
+        /// through recursive memory addresses.
+        NotActive,
+    };
+
     mapper: Mapper,
     level_4_table: *paging.PageTable,
     recursive_index: paging.PageTableIndex,
@@ -51,7 +52,7 @@ pub const RecursivePageTable = struct {
     ///
     /// Otherwise a `RecursivePageTableCreationError` is returned.
     pub fn init(table: *paging.PageTable) InvalidPageTable!RecursivePageTable {
-        const page = paging.Page.containingAddress(VirtAddr.initPanic(@ptrToInt(table)));
+        const page = paging.Page.containingAddress(x86_64.VirtAddr.initPanic(@ptrToInt(table)));
         const recursive_index = page.p4Index();
         const recursive_index_value = recursive_index.value;
 
@@ -63,7 +64,7 @@ pub const RecursivePageTable = struct {
         }
 
         const recursive_index_frame = table.getAtIndex(recursive_index).getFrame() catch return InvalidPageTable.NotRecursive;
-        if (registers.control.Cr3.read().physFrame.start_address.value != recursive_index_frame.start_address.value) {
+        if (x86_64.registers.control.Cr3.read().physFrame.start_address.value != recursive_index_frame.start_address.value) {
             return InvalidPageTable.NotActive;
         }
 
@@ -100,7 +101,7 @@ pub const RecursivePageTable = struct {
         flags: paging.PageTableFlags,
         parent_table_flags: paging.PageTableFlags,
         frame_allocator: *paging.FrameAllocator,
-    ) paging.MapToError!paging.MapperFlush1GiB {
+    ) mapping.MapToError!mapping.MapperFlush1GiB {
         var self = getSelfPtr(mapper);
 
         const p3 = try createNextTable(
@@ -115,7 +116,7 @@ pub const RecursivePageTable = struct {
         );
 
         var entry = p3.getAtIndex(page.p3Index());
-        if (!entry.isUnused()) return paging.MapToError.PageAlreadyMapped;
+        if (!entry.isUnused()) return mapping.MapToError.PageAlreadyMapped;
 
         entry.setAddr(frame.start_address);
 
@@ -124,18 +125,18 @@ pub const RecursivePageTable = struct {
 
         entry.setFlags(new_flags);
 
-        return paging.MapperFlush1GiB.init(page);
+        return mapping.MapperFlush1GiB.init(page);
     }
 
     fn unmap1GiB(
         mapper: *Mapper,
         page: paging.Page1GiB,
-    ) paging.UnmapError!paging.UnmapResult1GiB {
+    ) mapping.UnmapError!mapping.UnmapResult1GiB {
         var self = getSelfPtr(mapper);
 
         _ = self.level_4_table.getAtIndex(page.p4Index()).getFrame() catch |err| switch (err) {
-            paging.FrameError.FrameNotPresent => return paging.UnmapError.PageNotMapped,
-            paging.FrameError.HugeFrame => return paging.UnmapError.ParentEntryHugePage,
+            paging.FrameError.FrameNotPresent => return mapping.UnmapError.PageNotMapped,
+            paging.FrameError.HugeFrame => return mapping.UnmapError.ParentEntryHugePage,
         };
 
         const p3 = p3Ptr(.Size1GiB, page, self.recursive_index);
@@ -143,16 +144,16 @@ pub const RecursivePageTable = struct {
         const p3_entry = p3.getAtIndex(page.p3Index());
         const flags = p3_entry.getFlags();
 
-        if (flags.value & paging.PageTableFlags.PRESENT == 0) return paging.UnmapError.PageNotMapped;
-        if (flags.value & paging.PageTableFlags.HUGE_PAGE == 0) return paging.UnmapError.ParentEntryHugePage;
+        if (flags.value & paging.PageTableFlags.PRESENT == 0) return mapping.UnmapError.PageNotMapped;
+        if (flags.value & paging.PageTableFlags.HUGE_PAGE == 0) return mapping.UnmapError.ParentEntryHugePage;
 
-        const frame = paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch |err| return paging.UnmapError.InvalidFrameAddress;
+        const frame = paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch |err| return mapping.UnmapError.InvalidFrameAddress;
 
         p3_entry.setUnused();
 
-        return paging.UnmapResult1GiB{
+        return mapping.UnmapResult1GiB{
             .frame = frame,
-            .flush = paging.MapperFlush1GiB.init(page),
+            .flush = mapping.MapperFlush1GiB.init(page),
         };
     }
 
@@ -160,57 +161,57 @@ pub const RecursivePageTable = struct {
         mapper: *Mapper,
         page: paging.Page1GiB,
         flags: paging.PageTableFlags,
-    ) paging.FlagUpdateError!paging.MapperFlush1GiB {
+    ) mapping.FlagUpdateError!mapping.MapperFlush1GiB {
         var self = getSelfPtr(mapper);
 
         if (self.level_4_table.getAtIndex(page.p4Index()).isUnused()) {
-            return paging.FlagUpdateError.PageNotMapped;
+            return mapping.FlagUpdateError.PageNotMapped;
         }
 
         const p3 = p3Ptr(.Size1GiB, page, self.recursive_index);
 
         var p3_entry = p3.getAtIndex(page.p3Index());
 
-        if (p3_entry.isUnused()) return paging.FlagUpdateError.PageNotMapped;
+        if (p3_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
 
         var new_flags = flags;
         new_flags.value |= paging.PageTableFlags.HUGE_PAGE;
         p3_entry.setFlags(new_flags);
 
-        return paging.MapperFlush1GiB.init(page);
+        return mapping.MapperFlush1GiB.init(page);
     }
 
     fn setFlagsP4Entry1GiB(
         mapper: *Mapper,
         page: paging.Page1GiB,
         flags: paging.PageTableFlags,
-    ) paging.FlagUpdateError!paging.MapperFlushAll {
+    ) mapping.FlagUpdateError!mapping.MapperFlushAll {
         var self = getSelfPtr(mapper);
 
         const p4_entry = self.level_4_table.getAtIndex(page.p4Index());
-        if (p4_entry.isUnused()) return paging.FlagUpdateError.PageNotMapped;
+        if (p4_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
 
         p4_entry.setFlags(flags);
-        return paging.MapperFlushAll{};
+        return mapping.MapperFlushAll{};
     }
 
     fn translatePage1GiB(
         mapper: *Mapper,
         page: paging.Page1GiB,
-    ) paging.TranslateError!paging.PhysFrame1GiB {
+    ) mapping.TranslateError!paging.PhysFrame1GiB {
         var self = getSelfPtr(mapper);
 
         if (self.level_4_table.getAtIndex(page.p4Index()).isUnused()) {
-            return paging.TranslateError.NotMapped;
+            return mapping.TranslateError.NotMapped;
         }
 
         const p3 = p3Ptr(.Size1GiB, page, self.recursive_index);
 
         const p3_entry = p3.getAtIndex(page.p3Index());
 
-        if (p3_entry.isUnused()) return paging.TranslateError.NotMapped;
+        if (p3_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
-        return paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch |err| return paging.TranslateError.InvalidFrameAddress;
+        return paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
     }
 
     fn mapToWithTableFlags2MiB(
@@ -220,7 +221,7 @@ pub const RecursivePageTable = struct {
         flags: paging.PageTableFlags,
         parent_table_flags: paging.PageTableFlags,
         frame_allocator: *paging.FrameAllocator,
-    ) paging.MapToError!paging.MapperFlush2MiB {
+    ) mapping.MapToError!mapping.MapperFlush2MiB {
         var self = getSelfPtr(mapper);
 
         const p3 = try createNextTable(
@@ -246,7 +247,7 @@ pub const RecursivePageTable = struct {
         );
 
         var entry = p2.getAtIndex(page.p2Index());
-        if (!entry.isUnused()) return paging.MapToError.PageAlreadyMapped;
+        if (!entry.isUnused()) return mapping.MapToError.PageAlreadyMapped;
 
         entry.setAddr(frame.start_address);
 
@@ -255,26 +256,26 @@ pub const RecursivePageTable = struct {
 
         entry.setFlags(new_flags);
 
-        return paging.MapperFlush2MiB.init(page);
+        return mapping.MapperFlush2MiB.init(page);
     }
 
     fn unmap2MiB(
         mapper: *Mapper,
         page: paging.Page2MiB,
-    ) paging.UnmapError!paging.UnmapResult2MiB {
+    ) mapping.UnmapError!mapping.UnmapResult2MiB {
         var self = getSelfPtr(mapper);
 
         _ = self.level_4_table.getAtIndex(page.p4Index()).getFrame() catch |err| switch (err) {
-            paging.FrameError.FrameNotPresent => return paging.UnmapError.PageNotMapped,
-            paging.FrameError.HugeFrame => return paging.UnmapError.ParentEntryHugePage,
+            paging.FrameError.FrameNotPresent => return mapping.UnmapError.PageNotMapped,
+            paging.FrameError.HugeFrame => return mapping.UnmapError.ParentEntryHugePage,
         };
 
         const p3 = p3Ptr(.Size2MiB, page, self.recursive_index);
         const p3_entry = p3.getAtIndex(page.p3Index());
 
         _ = p3_entry.getFrame() catch |err| switch (err) {
-            paging.FrameError.FrameNotPresent => return paging.UnmapError.PageNotMapped,
-            paging.FrameError.HugeFrame => return paging.UnmapError.ParentEntryHugePage,
+            paging.FrameError.FrameNotPresent => return mapping.UnmapError.PageNotMapped,
+            paging.FrameError.HugeFrame => return mapping.UnmapError.ParentEntryHugePage,
         };
 
         const p2 = p2Ptr(.Size2MiB, page, self.recursive_index);
@@ -282,16 +283,16 @@ pub const RecursivePageTable = struct {
         const p2_entry = p2.getAtIndex(page.p2Index());
         const flags = p2_entry.getFlags();
 
-        if (flags.value & paging.PageTableFlags.PRESENT == 0) return paging.UnmapError.PageNotMapped;
-        if (flags.value & paging.PageTableFlags.HUGE_PAGE == 0) return paging.UnmapError.ParentEntryHugePage;
+        if (flags.value & paging.PageTableFlags.PRESENT == 0) return mapping.UnmapError.PageNotMapped;
+        if (flags.value & paging.PageTableFlags.HUGE_PAGE == 0) return mapping.UnmapError.ParentEntryHugePage;
 
-        const frame = paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch |err| return paging.UnmapError.InvalidFrameAddress;
+        const frame = paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch |err| return mapping.UnmapError.InvalidFrameAddress;
 
         p2_entry.setUnused();
 
-        return paging.UnmapResult2MiB{
+        return mapping.UnmapResult2MiB{
             .frame = frame,
-            .flush = paging.MapperFlush2MiB.init(page),
+            .flush = mapping.MapperFlush2MiB.init(page),
         };
     }
 
@@ -299,87 +300,87 @@ pub const RecursivePageTable = struct {
         mapper: *Mapper,
         page: paging.Page2MiB,
         flags: paging.PageTableFlags,
-    ) paging.FlagUpdateError!paging.MapperFlush2MiB {
+    ) mapping.FlagUpdateError!mapping.MapperFlush2MiB {
         var self = getSelfPtr(mapper);
 
         if (self.level_4_table.getAtIndex(page.p4Index()).isUnused()) {
-            return paging.FlagUpdateError.PageNotMapped;
+            return mapping.FlagUpdateError.PageNotMapped;
         }
 
         const p3 = p3Ptr(.Size2MiB, page, self.recursive_index);
 
         var p3_entry = p3.getAtIndex(page.p3Index());
 
-        if (p3_entry.isUnused()) return paging.FlagUpdateError.PageNotMapped;
+        if (p3_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
 
         const p2 = p2Ptr(.Size2MiB, page, self.recursive_index);
 
         var p2_entry = p2.getAtIndex(page.p2Index());
 
-        if (p2_entry.isUnused()) return paging.FlagUpdateError.PageNotMapped;
+        if (p2_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
 
         var new_flags = flags;
         new_flags.value |= paging.PageTableFlags.HUGE_PAGE;
         p2_entry.setFlags(new_flags);
 
-        return paging.MapperFlush2MiB.init(page);
+        return mapping.MapperFlush2MiB.init(page);
     }
 
     fn setFlagsP4Entry2MiB(
         mapper: *Mapper,
         page: paging.Page2MiB,
         flags: paging.PageTableFlags,
-    ) paging.FlagUpdateError!paging.MapperFlushAll {
+    ) mapping.FlagUpdateError!mapping.MapperFlushAll {
         var self = getSelfPtr(mapper);
 
         const p4_entry = self.level_4_table.getAtIndex(page.p4Index());
-        if (p4_entry.isUnused()) return paging.FlagUpdateError.PageNotMapped;
+        if (p4_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
         p4_entry.setFlags(flags);
-        return paging.MapperFlushAll{};
+        return mapping.MapperFlushAll{};
     }
 
     fn setFlagsP3Entry2MiB(
         mapper: *Mapper,
         page: paging.Page2MiB,
         flags: paging.PageTableFlags,
-    ) paging.FlagUpdateError!paging.MapperFlushAll {
+    ) mapping.FlagUpdateError!mapping.MapperFlushAll {
         var self = getSelfPtr(mapper);
 
         if (self.level_4_table.getAtIndex(page.p4Index()).isUnused()) {
-            return paging.FlagUpdateError.PageNotMapped;
+            return mapping.FlagUpdateError.PageNotMapped;
         }
 
         const p3 = p3Ptr(.Size2MiB, page, self.recursive_index);
 
         const p3_entry = p3.getAtIndex(page.p3Index());
-        if (p3_entry.isUnused()) return paging.FlagUpdateError.PageNotMapped;
+        if (p3_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
         p3_entry.setFlags(flags);
-        return paging.MapperFlushAll{};
+        return mapping.MapperFlushAll{};
     }
 
     fn translatePage2MiB(
         mapper: *Mapper,
         page: paging.Page2MiB,
-    ) paging.TranslateError!paging.PhysFrame2MiB {
+    ) mapping.TranslateError!paging.PhysFrame2MiB {
         var self = getSelfPtr(mapper);
 
         if (self.level_4_table.getAtIndex(page.p4Index()).isUnused()) {
-            return paging.TranslateError.NotMapped;
+            return mapping.TranslateError.NotMapped;
         }
 
         const p3 = p3Ptr(.Size2MiB, page, self.recursive_index);
 
         const p3_entry = p3.getAtIndex(page.p3Index());
 
-        if (p3_entry.isUnused()) return paging.TranslateError.NotMapped;
+        if (p3_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
         const p2 = p2Ptr(.Size2MiB, page, self.recursive_index);
 
         const p2_entry = p2.getAtIndex(page.p2Index());
 
-        if (p2_entry.isUnused()) return paging.TranslateError.NotMapped;
+        if (p2_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
-        return paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch |err| return paging.TranslateError.InvalidFrameAddress;
+        return paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
     }
 
     fn mapToWithTableFlags(
@@ -389,7 +390,7 @@ pub const RecursivePageTable = struct {
         flags: paging.PageTableFlags,
         parent_table_flags: paging.PageTableFlags,
         frame_allocator: *paging.FrameAllocator,
-    ) paging.MapToError!paging.MapperFlush {
+    ) mapping.MapToError!mapping.MapperFlush {
         var self = getSelfPtr(mapper);
 
         const p3 = try createNextTable(
@@ -426,54 +427,54 @@ pub const RecursivePageTable = struct {
         );
 
         var entry = p1.getAtIndex(page.p1Index());
-        if (!entry.isUnused()) return paging.MapToError.PageAlreadyMapped;
+        if (!entry.isUnused()) return mapping.MapToError.PageAlreadyMapped;
 
         entry.setAddr(frame.start_address);
         entry.setFlags(flags);
 
-        return paging.MapperFlush.init(page);
+        return mapping.MapperFlush.init(page);
     }
 
     fn unmap(
         mapper: *Mapper,
         page: paging.Page,
-    ) paging.UnmapError!paging.UnmapResult {
+    ) mapping.UnmapError!mapping.UnmapResult {
         var self = getSelfPtr(mapper);
 
         _ = self.level_4_table.getAtIndex(page.p4Index()).getFrame() catch |err| switch (err) {
-            paging.FrameError.FrameNotPresent => return paging.UnmapError.PageNotMapped,
-            paging.FrameError.HugeFrame => return paging.UnmapError.ParentEntryHugePage,
+            paging.FrameError.FrameNotPresent => return mapping.UnmapError.PageNotMapped,
+            paging.FrameError.HugeFrame => return mapping.UnmapError.ParentEntryHugePage,
         };
 
         const p3 = p3Ptr(.Size4KiB, page, self.recursive_index);
         const p3_entry = p3.getAtIndex(page.p3Index());
 
         _ = p3_entry.getFrame() catch |err| switch (err) {
-            paging.FrameError.FrameNotPresent => return paging.UnmapError.PageNotMapped,
-            paging.FrameError.HugeFrame => return paging.UnmapError.ParentEntryHugePage,
+            paging.FrameError.FrameNotPresent => return mapping.UnmapError.PageNotMapped,
+            paging.FrameError.HugeFrame => return mapping.UnmapError.ParentEntryHugePage,
         };
 
         const p2 = p2Ptr(.Size4KiB, page, self.recursive_index);
         const p2_entry = p2.getAtIndex(page.p2Index());
 
         _ = p2_entry.getFrame() catch |err| switch (err) {
-            paging.FrameError.FrameNotPresent => return paging.UnmapError.PageNotMapped,
-            paging.FrameError.HugeFrame => return paging.UnmapError.ParentEntryHugePage,
+            paging.FrameError.FrameNotPresent => return mapping.UnmapError.PageNotMapped,
+            paging.FrameError.HugeFrame => return mapping.UnmapError.ParentEntryHugePage,
         };
 
         const p1 = p2Ptr(.Size4KiB, page, self.recursive_index);
         const p1_entry = p1.getAtIndex(page.p1Index());
 
         const frame = p1_entry.getFrame() catch |err| switch (err) {
-            paging.FrameError.FrameNotPresent => return paging.UnmapError.PageNotMapped,
-            paging.FrameError.HugeFrame => return paging.UnmapError.ParentEntryHugePage,
+            paging.FrameError.FrameNotPresent => return mapping.UnmapError.PageNotMapped,
+            paging.FrameError.HugeFrame => return mapping.UnmapError.ParentEntryHugePage,
         };
 
         p1_entry.setUnused();
 
-        return paging.UnmapResult{
+        return mapping.UnmapResult{
             .frame = frame,
-            .flush = paging.MapperFlush.init(page),
+            .flush = mapping.MapperFlush.init(page),
         };
     }
 
@@ -481,135 +482,135 @@ pub const RecursivePageTable = struct {
         mapper: *Mapper,
         page: paging.Page,
         flags: paging.PageTableFlags,
-    ) paging.FlagUpdateError!paging.MapperFlush {
+    ) mapping.FlagUpdateError!mapping.MapperFlush {
         var self = getSelfPtr(mapper);
 
         if (self.level_4_table.getAtIndex(page.p4Index()).isUnused()) {
-            return paging.FlagUpdateError.PageNotMapped;
+            return mapping.FlagUpdateError.PageNotMapped;
         }
 
         const p3 = p3Ptr(.Size4KiB, page, self.recursive_index);
 
         var p3_entry = p3.getAtIndex(page.p3Index());
 
-        if (p3_entry.isUnused()) return paging.FlagUpdateError.PageNotMapped;
+        if (p3_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
 
         const p2 = p2Ptr(.Size4KiB, page, self.recursive_index);
 
         var p2_entry = p2.getAtIndex(page.p2Index());
 
-        if (p2_entry.isUnused()) return paging.FlagUpdateError.PageNotMapped;
+        if (p2_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
 
         const p1 = p1Ptr(.Size4KiB, page, self.recursive_index);
 
         var p1_entry = p1.getAtIndex(page.p1Index());
 
-        if (p1_entry.isUnused()) return paging.FlagUpdateError.PageNotMapped;
+        if (p1_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
 
         p1_entry.setFlags(flags);
 
-        return paging.MapperFlush.init(page);
+        return mapping.MapperFlush.init(page);
     }
 
     fn setFlagsP4Entry(
         mapper: *Mapper,
         page: paging.Page,
         flags: paging.PageTableFlags,
-    ) paging.FlagUpdateError!paging.MapperFlushAll {
+    ) mapping.FlagUpdateError!mapping.MapperFlushAll {
         var self = getSelfPtr(mapper);
 
         const p4_entry = self.level_4_table.getAtIndex(page.p4Index());
-        if (p4_entry.isUnused()) return paging.FlagUpdateError.PageNotMapped;
+        if (p4_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
         p4_entry.setFlags(flags);
-        return paging.MapperFlushAll{};
+        return mapping.MapperFlushAll{};
     }
 
     fn setFlagsP3Entry(
         mapper: *Mapper,
         page: paging.Page,
         flags: paging.PageTableFlags,
-    ) paging.FlagUpdateError!paging.MapperFlushAll {
+    ) mapping.FlagUpdateError!mapping.MapperFlushAll {
         var self = getSelfPtr(mapper);
 
         if (self.level_4_table.getAtIndex(page.p4Index()).isUnused()) {
-            return paging.FlagUpdateError.PageNotMapped;
+            return mapping.FlagUpdateError.PageNotMapped;
         }
 
         const p3 = p3Ptr(.Size4KiB, page, self.recursive_index);
 
         const p3_entry = p3.getAtIndex(page.p3Index());
-        if (p3_entry.isUnused()) return paging.FlagUpdateError.PageNotMapped;
+        if (p3_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
 
         p3_entry.setFlags(flags);
-        return paging.MapperFlushAll{};
+        return mapping.MapperFlushAll{};
     }
 
     fn setFlagsP2Entry(
         mapper: *Mapper,
         page: paging.Page,
         flags: paging.PageTableFlags,
-    ) paging.FlagUpdateError!paging.MapperFlushAll {
+    ) mapping.FlagUpdateError!mapping.MapperFlushAll {
         var self = getSelfPtr(mapper);
 
         if (self.level_4_table.getAtIndex(page.p4Index()).isUnused()) {
-            return paging.FlagUpdateError.PageNotMapped;
+            return mapping.FlagUpdateError.PageNotMapped;
         }
 
         const p3 = p3Ptr(.Size4KiB, page, self.recursive_index);
 
         const p3_entry = p3.getAtIndex(page.p3Index());
-        if (p3_entry.isUnused()) return paging.FlagUpdateError.PageNotMapped;
+        if (p3_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
 
         const p2 = p2Ptr(.Size4KiB, page, self.recursive_index);
 
         const p2_entry = p2.getAtIndex(page.p2Index());
-        if (p2_entry.isUnused()) return paging.FlagUpdateError.PageNotMapped;
+        if (p2_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
 
         p2_entry.setFlags(flags);
-        return paging.MapperFlushAll{};
+        return mapping.MapperFlushAll{};
     }
 
     fn translatePage(
         mapper: *Mapper,
         page: paging.Page,
-    ) paging.TranslateError!paging.PhysFrame {
+    ) mapping.TranslateError!paging.PhysFrame {
         var self = getSelfPtr(mapper);
 
         if (self.level_4_table.getAtIndex(page.p4Index()).isUnused()) {
-            return paging.TranslateError.NotMapped;
+            return mapping.TranslateError.NotMapped;
         }
 
         const p3 = p3Ptr(.Size4KiB, page, self.recursive_index);
 
         const p3_entry = p3.getAtIndex(page.p3Index());
 
-        if (p3_entry.isUnused()) return paging.TranslateError.NotMapped;
+        if (p3_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
         const p2 = p2Ptr(.Size4KiB, page, self.recursive_index);
 
         const p2_entry = p2.getAtIndex(page.p2Index());
 
-        if (p2_entry.isUnused()) return paging.TranslateError.NotMapped;
+        if (p2_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
         const p1 = p1Ptr(.Size4KiB, page, self.recursive_index);
 
         const p1_entry = p1.getAtIndex(page.p1Index());
 
-        if (p1_entry.isUnused()) return paging.TranslateError.NotMapped;
+        if (p1_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
-        return paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return paging.TranslateError.InvalidFrameAddress;
+        return paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
     }
 
     fn translate(
         mapper: *Mapper,
-        addr: VirtAddr,
-    ) paging.TranslateError!paging.TranslateResult {
+        addr: x86_64.VirtAddr,
+    ) mapping.TranslateError!mapping.TranslateResult {
         var self = getSelfPtr(mapper);
         const page = paging.Page.containingAddress(addr);
 
         const p4_entry = self.level_4_table.getAtIndex(addr.p4Index());
         if (p4_entry.isUnused()) {
-            return paging.TranslateError.NotMapped;
+            return mapping.TranslateError.NotMapped;
         }
         if (p4_entry.getFlags().value & paging.PageTableFlags.HUGE_PAGE != 0) {
             @panic("level 4 entry has huge page bit set");
@@ -618,11 +619,11 @@ pub const RecursivePageTable = struct {
         const p3 = p3Ptr(.Size4KiB, page, self.recursive_index);
 
         const p3_entry = p3.getAtIndex(page.p3Index());
-        if (p3_entry.isUnused()) return paging.TranslateError.NotMapped;
+        if (p3_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
         const p3_flags = p3_entry.getFlags();
         if (p3_flags.value & paging.PageTableFlags.HUGE_PAGE != 0) {
-            return paging.TranslateResult{
+            return mapping.TranslateResult{
                 .Frame1GiB = .{
                     .frame = paging.PhysFrame1GiB.containingAddress(p3_entry.getAddr()),
                     .offset = addr.value & 0o777_777_7777,
@@ -634,11 +635,11 @@ pub const RecursivePageTable = struct {
         const p2 = p2Ptr(.Size4KiB, page, self.recursive_index);
 
         const p2_entry = p2.getAtIndex(addr.p2Index());
-        if (p2_entry.isUnused()) return paging.TranslateError.NotMapped;
+        if (p2_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
         const p2_flags = p2_entry.getFlags();
         if (p2_flags.value & paging.PageTableFlags.HUGE_PAGE != 0) {
-            return paging.TranslateResult{
+            return mapping.TranslateResult{
                 .Frame2MiB = .{
                     .frame = paging.PhysFrame2MiB.containingAddress(p2_entry.getAddr()),
                     .offset = addr.value & 0o777_7777,
@@ -650,16 +651,16 @@ pub const RecursivePageTable = struct {
         const p1 = p2Ptr(.Size4KiB, page, self.recursive_index);
 
         const p1_entry = p1.getAtIndex(addr.p1Index());
-        if (p1_entry.isUnused()) return paging.TranslateError.NotMapped;
+        if (p1_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
         const p1_flags = p1_entry.getFlags();
         if (p1_flags.value & paging.PageTableFlags.HUGE_PAGE != 0) {
             @panic("level 1 entry has huge page bit set");
         }
 
-        const frame = paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return paging.TranslateError.InvalidFrameAddress;
+        const frame = paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
 
-        return paging.TranslateResult{
+        return mapping.TranslateResult{
             .Frame4KiB = .{
                 .frame = frame,
                 .offset = @as(u64, addr.pageOffset().value),
@@ -717,7 +718,7 @@ fn createNextTable(
     nextTablePage: paging.Page,
     insertFlags: paging.PageTableFlags,
     frameAllocator: *paging.FrameAllocator,
-) paging.MapToError!*paging.PageTable {
+) mapping.MapToError!*paging.PageTable {
     var created = false;
 
     if (entry.isUnused()) {
@@ -730,7 +731,7 @@ fn createNextTable(
             );
             created = true;
         } else {
-            return paging.MapToError.FrameAllocationFailed;
+            return mapping.MapToError.FrameAllocationFailed;
         }
     } else {
         const raw_insert_flags = insertFlags.value;

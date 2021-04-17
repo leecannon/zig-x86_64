@@ -2,7 +2,7 @@ usingnamespace @import("../common.zig");
 
 /// Returns whether interrupts are enabled.
 pub fn areEnabled() callconv(.Inline) bool {
-    return (registers.RFlags.read().value & registers.RFlags.INTERRUPT_FLAG) != 0;
+    return (x86_64.registers.RFlags.read().value & x86_64.registers.RFlags.INTERRUPT_FLAG) != 0;
 }
 
 /// Enable interrupts.

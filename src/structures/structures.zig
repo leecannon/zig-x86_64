@@ -22,7 +22,7 @@ pub const DescriptorTablePointer = packed struct {
     limit: u16,
 
     /// Pointer to the memory region containing the DT.
-    base: VirtAddr,
+    base: x86_64.VirtAddr,
 
     test {
         std.testing.refAllDecls(@This());

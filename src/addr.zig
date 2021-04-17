@@ -1,7 +1,7 @@
 usingnamespace @import("common.zig");
 
-const PageTableIndex = structures.paging.PageTableIndex;
-const PageOffset = structures.paging.PageOffset;
+const PageTableIndex = x86_64.structures.paging.PageTableIndex;
+const PageOffset = x86_64.structures.paging.PageOffset;
 
 /// A canonical 64-bit virtual memory address.
 ///

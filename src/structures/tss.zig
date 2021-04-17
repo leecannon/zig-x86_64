@@ -5,10 +5,10 @@ usingnamespace @import("../common.zig");
 pub const TaskStateSegment = packed struct {
     reserved_1: u32,
     /// The full 64-bit canonical forms of the stack pointers (RSP) for privilege levels 0-2.
-    privilege_stack_table: [3]VirtAddr,
+    privilege_stack_table: [3]x86_64.VirtAddr,
     reserved_2: u64,
     /// The full 64-bit canonical forms of the interrupt stack table (IST) pointers.
-    interrupt_stack_table: [7]VirtAddr,
+    interrupt_stack_table: [7]x86_64.VirtAddr,
     reserved_3: u64,
     reserved_4: u16,
     /// The 16-bit offset to the I/O permission bit map from the 64-bit TSS base.
