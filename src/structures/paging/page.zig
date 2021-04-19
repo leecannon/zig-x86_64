@@ -149,7 +149,7 @@ pub const PageRange2MiB = CreatePageRange(Page2MiB);
 /// An range of pages, exclusive the upper bound. Page size 1 GiB
 pub const PageRange1GiB = CreatePageRange(Page1GiB);
 
-fn CreatePageRange(comptime page_type: type) type {
+pub fn CreatePageRange(comptime page_type: type) type {
     comptime {
         if (page_type != Page and page_type != Page2MiB and page_type != Page1GiB) {
             @compileError("Non-Page type given");
@@ -193,7 +193,7 @@ pub const PageRange2MiBInclusive = CreatePageRangeInclusive(Page2MiB);
 /// An range of pages, inclusive the upper bound. Page size 1 GiB
 pub const PageRange1GiBInclusive = CreatePageRangeInclusive(Page1GiB);
 
-fn CreatePageRangeInclusive(comptime page_type: type) type {
+pub fn CreatePageRangeInclusive(comptime page_type: type) type {
     comptime {
         if (page_type != Page and page_type != Page2MiB and page_type != Page1GiB) {
             @compileError("Non-Page type given");
@@ -237,7 +237,7 @@ pub const PageIterator2MiB = CreatePageIterator(Page2MiB);
 /// Generates iterators for ranges of physical memory frame. Page size 1 GiB
 pub const PageIterator1GiB = CreatePageIterator(Page1GiB);
 
-fn CreatePageIterator(comptime page_type: type) type {
+pub fn CreatePageIterator(comptime page_type: type) type {
     const page_range_type = switch (page_type) {
         Page => PageRange,
         Page2MiB => PageRange2MiB,

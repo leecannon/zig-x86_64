@@ -218,7 +218,7 @@ pub const Mapper = struct {
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
         flags: paging.PageTableFlags,
-    ) callconv(.Inline) FlagUpdateError!paging.MapperFlushAll {
+    ) callconv(.Inline) FlagUpdateError!MapperFlushAll {
         return switch (size) {
             .Size4KiB => mapper.z_impl_setFlagsP2Entry(mapper, page, flags),
             .Size2MiB => FlagUpdateError.ParentEntryHugePage,
@@ -232,7 +232,7 @@ pub const Mapper = struct {
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
         flags: paging.PageTableFlags,
-    ) callconv(.Inline) FlagUpdateError!paging.MapperFlushAll {
+    ) callconv(.Inline) FlagUpdateError!MapperFlushAll {
         return switch (size) {
             .Size4KiB => mapper.z_impl_setFlagsP3Entry(mapper, page, flags),
             .Size2MiB => mapper.z_impl_setFlagsP3Entry2MiB(mapper, page, flags),
@@ -246,7 +246,7 @@ pub const Mapper = struct {
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
         flags: paging.PageTableFlags,
-    ) callconv(.Inline) FlagUpdateError!paging.MapperFlushAll {
+    ) callconv(.Inline) FlagUpdateError!MapperFlushAll {
         return switch (size) {
             .Size4KiB => mapper.z_impl_setFlagsP4Entry(mapper, page, flags),
             .Size2MiB => mapper.z_impl_setFlagsP4Entry2MiB(mapper, page, flags),
@@ -275,7 +275,7 @@ pub const Mapper = struct {
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
-    ) callconv(.Inline) UnmapError!paging.CreateUnmapResult(size) {
+    ) callconv(.Inline) UnmapError!CreateUnmapResult(size) {
         return switch (size) {
             .Size4KiB => mapper.z_impl_unmap(mapper, page),
             .Size2MiB => mapper.z_impl_unmap2MiB(mapper, page),
@@ -323,7 +323,7 @@ pub const UnmapResult2MiB = CreateUnmapResult(paging.PageSize.Size2MiB);
 /// Unmap result. Page size 1 GiB
 pub const UnmapResult1GiB = CreateUnmapResult(paging.PageSize.Size1GiB);
 
-fn CreateUnmapResult(comptime page_size: paging.PageSize) type {
+pub fn CreateUnmapResult(comptime page_size: paging.PageSize) type {
     const frame_type = switch (page_size) {
         .Size4KiB => paging.PhysFrame,
         .Size2MiB => paging.PhysFrame2MiB,
@@ -357,7 +357,7 @@ pub const TranslateResult2MiBContents = CreateTranslateResultContents(paging.Pag
 
 pub const TranslateResult1GiBContents = CreateTranslateResultContents(paging.PageSize.Size1GiB);
 
-fn CreateTranslateResultContents(comptime page_size: paging.PageSize) type {
+pub fn CreateTranslateResultContents(comptime page_size: paging.PageSize) type {
     const frame_type = switch (page_size) {
         .Size4KiB => paging.PhysFrame,
         .Size2MiB => paging.PhysFrame2MiB,
@@ -415,7 +415,7 @@ pub const MapperFlush2MiB = CreateMapperFlush(paging.PageSize.Size2MiB);
 /// change the mapping of a page to ensure that the TLB flush is not forgotten.
 pub const MapperFlush1GiB = CreateMapperFlush(paging.PageSize.Size1GiB);
 
-fn CreateMapperFlush(comptime page_size: paging.PageSize) type {
+pub fn CreateMapperFlush(comptime page_size: paging.PageSize) type {
     const page_type = switch (page_size) {
         .Size4KiB => paging.Page,
         .Size2MiB => paging.Page2MiB,
