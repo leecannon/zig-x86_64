@@ -10,6 +10,13 @@ const physToVirt = struct {
     }
 }.physToVirt;
 
+const noOpPhysToVirt = struct {
+    pub fn noOpPhysToVirt(_: void, phys_frame: paging.PhysFrame) *paging.PageTable {
+        return x86_64.VirtAddr.initUnchecked(phys_frame.start_address.value).toPtr(*paging.PageTable);
+    }
+}.noOpPhysToVirt;
+
+pub const NoOffsetPageTable = MappedPageTable(void, noOpPhysToVirt);
 pub const OffsetPageTable = MappedPageTable(x86_64.VirtAddr, physToVirt);
 
 /// A Mapper implementation that relies on a x86_64.PhysAddr to x86_64.VirtAddr conversion function.
