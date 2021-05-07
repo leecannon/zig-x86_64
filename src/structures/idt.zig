@@ -514,6 +514,11 @@ pub const EntryOptions = packed struct {
         return EntryOptions{ .value = 0b1110_0000_0000 };
     }
 
+    /// Is the entry present.
+    pub fn isPresent(self: EntryOptions) bool {
+        return getBit(self.value, 15);
+    }
+
     /// Set or reset the preset bit.
     pub fn setPresent(self: *EntryOptions, present: bool) void {
         setBit(&self.value, 15, present);

@@ -1,5 +1,19 @@
 usingnamespace @import("../common.zig");
 
+pub const EnsureNoInterrupts = struct {
+    enabled: bool,
+
+    pub fn start() EnsureNoInterrupts {
+        return .{
+            .enabled = areEnabled(),
+        };
+    }
+
+    pub fn end(self: EnsureNoInterrupts) void {
+        if (self.enabled) enable();
+    }
+};
+
 /// Returns whether interrupts are enabled.
 pub fn areEnabled() callconv(.Inline) bool {
     return (x86_64.registers.RFlags.read().value & x86_64.registers.RFlags.INTERRUPT_FLAG) != 0;
