@@ -22,6 +22,16 @@ pub inline fn lidt(idt: *const x86_64.structures.DescriptorTablePointer) void {
     );
 }
 
+/// Get the address of the current IDT.
+pub inline fn sidt() x86_64.structures.DescriptorTablePointer {
+    var idt: x86_64.structures.DescriptorTablePointer = undefined;
+    asm volatile ("sidt (%[idt])"
+        :
+        : [idt] "r" (idt)
+    );
+    return idt;
+}
+
 /// Load the task state register using the `ltr` instruction.
 pub inline fn loadTss(sel: x86_64.structures.gdt.SegmentSelector) void {
     asm volatile ("ltr %[sel]"
