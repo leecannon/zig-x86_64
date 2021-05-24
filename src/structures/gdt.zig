@@ -16,7 +16,7 @@ pub const SegmentSelector = struct {
     }
 
     // Returns the GDT index.
-    pub fn getIndex(self: SegmentSelector) callconv(.Inline) u16 {
+    pub inline fn getIndex(self: SegmentSelector) u16 {
         return self.value >> 3;
     }
 
@@ -56,11 +56,11 @@ pub const SegmentSelector = struct {
 
 test "SegmentSelector" {
     var a = SegmentSelector.init(1, .Ring0);
-    std.testing.expectEqual(@as(u16, 1), a.getIndex());
-    std.testing.expectEqual(x86_64.PrivilegeLevel.Ring0, try a.getRpl());
+    try std.testing.expectEqual(@as(u16, 1), a.getIndex());
+    try std.testing.expectEqual(x86_64.PrivilegeLevel.Ring0, try a.getRpl());
     a.setRpl(.Ring3);
-    std.testing.expectEqual(@as(u16, 1), a.getIndex());
-    std.testing.expectEqual(x86_64.PrivilegeLevel.Ring3, try a.getRpl());
+    try std.testing.expectEqual(@as(u16, 1), a.getIndex());
+    try std.testing.expectEqual(x86_64.PrivilegeLevel.Ring3, try a.getRpl());
 }
 
 /// A 64-bit mode global descriptor table (GDT).
@@ -169,25 +169,25 @@ test "GlobalDescriptorTable" {
 
 /// Creates a segment descriptor for a 64-bit kernel code segment.
 /// Suitable for use with `syscall` or 64-bit `sysenter`.
-pub fn createKernelCodeSegment() callconv(.Inline) Descriptor {
+pub inline fn createKernelCodeSegment() Descriptor {
     return .{ .UserSegment = Descriptor.KERNEL_CODE64 };
 }
 
 /// Creates a segment descriptor for a ring 0 data segment (32-bit or 64-bit).
 /// Suitable for use with `syscall` or 64-bit `sysenter`.
-pub fn createKernelDataSegment() callconv(.Inline) Descriptor {
+pub inline fn createKernelDataSegment() Descriptor {
     return .{ .UserSegment = Descriptor.KERNEL_DATA };
 }
 
 /// Creates a segment descriptor for a ring 3 data segment (32-bit or 64-bit).
 /// Suitable for use with `sysret` or `sysexit`.
-pub fn createUserDataSegment() callconv(.Inline) Descriptor {
+pub inline fn createUserDataSegment() Descriptor {
     return .{ .UserSegment = Descriptor.USER_DATA };
 }
 
 /// Creates a segment descriptor for a 64-bit ring 3 code segment. #
 /// Suitable for use with `sysret` or `sysexit`.
-pub fn createUserCodeSegment() callconv(.Inline) Descriptor {
+pub inline fn createUserCodeSegment() Descriptor {
     return .{ .UserSegment = Descriptor.USER_CODE64 };
 }
 
@@ -303,12 +303,12 @@ pub const Descriptor = union(enum) {
     test "Descriptors match linux" {
         // Make sure our defaults match the ones used by the Linux kernel.
         // Constants pulled from an old version of arch/x86/kernel/cpu/common.c
-        std.testing.expectEqual(0x00af9b000000ffff, Descriptor.KERNEL_CODE64);
-        std.testing.expectEqual(0x00cf9b000000ffff, Descriptor.KERNEL_CODE32);
-        std.testing.expectEqual(0x00cf93000000ffff, Descriptor.KERNEL_DATA);
-        std.testing.expectEqual(0x00affb000000ffff, Descriptor.USER_CODE64);
-        std.testing.expectEqual(0x00cffb000000ffff, Descriptor.USER_CODE32);
-        std.testing.expectEqual(0x00cff3000000ffff, Descriptor.USER_DATA);
+        try std.testing.expectEqual(0x00af9b000000ffff, Descriptor.KERNEL_CODE64);
+        try std.testing.expectEqual(0x00cf9b000000ffff, Descriptor.KERNEL_CODE32);
+        try std.testing.expectEqual(0x00cf93000000ffff, Descriptor.KERNEL_DATA);
+        try std.testing.expectEqual(0x00affb000000ffff, Descriptor.USER_CODE64);
+        try std.testing.expectEqual(0x00cffb000000ffff, Descriptor.USER_CODE32);
+        try std.testing.expectEqual(0x00cff3000000ffff, Descriptor.USER_DATA);
     }
 
     comptime {

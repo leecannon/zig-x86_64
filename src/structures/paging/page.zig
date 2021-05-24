@@ -11,7 +11,7 @@ pub const PageSize = enum {
     Size2MiB,
     Size1GiB,
 
-    pub fn bytes(self: PageSize) callconv(.Inline) u64 {
+    pub inline fn bytes(self: PageSize) u64 {
         return switch (self) {
             .Size4KiB => 4096,
             .Size2MiB => 4096 * 512,
@@ -19,7 +19,7 @@ pub const PageSize = enum {
         };
     }
 
-    pub fn sizeString(self: PageSize) callconv(.Inline) []const u8 {
+    pub inline fn sizeString(self: PageSize) []const u8 {
         return switch (self) {
             .Size4KiB => SIZE_4KiB_STR,
             .Size2MiB => SIZE_2MiB_STR,
@@ -27,7 +27,7 @@ pub const PageSize = enum {
         };
     }
 
-    pub fn isGiantPage(self: PageSize) callconv(.Inline) bool {
+    pub inline fn isGiantPage(self: PageSize) bool {
         return self == .Size1GiB;
     }
 };
@@ -61,7 +61,7 @@ pub fn CreatePage(comptime page_size: PageSize) type {
         }
 
         /// Returns the page that starts at the given virtual address.
-        pub fn fromStartAddressUnchecked(address: x86_64.VirtAddr) callconv(.Inline) Self {
+        pub inline fn fromStartAddressUnchecked(address: x86_64.VirtAddr) Self {
             return .{ .start_address = address };
         }
 
@@ -71,18 +71,18 @@ pub fn CreatePage(comptime page_size: PageSize) type {
         }
 
         /// Returns the level 4 page table index of this page.
-        pub fn p4Index(self: Self) callconv(.Inline) PageTableIndex {
+        pub inline fn p4Index(self: Self) PageTableIndex {
             return self.start_address.p4Index();
         }
 
         /// Returns the level 3 page table index of this page.
-        pub fn p3Index(self: Self) callconv(.Inline) PageTableIndex {
+        pub inline fn p3Index(self: Self) PageTableIndex {
             return self.start_address.p3Index();
         }
 
         /// Returns the level 2 page table index of this page.
         /// Not usable for Size1GiB
-        pub fn p2Index(self: Self) callconv(.Inline) PageTableIndex {
+        pub inline fn p2Index(self: Self) PageTableIndex {
             comptime {
                 if (page_size == .Size1GiB) {
                     @compileError("Not usable for Size1GiB");
@@ -93,7 +93,7 @@ pub fn CreatePage(comptime page_size: PageSize) type {
 
         /// Returns the level 1 page table index of this page.
         /// Only usable for Size4KiB
-        pub fn p1Index(self: Self) callconv(.Inline) PageTableIndex {
+        pub inline fn p1Index(self: Self) PageTableIndex {
             comptime {
                 if (page_size != .Size4KiB) {
                     @compileError("Only usable for Size4KiB");
@@ -254,12 +254,12 @@ pub fn CreatePageIterator(comptime page_type: type) type {
 
     return struct {
         /// Returns a range of pages, exclusive `end`.
-        pub fn range(start: page_type, end: page_type) callconv(.Inline) page_range_type {
+        pub inline fn range(start: page_type, end: page_type) page_range_type {
             return page_range_type{ .start = start, .end = end };
         }
 
         /// Returns a range of pages, inclusive `end`.
-        pub fn rangeInclusive(start: page_type, end: page_type) callconv(.Inline) page_range_inclusive_type {
+        pub inline fn rangeInclusive(start: page_type, end: page_type) page_range_inclusive_type {
             return page_range_inclusive_type{ .start = start, .end = end };
         }
 
@@ -282,23 +282,23 @@ test "PageIterator" {
     var iterator = PageIterator.range(a, b);
     var inclusive_iterator = PageIterator.rangeInclusive(a, b);
 
-    std.testing.expect(!iterator.isEmpty());
-    std.testing.expect(!inclusive_iterator.isEmpty());
+    try std.testing.expect(!iterator.isEmpty());
+    try std.testing.expect(!inclusive_iterator.isEmpty());
 
     var count: usize = 0;
     while (iterator.next()) |frame| {
         count += 1;
     }
-    std.testing.expectEqual(@as(usize, 15), count);
+    try std.testing.expectEqual(@as(usize, 15), count);
 
     count = 0;
     while (inclusive_iterator.next()) |frame| {
         count += 1;
     }
-    std.testing.expectEqual(@as(usize, 16), count);
+    try std.testing.expectEqual(@as(usize, 16), count);
 
-    std.testing.expect(iterator.isEmpty());
-    std.testing.expect(inclusive_iterator.isEmpty());
+    try std.testing.expect(iterator.isEmpty());
+    try std.testing.expect(inclusive_iterator.isEmpty());
 }
 
 comptime {

@@ -77,7 +77,7 @@ pub const SimplePic = struct {
         };
     }
 
-    fn handlesInterrupt(offset: u8, interrupt_id: u8) callconv(.Inline) bool {
+    inline fn handlesInterrupt(offset: u8, interrupt_id: u8) bool {
         return offset <= interrupt_id and interrupt_id < offset + 8;
     }
 
@@ -91,19 +91,19 @@ pub const SimplePic = struct {
         }
     }
 
-    pub fn rawGetPrimaryInterruptMask() callconv(.Inline) PicPrimaryInterruptMask {
+    pub inline fn rawGetPrimaryInterruptMask() PicPrimaryInterruptMask {
         return PicPrimaryInterruptMask.fromU8(PRIMARY_DATA_PORT.read());
     }
 
-    pub fn rawSetPrimaryInterruptMask(mask: PicPrimaryInterruptMask) callconv(.Inline) void {
+    pub inline fn rawSetPrimaryInterruptMask(mask: PicPrimaryInterruptMask) void {
         PRIMARY_DATA_PORT.write(mask.toU8());
     }
 
-    pub fn rawGetSecondaryInterruptMask() callconv(.Inline) PicSecondaryInterruptMask {
+    pub inline fn rawGetSecondaryInterruptMask() PicSecondaryInterruptMask {
         return PicSecondaryInterruptMask.fromU8(SECONDARY_DATA_PORT.read());
     }
 
-    pub fn rawSetSecondaryInterruptMask(mask: PicSecondaryInterruptMask) callconv(.Inline) void {
+    pub inline fn rawSetSecondaryInterruptMask(mask: PicSecondaryInterruptMask) void {
         SECONDARY_DATA_PORT.write(mask.toU8());
     }
 
@@ -131,7 +131,7 @@ pub const SimplePic = struct {
         };
     }
 
-    fn isPrimaryPic(interrupt: PicInterrupt) callconv(.Inline) bool {
+    inline fn isPrimaryPic(interrupt: PicInterrupt) bool {
         return switch (interrupt) {
             .Timer, .Keyboard, .Chain, .SerialPort2, .SerialPort1, .ParallelPort23, .FloppyDisk, .ParallelPort1 => true,
             else => false,
@@ -204,26 +204,26 @@ pub const PicPrimaryInterruptMask = packed struct {
     floppy_disk: bool,
     parallel_port_1: bool,
 
-    pub fn noneMasked() callconv(.Inline) PicPrimaryInterruptMask {
+    pub inline fn noneMasked() PicPrimaryInterruptMask {
         return fromU8(0);
     }
 
-    pub fn allMasked() callconv(.Inline) PicPrimaryInterruptMask {
+    pub inline fn allMasked() PicPrimaryInterruptMask {
         return fromU8(0b11111111);
     }
 
-    pub fn toU8(value: PicPrimaryInterruptMask) callconv(.Inline) u8 {
+    pub inline fn toU8(value: PicPrimaryInterruptMask) u8 {
         return @bitCast(u8, value);
     }
 
-    pub fn fromU8(value: u8) callconv(.Inline) PicPrimaryInterruptMask {
+    pub inline fn fromU8(value: u8) PicPrimaryInterruptMask {
         return @bitCast(PicPrimaryInterruptMask, value);
     }
 
     test {
         std.testing.refAllDecls(@This());
-        std.testing.expectEqual(@bitSizeOf(u8), @bitSizeOf(PicPrimaryInterruptMask));
-        std.testing.expectEqual(@sizeOf(u8), @sizeOf(PicPrimaryInterruptMask));
+        try std.testing.expectEqual(@bitSizeOf(u8), @bitSizeOf(PicPrimaryInterruptMask));
+        try std.testing.expectEqual(@sizeOf(u8), @sizeOf(PicPrimaryInterruptMask));
     }
 };
 
@@ -237,26 +237,26 @@ pub const PicSecondaryInterruptMask = packed struct {
     primary_ata: bool,
     secondary_ata: bool,
 
-    pub fn noneMasked() callconv(.Inline) PicSecondaryInterruptMask {
+    pub inline fn noneMasked() PicSecondaryInterruptMask {
         return fromU8(0);
     }
 
-    pub fn allMasked() callconv(.Inline) PicSecondaryInterruptMask {
+    pub inline fn allMasked() PicSecondaryInterruptMask {
         return fromU8(0b11111111);
     }
 
-    pub fn toU8(value: PicSecondaryInterruptMask) callconv(.Inline) u8 {
+    pub inline fn toU8(value: PicSecondaryInterruptMask) u8 {
         return @bitCast(u8, value);
     }
 
-    pub fn fromU8(value: u8) callconv(.Inline) PicSecondaryInterruptMask {
+    pub inline fn fromU8(value: u8) PicSecondaryInterruptMask {
         return @bitCast(PicSecondaryInterruptMask, value);
     }
 
     test {
         std.testing.refAllDecls(@This());
-        std.testing.expectEqual(@bitSizeOf(u8), @bitSizeOf(PicSecondaryInterruptMask));
-        std.testing.expectEqual(@sizeOf(u8), @sizeOf(PicSecondaryInterruptMask));
+        try std.testing.expectEqual(@bitSizeOf(u8), @bitSizeOf(PicSecondaryInterruptMask));
+        try std.testing.expectEqual(@sizeOf(u8), @sizeOf(PicSecondaryInterruptMask));
     }
 };
 

@@ -12,7 +12,7 @@ pub const Efer = struct {
     }
 
     /// Read the current raw CR0 value.
-    pub fn readRaw() callconv(.Inline) u64 {
+    pub inline fn readRaw() u64 {
         return REGISTER.read();
     }
 
@@ -26,7 +26,7 @@ pub const Efer = struct {
     /// Write the EFER flags.
     ///
     /// Does not preserve any bits, including reserved fields.
-    pub fn writeRaw(value: u64) callconv(.Inline) void {
+    pub inline fn writeRaw(value: u64) void {
         REGISTER.write(value);
     }
 
@@ -40,56 +40,56 @@ pub const Efer = struct {
     /// Enables the `syscall` and `sysret` instructions.
     pub const SYSTEM_CALL_EXTENSIONS: u64 = 1;
     pub const NOT_SYSTEM_CALL_EXTENSIONS: u64 = ~SYSTEM_CALL_EXTENSIONS;
-    pub fn isSYSTEM_CALL_EXTENSIONS(self: Efer) callconv(.Inline) bool {
+    pub inline fn isSYSTEM_CALL_EXTENSIONS(self: Efer) bool {
         return self.value & SYSTEM_CALL_EXTENSIONS != 0;
     }
 
     /// Activates long mode, requires activating paging.
     pub const LONG_MODE_ENABLE: u64 = 1 << 8;
     pub const NOT_LONG_MODE_ENABLE: u64 = ~LONG_MODE_ENABLE;
-    pub fn isLONG_MODE_ENABLE(self: Efer) callconv(.Inline) bool {
+    pub inline fn isLONG_MODE_ENABLE(self: Efer) bool {
         return self.value & LONG_MODE_ENABLE != 0;
     }
 
     /// Indicates that long mode is active.
     pub const LONG_MODE_ACTIVE: u64 = 1 << 10;
     pub const NOT_LONG_MODE_ACTIVE: u64 = ~LONG_MODE_ACTIVE;
-    pub fn isLONG_MODE_ACTIVE(self: Efer) callconv(.Inline) bool {
+    pub inline fn isLONG_MODE_ACTIVE(self: Efer) bool {
         return self.value & LONG_MODE_ACTIVE != 0;
     }
 
     /// Enables the no-execute page-protection feature.
     pub const NO_EXECUTE_ENABLE: u64 = 1 << 11;
     pub const NOT_NO_EXECUTE_ENABLE: u64 = ~NO_EXECUTE_ENABLE;
-    pub fn isNO_EXECUTE_ENABLE(self: Efer) callconv(.Inline) bool {
+    pub inline fn isNO_EXECUTE_ENABLE(self: Efer) bool {
         return self.value & NO_EXECUTE_ENABLE != 0;
     }
 
     /// Enables SVM extensions.
     pub const SECURE_VIRTUAL_MACHINE_ENABLE: u64 = 1 << 12;
     pub const NOT_SECURE_VIRTUAL_MACHINE_ENABLE: u64 = ~SECURE_VIRTUAL_MACHINE_ENABLE;
-    pub fn isSECURE_VIRTUAL_MACHINE_ENABLE(self: Efer) callconv(.Inline) bool {
+    pub inline fn isSECURE_VIRTUAL_MACHINE_ENABLE(self: Efer) bool {
         return self.value & SECURE_VIRTUAL_MACHINE_ENABLE != 0;
     }
 
     /// Enable certain limit checks in 64-bit mode.
     pub const LONG_MODE_SEGMENT_LIMIT_ENABLE: u64 = 1 << 13;
     pub const NOT_LONG_MODE_SEGMENT_LIMIT_ENABLE: u64 = ~LONG_MODE_SEGMENT_LIMIT_ENABLE;
-    pub fn isLONG_MODE_SEGMENT_LIMIT_ENABLE(self: Efer) callconv(.Inline) bool {
+    pub inline fn isLONG_MODE_SEGMENT_LIMIT_ENABLE(self: Efer) bool {
         return self.value & LONG_MODE_SEGMENT_LIMIT_ENABLE != 0;
     }
 
     /// Enable the `fxsave` and `fxrstor` instructions to execute faster in 64-bit mode.
     pub const FAST_FXSAVE_FXRSTOR: u64 = 1 << 14;
     pub const NOT_FAST_FXSAVE_FXRSTOR: u64 = ~FAST_FXSAVE_FXRSTOR;
-    pub fn isFAST_FXSAVE_FXRSTOR(self: Efer) callconv(.Inline) bool {
+    pub inline fn isFAST_FXSAVE_FXRSTOR(self: Efer) bool {
         return self.value & FAST_FXSAVE_FXRSTOR != 0;
     }
 
     /// Changes how the `invlpg` instruction operates on TLB entries of upper-level entries.
     pub const TRANSLATION_CACHE_EXTENSION: u64 = 1 << 15;
     pub const NOT_TRANSLATION_CACHE_EXTENSION: u64 = ~TRANSLATION_CACHE_EXTENSION;
-    pub fn isTRANSLATION_CACHE_EXTENSION(self: Efer) callconv(.Inline) bool {
+    pub inline fn isTRANSLATION_CACHE_EXTENSION(self: Efer) bool {
         return self.value & TRANSLATION_CACHE_EXTENSION != 0;
     }
 
@@ -103,13 +103,13 @@ pub const FsBase = struct {
     const REGISTER = Msr(0xC000_0100);
 
     /// Read the current FsBase register.
-    pub fn read() callconv(.Inline) x86_64.VirtAddr {
+    pub inline fn read() x86_64.VirtAddr {
         // We use unchecked here as we assume that the write function did not write an invalid address
         return x86_64.VirtAddr.initUnchecked(REGISTER.read());
     }
 
     /// Write a given virtual address to the FS.Base register.
-    pub fn write(addr: x86_64.VirtAddr) callconv(.Inline) void {
+    pub inline fn write(addr: x86_64.VirtAddr) void {
         REGISTER.write(addr.value);
     }
 
@@ -123,13 +123,13 @@ pub const GsBase = struct {
     const REGISTER = Msr(0xC000_0101);
 
     /// Read the current GsBase register.
-    pub fn read() callconv(.Inline) x86_64.VirtAddr {
+    pub inline fn read() x86_64.VirtAddr {
         // We use unchecked here as we assume that the write function did not write an invalid address
         return x86_64.VirtAddr.initUnchecked(REGISTER.read());
     }
 
     /// Write a given virtual address to the GS.Base register.
-    pub fn write(addr: x86_64.VirtAddr) callconv(.Inline) void {
+    pub inline fn write(addr: x86_64.VirtAddr) void {
         REGISTER.write(addr.value);
     }
 
@@ -143,13 +143,13 @@ pub const KernelGsBase = struct {
     const REGISTER = Msr(0xC000_0102);
 
     /// Read the current KernelGsBase register.
-    pub fn read() callconv(.Inline) x86_64.VirtAddr {
+    pub inline fn read() x86_64.VirtAddr {
         // We use unchecked here as we assume that the write function did not write an invalid address
         return x86_64.VirtAddr.initUnchecked(REGISTER.read());
     }
 
     /// Write a given virtual address to the KernelGsBase register.
-    pub fn write(addr: x86_64.VirtAddr) callconv(.Inline) void {
+    pub inline fn write(addr: x86_64.VirtAddr) void {
         REGISTER.write(addr.value);
     }
 
@@ -260,14 +260,14 @@ pub const LStar = struct {
 
     /// Read the current LStar register.
     /// This holds the target RIP of a syscall.
-    pub fn read() callconv(.Inline) x86_64.VirtAddr {
+    pub inline fn read() x86_64.VirtAddr {
         // We use unchecked here as we assume that the write function did not write an invalid address
         return x86_64.VirtAddr.initUnchecked(REGISTER.read());
     }
 
     /// Write a given virtual address to the LStar register.
     /// This holds the target RIP of a syscall.
-    pub fn write(addr: x86_64.VirtAddr) callconv(.Inline) void {
+    pub inline fn write(addr: x86_64.VirtAddr) void {
         REGISTER.write(addr.value);
     }
 
@@ -287,7 +287,7 @@ pub const SFMask = struct {
     /// executed. If a bit in SFMASK is set to 1, the corresponding
     /// bit in RFLAGS is cleared to 0. If a bit in SFMASK is cleared
     /// to 0, the corresponding rFLAGS bit is not modified.
-    pub fn read() callconv(.Inline) x86_64.registers.RFlags {
+    pub inline fn read() x86_64.registers.RFlags {
         return .{ .value = REGISTER.read() & x86_64.registers.RFlags.ALL };
     }
 
@@ -298,7 +298,7 @@ pub const SFMask = struct {
     /// executed. If a bit in SFMASK is set to 1, the corresponding
     /// bit in RFLAGS is cleared to 0. If a bit in SFMASK is cleared
     /// to 0, the corresponding rFLAGS bit is not modified.
-    pub fn write(value: x86_64.registers.RFlags) callconv(.Inline) void {
+    pub inline fn write(value: x86_64.registers.RFlags) void {
         REGISTER.write(value.value & x86_64.registers.RFlags.ALL);
     }
 
@@ -309,7 +309,7 @@ pub const SFMask = struct {
 
 fn Msr(comptime register: u32) type {
     return struct {
-        pub fn read() callconv(.Inline) u64 {
+        pub inline fn read() u64 {
             var high: u32 = undefined;
             var low: u32 = undefined;
 
@@ -323,7 +323,7 @@ fn Msr(comptime register: u32) type {
             return (@as(u64, high) << 32) | @as(u64, low);
         }
 
-        pub fn write(value: u64) callconv(.Inline) void {
+        pub inline fn write(value: u64) void {
             asm volatile ("wrmsr"
                 :
                 : [reg] "{ecx}" (register),

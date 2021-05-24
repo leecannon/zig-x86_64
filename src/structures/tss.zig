@@ -21,8 +21,8 @@ pub const TaskStateSegment = packed struct {
 
     test {
         std.testing.refAllDecls(@This());
-        std.testing.expectEqual(@bitSizeOf(u32) * 26, @bitSizeOf(TaskStateSegment));
-        std.testing.expectEqual(@sizeOf(u32) * 26, @sizeOf(TaskStateSegment));
+        try std.testing.expectEqual(@bitSizeOf(u32) * 26, @bitSizeOf(TaskStateSegment));
+        try std.testing.expectEqual(@sizeOf(u32) * 26, @sizeOf(TaskStateSegment));
     }
 };
 

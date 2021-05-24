@@ -408,8 +408,8 @@ pub const InterruptDescriptorTable = extern struct {
 
     test {
         std.testing.refAllDecls(@This());
-        std.testing.expectEqual(@bitSizeOf(u64) * 2 * 256, @bitSizeOf(InterruptDescriptorTable));
-        std.testing.expectEqual(@sizeOf(u64) * 2 * 256, @sizeOf(InterruptDescriptorTable));
+        try std.testing.expectEqual(@bitSizeOf(u64) * 2 * 256, @bitSizeOf(InterruptDescriptorTable));
+        try std.testing.expectEqual(@sizeOf(u64) * 2 * 256, @sizeOf(InterruptDescriptorTable));
     }
 };
 
@@ -480,20 +480,20 @@ fn Entry(comptime handler_type: type) type {
         test {
             std.testing.refAllDecls(@This());
 
-            std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerFuncEntry));
-            std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerFuncEntry));
+            try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerFuncEntry));
+            try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerFuncEntry));
 
-            std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerWithErrorCodeFuncEntry));
-            std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerWithErrorCodeFuncEntry));
+            try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerWithErrorCodeFuncEntry));
+            try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerWithErrorCodeFuncEntry));
 
-            std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerDivergingFuncEntry));
-            std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerDivergingFuncEntry));
+            try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerDivergingFuncEntry));
+            try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerDivergingFuncEntry));
 
-            std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerDivergingWithErrorCodeFuncEntry));
-            std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerDivergingWithErrorCodeFuncEntry));
+            try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerDivergingWithErrorCodeFuncEntry));
+            try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerDivergingWithErrorCodeFuncEntry));
 
-            std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(PageFaultHandlerFuncEntry));
-            std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(PageFaultHandlerFuncEntry));
+            try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(PageFaultHandlerFuncEntry));
+            try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(PageFaultHandlerFuncEntry));
         }
     };
 }
@@ -510,7 +510,7 @@ pub const EntryOptions = packed struct {
     value: u16,
 
     /// Creates a minimal options field with all the must-be-one bits set.
-    pub fn minimal() callconv(.Inline) EntryOptions {
+    pub inline fn minimal() EntryOptions {
         return EntryOptions{ .value = 0b1110_0000_0000 };
     }
 
@@ -550,8 +550,8 @@ pub const EntryOptions = packed struct {
 
     test {
         std.testing.refAllDecls(@This());
-        std.testing.expectEqual(@bitSizeOf(u16), @bitSizeOf(EntryOptions));
-        std.testing.expectEqual(@sizeOf(u16), @sizeOf(EntryOptions));
+        try std.testing.expectEqual(@bitSizeOf(u16), @bitSizeOf(EntryOptions));
+        try std.testing.expectEqual(@sizeOf(u16), @sizeOf(EntryOptions));
     }
 };
 
@@ -578,7 +578,7 @@ pub const InterruptStackFrame = extern struct {
 
     /// `volatile` is used because LLVM optimizations remove non-volatile
     /// modifications of the interrupt stack frame.
-    pub fn asMut(self: *const InterruptStackFrame) callconv(.Inline) *volatile InterruptStackFrame {
+    pub inline fn asMut(self: *const InterruptStackFrame) *volatile InterruptStackFrame {
         return @intToPtr(*volatile InterruptStackFrame, @ptrToInt(self));
     }
 
@@ -597,8 +597,8 @@ pub const InterruptStackFrame = extern struct {
 
     test {
         std.testing.refAllDecls(@This());
-        std.testing.expectEqual(@bitSizeOf(u64) * 5, @bitSizeOf(InterruptStackFrame));
-        std.testing.expectEqual(@sizeOf(u64) * 5, @sizeOf(InterruptStackFrame));
+        try std.testing.expectEqual(@bitSizeOf(u64) * 5, @bitSizeOf(InterruptStackFrame));
+        try std.testing.expectEqual(@sizeOf(u64) * 5, @sizeOf(InterruptStackFrame));
     }
 };
 
@@ -613,7 +613,7 @@ pub const PageFaultErrorCode = extern struct {
     /// else the page fault was caused by a not-present page.
     pub const PROTECTION_VIOLATION: u64 = 1;
     pub const NOT_PROTECTION_VIOLATION: u64 = ~PROTECTION_VIOLATION;
-    pub fn isPROTECTION_VIOLATION(self: PageFaultErrorCode) callconv(.Inline) bool {
+    pub inline fn isPROTECTION_VIOLATION(self: PageFaultErrorCode) bool {
         return self.value & PROTECTION_VIOLATION != 0;
     }
 
@@ -622,7 +622,7 @@ pub const PageFaultErrorCode = extern struct {
     /// necessarily indicate the cause of the page fault was a read or write violation.
     pub const CAUSED_BY_WRITE: u64 = 1 << 1;
     pub const NOT_CAUSED_BY_WRITE: u64 = ~CAUSED_BY_WRITE;
-    pub fn isCAUSED_BY_WRITE(self: PageFaultErrorCode) callconv(.Inline) bool {
+    pub inline fn isCAUSED_BY_WRITE(self: PageFaultErrorCode) bool {
         return self.value & CAUSED_BY_WRITE != 0;
     }
 
@@ -631,7 +631,7 @@ pub const PageFaultErrorCode = extern struct {
     /// does not necessarily indicate the cause of the page fault was a privilege violation.
     pub const USER_MODE: u64 = 1 << 2;
     pub const NOT_USER_MODE: u64 = ~USER_MODE;
-    pub fn isUSER_MODE(self: PageFaultErrorCode) callconv(.Inline) bool {
+    pub inline fn isUSER_MODE(self: PageFaultErrorCode) bool {
         return self.value & USER_MODE != 0;
     }
 
@@ -639,7 +639,7 @@ pub const PageFaultErrorCode = extern struct {
     /// a reserved field within a page-translation-table entry.
     pub const MALFORMED_TABLE: u64 = 1 << 3;
     pub const NOT_MALFORMED_TABLE: u64 = ~MALFORMED_TABLE;
-    pub fn isMALFORMED_TABLE(self: PageFaultErrorCode) callconv(.Inline) bool {
+    pub inline fn isMALFORMED_TABLE(self: PageFaultErrorCode) bool {
         return self.value & MALFORMED_TABLE != 0;
     }
 
@@ -647,7 +647,7 @@ pub const PageFaultErrorCode = extern struct {
     /// instruction fetch.
     pub const INSTRUCTION_FETCH: u64 = 1 << 4;
     pub const NOT_INSTRUCTION_FETCH: u64 = ~INSTRUCTION_FETCH;
-    pub fn isINSTRUCTION_FETCH(self: PageFaultErrorCode) callconv(.Inline) bool {
+    pub inline fn isINSTRUCTION_FETCH(self: PageFaultErrorCode) bool {
         return self.value & INSTRUCTION_FETCH != 0;
     }
 
@@ -685,8 +685,8 @@ pub const PageFaultErrorCode = extern struct {
 
     test {
         std.testing.refAllDecls(@This());
-        std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageFaultErrorCode));
-        std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageFaultErrorCode));
+        try std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageFaultErrorCode));
+        try std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageFaultErrorCode));
     }
 };
 

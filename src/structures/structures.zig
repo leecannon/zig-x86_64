@@ -26,8 +26,8 @@ pub const DescriptorTablePointer = packed struct {
 
     test {
         std.testing.refAllDecls(@This());
-        std.testing.expectEqual(@bitSizeOf(u16) + @bitSizeOf(u64), @bitSizeOf(DescriptorTablePointer));
-        std.testing.expectEqual(@sizeOf(u16) + @sizeOf(u64), @sizeOf(DescriptorTablePointer));
+        try std.testing.expectEqual(@bitSizeOf(u16) + @bitSizeOf(u64), @bitSizeOf(DescriptorTablePointer));
+        try std.testing.expectEqual(@sizeOf(u16) + @sizeOf(u64), @sizeOf(DescriptorTablePointer));
     }
 };
 

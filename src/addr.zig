@@ -123,36 +123,36 @@ pub const VirtAddr = packed struct {
 
     test {
         std.testing.refAllDecls(@This());
-        std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(VirtAddr));
-        std.testing.expectEqual(@sizeOf(u64), @sizeOf(VirtAddr));
+        try std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(VirtAddr));
+        try std.testing.expectEqual(@sizeOf(u64), @sizeOf(VirtAddr));
     }
 };
 
 test "VirtAddr.initTruncate" {
     var virtAddr = VirtAddr.initTruncate(0);
-    std.testing.expectEqual(@as(u64, 0), virtAddr.value);
+    try std.testing.expectEqual(@as(u64, 0), virtAddr.value);
 
     virtAddr = VirtAddr.initTruncate(1 << 47);
-    std.testing.expectEqual(@as(u64, 0xfffff << 47), virtAddr.value);
+    try std.testing.expectEqual(@as(u64, 0xfffff << 47), virtAddr.value);
 
     virtAddr = VirtAddr.initTruncate(123);
-    std.testing.expectEqual(@as(u64, 123), virtAddr.value);
+    try std.testing.expectEqual(@as(u64, 123), virtAddr.value);
 
     virtAddr = VirtAddr.initTruncate(123 << 47);
-    std.testing.expectEqual(@as(u64, 0xfffff << 47), virtAddr.value);
+    try std.testing.expectEqual(@as(u64, 0xfffff << 47), virtAddr.value);
 }
 
 test "VirtAddr.init" {
     var virtAddr = try VirtAddr.init(0);
-    std.testing.expectEqual(@as(u64, 0), virtAddr.value);
+    try std.testing.expectEqual(@as(u64, 0), virtAddr.value);
 
     virtAddr = try VirtAddr.init(1 << 47);
-    std.testing.expectEqual(@as(u64, 0xfffff << 47), virtAddr.value);
+    try std.testing.expectEqual(@as(u64, 0xfffff << 47), virtAddr.value);
 
     virtAddr = try VirtAddr.init(123);
-    std.testing.expectEqual(@as(u64, 123), virtAddr.value);
+    try std.testing.expectEqual(@as(u64, 123), virtAddr.value);
 
-    std.testing.expectError(error.VirtAddrNotValid, VirtAddr.init(123 << 47));
+    try std.testing.expectError(error.VirtAddrNotValid, VirtAddr.init(123 << 47));
 }
 
 test "VirtAddr.fromPtr" {
@@ -160,10 +160,10 @@ test "VirtAddr.fromPtr" {
     var somethingelse: usize = undefined;
 
     var virtAddr = VirtAddr.fromPtr(&something);
-    std.testing.expectEqual(@ptrToInt(&something), virtAddr.value);
+    try std.testing.expectEqual(@ptrToInt(&something), virtAddr.value);
 
     virtAddr = VirtAddr.fromPtr(&somethingelse);
-    std.testing.expectEqual(@ptrToInt(&somethingelse), virtAddr.value);
+    try std.testing.expectEqual(@ptrToInt(&somethingelse), virtAddr.value);
 }
 
 test "VirtAddr.toPtr" {
@@ -173,18 +173,18 @@ test "VirtAddr.toPtr" {
     const ptr = virtAddr.toPtr(*usize);
     ptr.* = 123;
 
-    std.testing.expectEqual(@as(usize, 123), something);
+    try std.testing.expectEqual(@as(usize, 123), something);
 }
 
 test "VirtAddr.pageOffset/Index" {
     var something: usize = undefined;
     var virtAddr = VirtAddr.fromPtr(&something);
 
-    std.testing.expectEqual(@intCast(u12, getBits(virtAddr.value, 0, 12)), virtAddr.pageOffset().value);
-    std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 12, 21)), virtAddr.p1Index().value);
-    std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 21, 30)), virtAddr.p2Index().value);
-    std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 30, 39)), virtAddr.p3Index().value);
-    std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 39, 48)), virtAddr.p4Index().value);
+    try std.testing.expectEqual(@intCast(u12, getBits(virtAddr.value, 0, 12)), virtAddr.pageOffset().value);
+    try std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 12, 21)), virtAddr.p1Index().value);
+    try std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 21, 30)), virtAddr.p2Index().value);
+    try std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 30, 39)), virtAddr.p3Index().value);
+    try std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 39, 48)), virtAddr.p4Index().value);
 }
 
 /// A 64-bit physical memory address.
@@ -258,8 +258,8 @@ pub const PhysAddr = packed struct {
 
     test {
         std.testing.refAllDecls(@This());
-        std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PhysAddr));
-        std.testing.expectEqual(@sizeOf(u64), @sizeOf(PhysAddr));
+        try std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PhysAddr));
+        try std.testing.expectEqual(@sizeOf(u64), @sizeOf(PhysAddr));
     }
 };
 

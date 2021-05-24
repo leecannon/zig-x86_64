@@ -15,7 +15,7 @@ pub fn setCs(sel: x86_64.structures.gdt.SegmentSelector) void {
 }
 
 /// Reload stack segment register.
-pub fn loadSs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void {
+pub inline fn loadSs(sel: x86_64.structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%ss"
         :
         : [sel] "r" (sel.value)
@@ -24,7 +24,7 @@ pub fn loadSs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void
 }
 
 /// Reload data segment register.
-pub fn loadDs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void {
+pub inline fn loadDs(sel: x86_64.structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%ds"
         :
         : [sel] "r" (sel.value)
@@ -33,7 +33,7 @@ pub fn loadDs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void
 }
 
 /// Reload es segment register.
-pub fn loadEs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void {
+pub inline fn loadEs(sel: x86_64.structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%es"
         :
         : [sel] "r" (sel.value)
@@ -42,7 +42,7 @@ pub fn loadEs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void
 }
 
 /// Reload fs segment register.
-pub fn loadFs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void {
+pub inline fn loadFs(sel: x86_64.structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%fs"
         :
         : [sel] "r" (sel.value)
@@ -51,7 +51,7 @@ pub fn loadFs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void
 }
 
 /// Reload gs segment register.
-pub fn loadGs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void {
+pub inline fn loadGs(sel: x86_64.structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%gs"
         :
         : [sel] "r" (sel.value)
@@ -60,12 +60,12 @@ pub fn loadGs(sel: x86_64.structures.gdt.SegmentSelector) callconv(.Inline) void
 }
 
 /// Swap `KernelGsBase` MSR and `GsBase` MSR.
-pub fn swapGs() callconv(.Inline) void {
+pub inline fn swapGs() void {
     asm volatile ("swapgs" ::: "memory");
 }
 
 /// Returns the current value of the code segment register.
-pub fn getCs() callconv(.Inline) x86_64.structures.gdt.SegmentSelector {
+pub inline fn getCs() x86_64.structures.gdt.SegmentSelector {
     return .{
         .value = asm ("mov %%cs, %[ret]"
             : [ret] "=r" (-> u16)
@@ -82,7 +82,7 @@ pub fn getCs() callconv(.Inline) x86_64.structures.gdt.SegmentSelector {
 /// The caller must ensure that this write operation has no unsafe side
 /// effects, as the FS segment base address is often used for thread
 /// local storage.
-pub fn wrfsbase(value: u64) callconv(.Inline) void {
+pub inline fn wrfsbase(value: u64) void {
     asm volatile ("wrfsbase %[val]"
         :
         : [val] "r" (value)
@@ -94,7 +94,7 @@ pub fn wrfsbase(value: u64) callconv(.Inline) void {
 /// ## Safety
 ///
 /// If `CR4.fsgsbase` is not set, this instruction will throw an `#UD`.
-pub fn rdfsbase() callconv(.Inline) u64 {
+pub inline fn rdfsbase() u64 {
     return asm ("rdfsbase %[ret]"
         : [ret] "=r" (-> u64)
     );
@@ -108,7 +108,7 @@ pub fn rdfsbase() callconv(.Inline) u64 {
 ///
 /// The caller must ensure that this write operation has no unsafe side
 /// effects, as the GS segment base address might be in use.
-pub fn wrgsbase(value: u64) callconv(.Inline) void {
+pub inline fn wrgsbase(value: u64) void {
     asm volatile ("wrgsbase %[val]"
         :
         : [val] "r" (value)
@@ -120,7 +120,7 @@ pub fn wrgsbase(value: u64) callconv(.Inline) void {
 /// ## Safety
 ///
 /// If `CR4.fsgsbase` is not set, this instruction will throw an `#UD`.
-pub fn rdgsbase() callconv(.Inline) u64 {
+pub inline fn rdgsbase() u64 {
     return asm ("rdgsbase %[ret]"
         : [ret] "=r" (-> u64)
     );

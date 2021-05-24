@@ -137,14 +137,14 @@ pub const Mapper = struct {
     /// even if they are not set in `PageTableFlags`.
     ///
     /// The `mapToWithTableFlags` method gives explicit control over the parent page table flags.
-    pub fn mapTo(
+    pub inline fn mapTo(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
         frame: paging.CreatePhysFrame(size),
         flags: paging.PageTableFlags,
         frame_allocator: *paging.FrameAllocator,
-    ) callconv(.Inline) MapToError!CreateMapperFlush(size) {
+    ) MapToError!CreateMapperFlush(size) {
         const parent_table_flags = paging.PageTableFlags.init(
             flags.value &
                 (paging.PageTableFlags.PRESENT | paging.PageTableFlags.WRITABLE | paging.PageTableFlags.USER_ACCESSIBLE),
@@ -193,19 +193,19 @@ pub const Mapper = struct {
     ///
     /// If the given address has a valid mapping, the mapped frame and the offset within that
     /// frame is returned. Otherwise an error value is returned.
-    pub fn translate(
+    pub inline fn translate(
         mapper: *Mapper,
         addr: x86_64.VirtAddr,
-    ) callconv(.Inline) TranslateError!TranslateResult {
+    ) TranslateError!TranslateResult {
         return mapper.z_impl_translate(mapper, addr);
     }
 
     /// Return the frame that the specified page is mapped to.
-    pub fn translatePage(
+    pub inline fn translatePage(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
-    ) callconv(.Inline) TranslateError!paging.CreatePhysFrame(size) {
+    ) TranslateError!paging.CreatePhysFrame(size) {
         return switch (size) {
             .Size4KiB => mapper.z_impl_translatePage(mapper, page),
             .Size2MiB => mapper.z_impl_translatePage2MiB(mapper, page),
@@ -214,12 +214,12 @@ pub const Mapper = struct {
     }
 
     /// Set the flags of an existing page table level 2 entry
-    pub fn setFlagsP2Entry(
+    pub inline fn setFlagsP2Entry(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
         flags: paging.PageTableFlags,
-    ) callconv(.Inline) FlagUpdateError!MapperFlushAll {
+    ) FlagUpdateError!MapperFlushAll {
         return switch (size) {
             .Size4KiB => mapper.z_impl_setFlagsP2Entry(mapper, page, flags),
             .Size2MiB => FlagUpdateError.ParentEntryHugePage,
@@ -228,12 +228,12 @@ pub const Mapper = struct {
     }
 
     /// Set the flags of an existing page table level 3 entry
-    pub fn setFlagsP3Entry(
+    pub inline fn setFlagsP3Entry(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
         flags: paging.PageTableFlags,
-    ) callconv(.Inline) FlagUpdateError!MapperFlushAll {
+    ) FlagUpdateError!MapperFlushAll {
         return switch (size) {
             .Size4KiB => mapper.z_impl_setFlagsP3Entry(mapper, page, flags),
             .Size2MiB => mapper.z_impl_setFlagsP3Entry2MiB(mapper, page, flags),
@@ -242,12 +242,12 @@ pub const Mapper = struct {
     }
 
     /// Set the flags of an existing page table level 4 entry
-    pub fn setFlagsP4Entry(
+    pub inline fn setFlagsP4Entry(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
         flags: paging.PageTableFlags,
-    ) callconv(.Inline) FlagUpdateError!MapperFlushAll {
+    ) FlagUpdateError!MapperFlushAll {
         return switch (size) {
             .Size4KiB => mapper.z_impl_setFlagsP4Entry(mapper, page, flags),
             .Size2MiB => mapper.z_impl_setFlagsP4Entry2MiB(mapper, page, flags),
@@ -256,12 +256,12 @@ pub const Mapper = struct {
     }
 
     /// Updates the flags of an existing mapping.
-    pub fn updateFlags(
+    pub inline fn updateFlags(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
         flags: paging.PageTableFlags,
-    ) callconv(.Inline) FlagUpdateError!CreateMapperFlush(size) {
+    ) FlagUpdateError!CreateMapperFlush(size) {
         return switch (size) {
             .Size4KiB => mapper.z_impl_updateFlags(mapper, page, flags),
             .Size2MiB => mapper.z_impl_updateFlags2MiB(mapper, page, flags),
@@ -272,11 +272,11 @@ pub const Mapper = struct {
     /// Removes a mapping from the page table and returns the frame that used to be mapped.
     ///
     /// Note that no page tables or pages are deallocated.
-    pub fn unmap(
+    pub inline fn unmap(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
-    ) callconv(.Inline) UnmapError!CreateUnmapResult(size) {
+    ) UnmapError!CreateUnmapResult(size) {
         return switch (size) {
             .Size4KiB => mapper.z_impl_unmap(mapper, page),
             .Size2MiB => mapper.z_impl_unmap2MiB(mapper, page),
@@ -294,7 +294,7 @@ pub const Mapper = struct {
     ///
     /// Depending on the used mapper implementation, the `PRESENT` and `WRITABLE` flags might
     /// be set for parent tables, even if they are not specified in `parent_table_flags`.
-    pub fn mapToWithTableFlags(
+    pub inline fn mapToWithTableFlags(
         mapper: *Mapper,
         comptime size: paging.PageSize,
         page: paging.CreatePage(size),
@@ -302,7 +302,7 @@ pub const Mapper = struct {
         flags: paging.PageTableFlags,
         parent_table_flags: paging.PageTableFlags,
         frame_allocator: *paging.FrameAllocator,
-    ) callconv(.Inline) MapToError!CreateMapperFlush(size) {
+    ) MapToError!CreateMapperFlush(size) {
         return switch (size) {
             .Size4KiB => mapper.z_impl_mapToWithTableFlags(mapper, page, frame, flags, parent_table_flags, frame_allocator),
             .Size2MiB => mapper.z_impl_mapToWithTableFlags2MiB(mapper, page, frame, flags, parent_table_flags, frame_allocator),

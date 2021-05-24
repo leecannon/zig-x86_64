@@ -8,8 +8,8 @@ const testing = std.testing;
 /// ```zig
 /// const a: u8 = 0b00000010;
 ///
-/// testing.expect(!getBit(a, 0));
-/// testing.expect(getBit(a, 1));
+/// try testing.expect(!getBit(a, 0));
+/// try testing.expect(getBit(a, 1));
 /// ```
 pub fn getBit(target: anytype, comptime bit: comptime_int) bool {
     const target_type = @TypeOf(target);
@@ -26,7 +26,7 @@ pub fn getBit(target: anytype, comptime bit: comptime_int) bool {
 /// ```zig
 /// const a: u8 = 0b01101100;
 /// const b = getBits(a, 2, 6);
-/// testing.expectEqual(@as(u8,0b00001011), b);
+///try testing.expectEqual(@as(u8,0b00001011), b);
 /// ```
 pub fn getBits(target: anytype, comptime start_bit: comptime_int, comptime end_bit: comptime_int) @TypeOf(target) {
     const target_type = @TypeOf(target);
@@ -51,9 +51,9 @@ pub fn getBits(target: anytype, comptime start_bit: comptime_int, comptime end_b
 ///
 /// ```zig
 /// var val: u8 = 0b00000000;
-/// testing.expect(!getBit(val, 0));
+/// try testing.expect(!getBit(val, 0));
 /// setBit( &val, 0, true);
-/// testing.expect(getBit(val, 0));
+/// try testing.expect(getBit(val, 0));
 /// ```
 pub fn setBit(target: anytype, comptime bit: comptime_int, value: bool) void {
     const ptr_type_info: std.builtin.TypeInfo = @typeInfo(@TypeOf(target));
@@ -82,7 +82,7 @@ pub fn setBit(target: anytype, comptime bit: comptime_int, value: bool) void {
 /// ```zig
 /// var val: u8 = 0b10000000;
 /// setBits(&val, 2, 6, 0b00001101);
-/// testing.expectEqual(@as(u8, 0b10110100), val);
+///try testing.expectEqual(@as(u8, 0b10110100), val);
 /// ```
 ///
 /// ## Panics
@@ -115,37 +115,37 @@ pub fn setBits(target: anytype, comptime start_bit: comptime_int, comptime end_b
 
 test "getBit" {
     const a: u8 = 0b00000000;
-    testing.expect(!getBit(a, 0));
-    testing.expect(!getBit(a, 1));
+    try testing.expect(!getBit(a, 0));
+    try testing.expect(!getBit(a, 1));
 
     const b: u8 = 0b11111111;
-    testing.expect(getBit(b, 0));
-    testing.expect(getBit(b, 1));
+    try testing.expect(getBit(b, 0));
+    try testing.expect(getBit(b, 1));
 
     const c: u8 = 0b00000010;
-    testing.expect(!getBit(c, 0));
-    testing.expect(getBit(c, 1));
+    try testing.expect(!getBit(c, 0));
+    try testing.expect(getBit(c, 1));
 }
 
 test "getBits" {
     const a: u8 = 0b01101100;
     const b = getBits(a, 2, 6);
-    testing.expectEqual(@as(u8, 0b00001011), b);
+    try testing.expectEqual(@as(u8, 0b00001011), b);
 }
 
 test "setBit" {
     var val: u8 = 0b00000000;
-    testing.expect(!getBit(val, 0));
+    try testing.expect(!getBit(val, 0));
     setBit(&val, 0, true);
-    testing.expect(getBit(val, 0));
+    try testing.expect(getBit(val, 0));
     setBit(&val, 0, false);
-    testing.expect(!getBit(val, 0));
+    try testing.expect(!getBit(val, 0));
 }
 
 test "setBits" {
     var val: u8 = 0b10000000;
     setBits(&val, 2, 6, 0b00001101);
-    testing.expectEqual(@as(u8, 0b10110100), val);
+    try testing.expectEqual(@as(u8, 0b10110100), val);
 }
 
 comptime {

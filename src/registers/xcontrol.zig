@@ -10,7 +10,7 @@ pub const XCr0 = struct {
     }
 
     /// Read the current raw XCr0 value.
-    pub fn readRaw() callconv(.Inline) u64 {
+    pub inline fn readRaw() u64 {
         var high: u32 = undefined;
         var low: u32 = undefined;
 
@@ -34,7 +34,7 @@ pub const XCr0 = struct {
     /// Write raw XCr0 flags.
     ///
     /// Does _not_ preserve any values, including reserved fields.
-    pub fn writeRaw(value: u64) callconv(.Inline) void {
+    pub inline fn writeRaw(value: u64) void {
         var high: u32 = @truncate(u32, value >> 32);
         var low: u32 = @truncate(u32, value);
 
@@ -52,7 +52,7 @@ pub const XCr0 = struct {
     /// Enables x87 FPU
     pub const X87: u64 = 1;
     pub const NOT_X87: u64 = ~X87;
-    pub fn isX87(self: XCr0) callconv(.Inline) bool {
+    pub inline fn isX87(self: XCr0) bool {
         return self.value & X87 != 0;
     }
 
@@ -60,7 +60,7 @@ pub const XCr0 = struct {
     /// Must be set to enable AVX and YMM
     pub const SSE: u64 = 1 << 1;
     pub const NOT_SSE: u64 = ~SSE;
-    pub fn isSSE(self: XCr0) callconv(.Inline) bool {
+    pub inline fn isSSE(self: XCr0) bool {
         return self.value & SSE != 0;
     }
 
@@ -68,7 +68,7 @@ pub const XCr0 = struct {
     /// Must be set to enable AVX
     pub const YMM: u64 = 1 << 2;
     pub const NOT_YMM: u64 = ~YMM;
-    pub fn isYMM(self: XCr0) callconv(.Inline) bool {
+    pub inline fn isYMM(self: XCr0) bool {
         return self.value & YMM != 0;
     }
 
@@ -76,14 +76,14 @@ pub const XCr0 = struct {
     /// ZSAVE/XRSTOR
     pub const MPK: u64 = 1 << 9;
     pub const NOT_MPK: u64 = ~MPK;
-    pub fn isMPK(self: XCr0) callconv(.Inline) bool {
+    pub inline fn isMPK(self: XCr0) bool {
         return self.value & MPK != 0;
     }
 
     /// When set the Lightweight Profiling extensions are enabled
     pub const LWP: u64 = 1 << 62;
     pub const NOT_LWP: u64 = ~LWP;
-    pub fn isLWP(self: XCr0) callconv(.Inline) bool {
+    pub inline fn isLWP(self: XCr0) bool {
         return self.value & LWP != 0;
     }
 

@@ -10,7 +10,7 @@ pub const COMPort = enum {
     COM4,
 };
 
-fn comPortToPort(com_port: COMPort) callconv(.Inline) u16 {
+inline fn comPortToPort(com_port: COMPort) u16 {
     return switch (com_port) {
         .COM1 => 0x3F8,
         .COM2 => 0x2F8,
@@ -26,7 +26,7 @@ pub const BaudRate = enum {
     Baud28800,
 };
 
-fn baudRateToDivisor(baud_rate: BaudRate) callconv(.Inline) u8 {
+inline fn baudRateToDivisor(baud_rate: BaudRate) u8 {
     return switch (baud_rate) {
         .Baud115200 => 1,
         .Baud57600 => 2,
@@ -79,7 +79,7 @@ pub const SerialPort = struct {
     }
 
     /// Write formated output
-    pub fn writeFormat(self: *SerialPort, comptime fmt: []const u8, args: anytype) callconv(.Inline) void {
+    pub inline fn writeFormat(self: *SerialPort, comptime fmt: []const u8, args: anytype) void {
         self.writer().print(fmt, args) catch unreachable;
     }
 
@@ -92,7 +92,7 @@ pub const SerialPort = struct {
     }
 
     /// Create a `std.io.Writer` for this serial port
-    pub fn writer(self: *SerialPort) callconv(.Inline) Writer {
+    pub inline fn writer(self: *SerialPort) Writer {
         return .{ .context = self };
     }
 

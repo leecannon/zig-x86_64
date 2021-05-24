@@ -12,7 +12,7 @@ pub const RFlags = struct {
     }
 
     /// Returns the raw current value of the RFLAGS register.
-    pub fn readRaw() callconv(.Inline) u64 {
+    pub inline fn readRaw() u64 {
         return asm ("pushfq; popq %[ret]"
             : [ret] "=r" (-> u64)
             :
@@ -28,7 +28,7 @@ pub const RFlags = struct {
     /// Writes the RFLAGS register.
     ///
     /// Does not preserve any bits, including reserved bits. any values, including reserved fields.
-    pub fn writeRaw(value: u64) callconv(.Inline) void {
+    pub inline fn writeRaw(value: u64) void {
         asm volatile ("pushq %[val]; popfq"
             :
             : [val] "r" (value)
@@ -49,7 +49,7 @@ pub const RFlags = struct {
     /// If this flag is modifiable, the CPU supports CPUID.
     pub const ID: u64 = 1 << 21;
     pub const NOT_ID: u64 = ~ID;
-    pub fn isID(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isID(self: RFlags) bool {
         return self.value & ID != 0;
     }
 
@@ -59,7 +59,7 @@ pub const RFlags = struct {
     /// interrupts (CR4.PVI) are activated.
     pub const VIRTUAL_INTERRUPT_PENDING: u64 = 1 << 20;
     pub const NOT_VIRTUAL_INTERRUPT_PENDING: u64 = ~VIRTUAL_INTERRUPT_PENDING;
-    pub fn isVIRTUAL_INTERRUPT_PENDING(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isVIRTUAL_INTERRUPT_PENDING(self: RFlags) bool {
         return self.value & VIRTUAL_INTERRUPT_PENDING != 0;
     }
 
@@ -69,35 +69,35 @@ pub const RFlags = struct {
     /// interrupts (CR4.PVI) are activated.
     pub const VIRTUAL_INTERRUPT: u64 = 1 << 19;
     pub const NOT_VIRTUAL_INTERRUPT: u64 = ~VIRTUAL_INTERRUPT;
-    pub fn isVIRTUAL_INTERRUPT(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isVIRTUAL_INTERRUPT(self: RFlags) bool {
         return self.value & VIRTUAL_INTERRUPT != 0;
     }
 
     /// Enable automatic alignment checking if CR0.AM is set. Only works if CPL is 3.
     pub const ALIGNMENT_CHECK: u64 = 1 << 18;
     pub const NOT_ALIGNMENT_CHECK: u64 = ~ALIGNMENT_CHECK;
-    pub fn isALIGNMENT_CHECK(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isALIGNMENT_CHECK(self: RFlags) bool {
         return self.value & ALIGNMENT_CHECK != 0;
     }
 
     /// Enable the virtual-8086 mode.
     pub const VIRTUAL_8086_MODE: u64 = 1 << 17;
     pub const NOT_VIRTUAL_8086_MODE: u64 = ~VIRTUAL_8086_MODE;
-    pub fn isVIRTUAL_8086_MODE(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isVIRTUAL_8086_MODE(self: RFlags) bool {
         return self.value & VIRTUAL_8086_MODE != 0;
     }
 
     /// Allows to restart an instruction following an instrucion breakpoint.
     pub const RESUME_FLAG: u64 = 1 << 16;
     pub const NOT_RESUME_FLAG: u64 = ~RESUME_FLAG;
-    pub fn isRESUME_FLAG(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isRESUME_FLAG(self: RFlags) bool {
         return self.value & RESUME_FLAG != 0;
     }
 
     /// Used by `iret` in hardware task switch mode to determine if current task is nested.
     pub const NESTED_TASK: u64 = 1 << 14;
     pub const NOT_NESTED_TASK: u64 = ~NESTED_TASK;
-    pub fn isNESTED_TASK(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isNESTED_TASK(self: RFlags) bool {
         return self.value & NESTED_TASK != 0;
     }
 
@@ -106,7 +106,7 @@ pub const RFlags = struct {
     /// Specifies the privilege level required for executing I/O address-space instructions.
     pub const IOPL_HIGH: u64 = 1 << 13;
     pub const NOT_IOPL_HIGH: u64 = ~IOPL_HIGH;
-    pub fn isIOPL_HIGH(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isIOPL_HIGH(self: RFlags) bool {
         return self.value & IOPL_HIGH != 0;
     }
 
@@ -115,7 +115,7 @@ pub const RFlags = struct {
     /// Specifies the privilege level required for executing I/O address-space instructions.
     pub const IOPL_LOW: u64 = 1 << 12;
     pub const NOT_IOPL_LOW: u64 = ~IOPL_LOW;
-    pub fn isIOPL_LOW(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isIOPL_LOW(self: RFlags) bool {
         return self.value & IOPL_LOW != 0;
     }
 
@@ -123,42 +123,42 @@ pub const RFlags = struct {
     /// operation differs from the source operands.
     pub const OVERFLOW_FLAG: u64 = 1 << 11;
     pub const NOT_OVERFLOW_FLAG: u64 = ~OVERFLOW_FLAG;
-    pub fn isOVERFLOW_FLAG(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isOVERFLOW_FLAG(self: RFlags) bool {
         return self.value & OVERFLOW_FLAG != 0;
     }
 
     /// Determines the order in which strings are processed.
     pub const DIRECTION_FLAG: u64 = 1 << 10;
     pub const NOT_DIRECTION_FLAG: u64 = ~DIRECTION_FLAG;
-    pub fn isDIRECTION_FLAG(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isDIRECTION_FLAG(self: RFlags) bool {
         return self.value & DIRECTION_FLAG != 0;
     }
 
     /// Enable interrupts.
     pub const INTERRUPT_FLAG: u64 = 1 << 9;
     pub const NOT_INTERRUPT_FLAG: u64 = ~INTERRUPT_FLAG;
-    pub fn isINTERRUPT_FLAG(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isINTERRUPT_FLAG(self: RFlags) bool {
         return self.value & INTERRUPT_FLAG != 0;
     }
 
     /// Enable single-step mode for debugging.
     pub const TRAP_FLAG: u64 = 1 << 8;
     pub const NOT_TRAP_FLAG: u64 = ~TRAP_FLAG;
-    pub fn isTRAP_FLAG(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isTRAP_FLAG(self: RFlags) bool {
         return self.value & TRAP_FLAG != 0;
     }
 
     /// Set by hardware if last arithmetic operation resulted in a negative value.
     pub const SIGN_FLAG: u64 = 1 << 7;
     pub const NOT_SIGN_FLAG: u64 = ~SIGN_FLAG;
-    pub fn isSIGN_FLAG(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isSIGN_FLAG(self: RFlags) bool {
         return self.value & SIGN_FLAG != 0;
     }
 
     /// Set by hardware if last arithmetic operation resulted in a zero value.
     pub const ZERO_FLAG: u64 = 1 << 6;
     pub const NOT_ZERO_FLAG: u64 = ~ZERO_FLAG;
-    pub fn isZERO_FLAG(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isZERO_FLAG(self: RFlags) bool {
         return self.value & ZERO_FLAG != 0;
     }
 
@@ -166,14 +166,14 @@ pub const RFlags = struct {
     /// result.
     pub const AUXILIARY_CARRY_FLAG: u64 = 1 << 4;
     pub const NOT_AUXILIARY_CARRY_FLAG: u64 = ~AUXILIARY_CARRY_FLAG;
-    pub fn isAUXILIARY_CARRY_FLAG(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isAUXILIARY_CARRY_FLAG(self: RFlags) bool {
         return self.value & AUXILIARY_CARRY_FLAG != 0;
     }
 
     /// Set by hardware if last result has an even number of 1 bits (only for some operations).
     pub const PARITY_FLAG: u64 = 1 << 2;
     pub const NOT_PARITY_FLAG: u64 = ~PARITY_FLAG;
-    pub fn isPARITY_FLAG(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isPARITY_FLAG(self: RFlags) bool {
         return self.value & PARITY_FLAG != 0;
     }
 
@@ -181,7 +181,7 @@ pub const RFlags = struct {
     /// most-significant bit of the result.
     pub const CARRY_FLAG: u64 = 1;
     pub const NOT_CARRY_FLAG: u64 = ~CARRY_FLAG;
-    pub fn isCARRY_FLAG(self: RFlags) callconv(.Inline) bool {
+    pub inline fn isCARRY_FLAG(self: RFlags) bool {
         return self.value & CARRY_FLAG != 0;
     }
 
