@@ -1,16 +1,38 @@
 usingnamespace @import("../common.zig");
 
 /// Extended feature enable mask register
-pub const XCr0 = struct {
-    value: u64,
+pub const XCr0 = packed struct {
+    /// Enables x87 FPU
+    x87: bool,
+    /// Enables 128-bit (legacy) SSE
+    /// Must be set to enable AVX and YMM
+    sse: bool,
+    /// Enables 256-bit SSE
+    /// Must be set to enable AVX
+    avx: bool,
+    z_reserved3_7: u5,
+
+    z_reserved8: bool,
+    /// When set, PKRU state management is supported by
+    /// ZSAVE/XRSTOR
+    mpk: bool,
+    z_reserved10_15: u6,
+
+    z_reserved16_47: u32,
+    z_reserved48_55: u8,
+
+    z_reserved56_61: u6,
+    /// When set the Lightweight Profiling extensions are enabled
+    lwp: bool,
+    z_reserved63: bool,
 
     /// Read the current set of XCr0 flags.
     pub fn read() XCr0 {
-        return .{ .value = readRaw() & ALL };
+        return XCr0.fromU64(readRaw());
     }
 
     /// Read the current raw XCr0 value.
-    pub inline fn readRaw() u64 {
+    fn readRaw() u64 {
         var high: u32 = undefined;
         var low: u32 = undefined;
 
@@ -28,13 +50,13 @@ pub const XCr0 = struct {
     ///
     /// Preserves the value of reserved fields.
     pub fn write(self: XCr0) void {
-        writeRaw(self.value | (readRaw() & NOT_ALL));
+        writeRaw(self.toU64() | (readRaw() & ALL_RESERVED));
     }
 
     /// Write raw XCr0 flags.
     ///
     /// Does _not_ preserve any values, including reserved fields.
-    pub inline fn writeRaw(value: u64) void {
+    fn writeRaw(value: u64) void {
         var high: u32 = @truncate(u32, value >> 32);
         var low: u32 = @truncate(u32, value);
 
@@ -46,45 +68,31 @@ pub const XCr0 = struct {
         );
     }
 
-    pub const ALL: u64 = X87 | SSE | YMM | MPK | LWP;
-    pub const NOT_ALL: u64 = ~ALL;
+    const ALL_RESERVED: u64 = blk: {
+        var flags = std.mem.zeroes(XCr0);
+        flags.z_reserved3_7 = std.math.maxInt(u5);
+        flags.z_reserved8 = true;
+        flags.z_reserved10_15 = std.math.maxInt(u6);
+        flags.z_reserved16_47 = std.math.maxInt(u32);
+        flags.z_reserved48_55 = std.math.maxInt(u8);
+        flags.z_reserved56_61 = std.math.maxInt(u6);
+        flags.z_reserved63 = true;
+        break :blk @bitCast(u64, flags);
+    };
 
-    /// Enables x87 FPU
-    pub const X87: u64 = 1;
-    pub const NOT_X87: u64 = ~X87;
-    pub inline fn isX87(self: XCr0) bool {
-        return self.value & X87 != 0;
+    const ALL_NOT_RESERVED: u64 = ~ALL_RESERVED;
+
+    pub fn fromU64(value: u64) XCr0 {
+        return @bitCast(XCr0, value & ALL_NOT_RESERVED);
     }
 
-    /// Enables 128-bit (legacy) SSE
-    /// Must be set to enable AVX and YMM
-    pub const SSE: u64 = 1 << 1;
-    pub const NOT_SSE: u64 = ~SSE;
-    pub inline fn isSSE(self: XCr0) bool {
-        return self.value & SSE != 0;
+    pub fn toU64(self: XCr0) u64 {
+        return @bitCast(u64, self) & ALL_NOT_RESERVED;
     }
 
-    /// Enables 256-bit SSE
-    /// Must be set to enable AVX
-    pub const YMM: u64 = 1 << 2;
-    pub const NOT_YMM: u64 = ~YMM;
-    pub inline fn isYMM(self: XCr0) bool {
-        return self.value & YMM != 0;
-    }
-
-    /// When set, PKRU state management is supported by
-    /// ZSAVE/XRSTOR
-    pub const MPK: u64 = 1 << 9;
-    pub const NOT_MPK: u64 = ~MPK;
-    pub inline fn isMPK(self: XCr0) bool {
-        return self.value & MPK != 0;
-    }
-
-    /// When set the Lightweight Profiling extensions are enabled
-    pub const LWP: u64 = 1 << 62;
-    pub const NOT_LWP: u64 = ~LWP;
-    pub inline fn isLWP(self: XCr0) bool {
-        return self.value & LWP != 0;
+    test {
+        try std.testing.expectEqual(@as(usize, 64), @bitSizeOf(XCr0));
+        try std.testing.expectEqual(@as(usize, 8), @sizeOf(XCr0));
     }
 
     comptime {

@@ -1,96 +1,75 @@
 usingnamespace @import("../common.zig");
 
 /// The Extended Feature Enable Register.
-pub const Efer = struct {
-    value: u64,
+pub const Efer = packed struct {
 
-    const REGISTER = Msr(0xC000_0080);
+    /// Enables the `syscall` and `sysret` instructions.
+    system_call_extensions: bool,
+
+    z_reserved1_7: u7,
+
+    /// Activates long mode, requires activating paging.
+    long_mode_enable: bool,
+
+    z_reserved9: bool,
+
+    /// Indicates that long mode is active.
+    long_mode_active: bool,
+
+    /// Enables the no-execute page-protection feature.
+    no_execute_enable: bool,
+
+    /// Enables SVM extensions.
+    secure_virtual_machine_enable: bool,
+
+    /// Enable certain limit checks in 64-bit mode.
+    long_mode_segment_limit: bool,
+
+    /// Enable the `fxsave` and `fxrstor` instructions to execute faster in 64-bit mode.
+    fast_fxsave_fxrstor: bool,
+
+    /// Changes how the `invlpg` instruction operates on TLB entries of upper-level entries.
+    translation_cache_extension: bool,
+
+    z_reserved16_31: u16,
+    z_reserved32_63: u32,
 
     /// Read the current EFER flags.
     pub fn read() Efer {
-        return .{ .value = readRaw() & ALL };
-    }
-
-    /// Read the current raw CR0 value.
-    pub inline fn readRaw() u64 {
-        return REGISTER.read();
+        return Efer.fromU64(REGISTER.read());
     }
 
     /// Write the EFER flags, preserving reserved values.
     ///
     /// Preserves the value of reserved fields.
     pub fn write(self: Efer) void {
-        writeRaw(self.value | (readRaw() & NOT_ALL));
+        REGISTER.write(self.toU64() | (REGISTER.read() & ALL_RESERVED));
     }
 
-    /// Write the EFER flags.
-    ///
-    /// Does not preserve any bits, including reserved fields.
-    pub inline fn writeRaw(value: u64) void {
-        REGISTER.write(value);
+    const REGISTER = Msr(0xC000_0080);
+
+    const ALL_RESERVED: u64 = blk: {
+        var flags = std.mem.zeroes(Efer);
+        flags.z_reserved1_7 = std.math.maxInt(u7);
+        flags.z_reserved9 = true;
+        flags.z_reserved16_31 = std.math.maxInt(u16);
+        flags.z_reserved32_63 = std.math.maxInt(u32);
+        break :blk @bitCast(u64, flags);
+    };
+
+    const ALL_NOT_RESERVED: u64 = ~ALL_RESERVED;
+
+    pub fn fromU64(value: u64) Efer {
+        return @bitCast(Efer, value & ALL_NOT_RESERVED);
     }
 
-    pub const ALL: u64 =
-        SYSTEM_CALL_EXTENSIONS | LONG_MODE_ENABLE | LONG_MODE_ACTIVE | NO_EXECUTE_ENABLE |
-        SECURE_VIRTUAL_MACHINE_ENABLE | LONG_MODE_SEGMENT_LIMIT_ENABLE | FAST_FXSAVE_FXRSTOR |
-        TRANSLATION_CACHE_EXTENSION;
-
-    pub const NOT_ALL: u64 = ~ALL;
-
-    /// Enables the `syscall` and `sysret` instructions.
-    pub const SYSTEM_CALL_EXTENSIONS: u64 = 1;
-    pub const NOT_SYSTEM_CALL_EXTENSIONS: u64 = ~SYSTEM_CALL_EXTENSIONS;
-    pub inline fn isSYSTEM_CALL_EXTENSIONS(self: Efer) bool {
-        return self.value & SYSTEM_CALL_EXTENSIONS != 0;
+    pub fn toU64(self: Efer) u64 {
+        return @bitCast(u64, self) & ALL_NOT_RESERVED;
     }
 
-    /// Activates long mode, requires activating paging.
-    pub const LONG_MODE_ENABLE: u64 = 1 << 8;
-    pub const NOT_LONG_MODE_ENABLE: u64 = ~LONG_MODE_ENABLE;
-    pub inline fn isLONG_MODE_ENABLE(self: Efer) bool {
-        return self.value & LONG_MODE_ENABLE != 0;
-    }
-
-    /// Indicates that long mode is active.
-    pub const LONG_MODE_ACTIVE: u64 = 1 << 10;
-    pub const NOT_LONG_MODE_ACTIVE: u64 = ~LONG_MODE_ACTIVE;
-    pub inline fn isLONG_MODE_ACTIVE(self: Efer) bool {
-        return self.value & LONG_MODE_ACTIVE != 0;
-    }
-
-    /// Enables the no-execute page-protection feature.
-    pub const NO_EXECUTE_ENABLE: u64 = 1 << 11;
-    pub const NOT_NO_EXECUTE_ENABLE: u64 = ~NO_EXECUTE_ENABLE;
-    pub inline fn isNO_EXECUTE_ENABLE(self: Efer) bool {
-        return self.value & NO_EXECUTE_ENABLE != 0;
-    }
-
-    /// Enables SVM extensions.
-    pub const SECURE_VIRTUAL_MACHINE_ENABLE: u64 = 1 << 12;
-    pub const NOT_SECURE_VIRTUAL_MACHINE_ENABLE: u64 = ~SECURE_VIRTUAL_MACHINE_ENABLE;
-    pub inline fn isSECURE_VIRTUAL_MACHINE_ENABLE(self: Efer) bool {
-        return self.value & SECURE_VIRTUAL_MACHINE_ENABLE != 0;
-    }
-
-    /// Enable certain limit checks in 64-bit mode.
-    pub const LONG_MODE_SEGMENT_LIMIT_ENABLE: u64 = 1 << 13;
-    pub const NOT_LONG_MODE_SEGMENT_LIMIT_ENABLE: u64 = ~LONG_MODE_SEGMENT_LIMIT_ENABLE;
-    pub inline fn isLONG_MODE_SEGMENT_LIMIT_ENABLE(self: Efer) bool {
-        return self.value & LONG_MODE_SEGMENT_LIMIT_ENABLE != 0;
-    }
-
-    /// Enable the `fxsave` and `fxrstor` instructions to execute faster in 64-bit mode.
-    pub const FAST_FXSAVE_FXRSTOR: u64 = 1 << 14;
-    pub const NOT_FAST_FXSAVE_FXRSTOR: u64 = ~FAST_FXSAVE_FXRSTOR;
-    pub inline fn isFAST_FXSAVE_FXRSTOR(self: Efer) bool {
-        return self.value & FAST_FXSAVE_FXRSTOR != 0;
-    }
-
-    /// Changes how the `invlpg` instruction operates on TLB entries of upper-level entries.
-    pub const TRANSLATION_CACHE_EXTENSION: u64 = 1 << 15;
-    pub const NOT_TRANSLATION_CACHE_EXTENSION: u64 = ~TRANSLATION_CACHE_EXTENSION;
-    pub inline fn isTRANSLATION_CACHE_EXTENSION(self: Efer) bool {
-        return self.value & TRANSLATION_CACHE_EXTENSION != 0;
+    test {
+        try std.testing.expectEqual(@as(usize, 64), @bitSizeOf(Efer));
+        try std.testing.expectEqual(@as(usize, 8), @sizeOf(Efer));
     }
 
     comptime {
@@ -103,13 +82,13 @@ pub const FsBase = struct {
     const REGISTER = Msr(0xC000_0100);
 
     /// Read the current FsBase register.
-    pub inline fn read() x86_64.VirtAddr {
+    pub fn read() x86_64.VirtAddr {
         // We use unchecked here as we assume that the write function did not write an invalid address
         return x86_64.VirtAddr.initUnchecked(REGISTER.read());
     }
 
     /// Write a given virtual address to the FS.Base register.
-    pub inline fn write(addr: x86_64.VirtAddr) void {
+    pub fn write(addr: x86_64.VirtAddr) void {
         REGISTER.write(addr.value);
     }
 
@@ -123,13 +102,13 @@ pub const GsBase = struct {
     const REGISTER = Msr(0xC000_0101);
 
     /// Read the current GsBase register.
-    pub inline fn read() x86_64.VirtAddr {
+    pub fn read() x86_64.VirtAddr {
         // We use unchecked here as we assume that the write function did not write an invalid address
         return x86_64.VirtAddr.initUnchecked(REGISTER.read());
     }
 
     /// Write a given virtual address to the GS.Base register.
-    pub inline fn write(addr: x86_64.VirtAddr) void {
+    pub fn write(addr: x86_64.VirtAddr) void {
         REGISTER.write(addr.value);
     }
 
@@ -143,13 +122,13 @@ pub const KernelGsBase = struct {
     const REGISTER = Msr(0xC000_0102);
 
     /// Read the current KernelGsBase register.
-    pub inline fn read() x86_64.VirtAddr {
+    pub fn read() x86_64.VirtAddr {
         // We use unchecked here as we assume that the write function did not write an invalid address
         return x86_64.VirtAddr.initUnchecked(REGISTER.read());
     }
 
     /// Write a given virtual address to the KernelGsBase register.
-    pub inline fn write(addr: x86_64.VirtAddr) void {
+    pub fn write(addr: x86_64.VirtAddr) void {
         REGISTER.write(addr.value);
     }
 
@@ -260,14 +239,14 @@ pub const LStar = struct {
 
     /// Read the current LStar register.
     /// This holds the target RIP of a syscall.
-    pub inline fn read() x86_64.VirtAddr {
+    pub fn read() x86_64.VirtAddr {
         // We use unchecked here as we assume that the write function did not write an invalid address
         return x86_64.VirtAddr.initUnchecked(REGISTER.read());
     }
 
     /// Write a given virtual address to the LStar register.
     /// This holds the target RIP of a syscall.
-    pub inline fn write(addr: x86_64.VirtAddr) void {
+    pub fn write(addr: x86_64.VirtAddr) void {
         REGISTER.write(addr.value);
     }
 
@@ -287,8 +266,8 @@ pub const SFMask = struct {
     /// executed. If a bit in SFMASK is set to 1, the corresponding
     /// bit in RFLAGS is cleared to 0. If a bit in SFMASK is cleared
     /// to 0, the corresponding rFLAGS bit is not modified.
-    pub inline fn read() x86_64.registers.RFlags {
-        return .{ .value = REGISTER.read() & x86_64.registers.RFlags.ALL };
+    pub fn read() x86_64.registers.RFlags {
+        return x86_64.registers.RFlags.fromU64(REGISTER.read());
     }
 
     /// Write to the SFMask register.
@@ -298,8 +277,8 @@ pub const SFMask = struct {
     /// executed. If a bit in SFMASK is set to 1, the corresponding
     /// bit in RFLAGS is cleared to 0. If a bit in SFMASK is cleared
     /// to 0, the corresponding rFLAGS bit is not modified.
-    pub inline fn write(value: x86_64.registers.RFlags) void {
-        REGISTER.write(value.value & x86_64.registers.RFlags.ALL);
+    pub fn write(value: x86_64.registers.RFlags) void {
+        REGISTER.write(value.toU64());
     }
 
     comptime {

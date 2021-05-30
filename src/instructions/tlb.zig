@@ -1,7 +1,7 @@
 usingnamespace @import("../common.zig");
 
 /// Invalidate the given address in the TLB using the `invlpg` instruction.
-pub inline fn flush(addr: x86_64.VirtAddr) void {
+pub fn flush(addr: x86_64.VirtAddr) void {
     asm volatile ("invlpg (%[addr])"
         :
         : [addr] "r" (addr.value)
@@ -10,7 +10,7 @@ pub inline fn flush(addr: x86_64.VirtAddr) void {
 }
 
 /// Invalidate the TLB completely by reloading the CR3 register.
-pub inline fn flushAll() void {
+pub fn flushAll() void {
     x86_64.registers.control.Cr3.write(x86_64.registers.control.Cr3.read());
 }
 

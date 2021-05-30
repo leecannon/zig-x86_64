@@ -16,7 +16,7 @@ pub const SegmentSelector = struct {
     }
 
     // Returns the GDT index.
-    pub inline fn getIndex(self: SegmentSelector) u16 {
+    pub fn getIndex(self: SegmentSelector) u16 {
         return self.value >> 3;
     }
 
@@ -84,16 +84,8 @@ test "SegmentSelector" {
 /// [Intel Manual](https://software.intel.com/sites/default/files/managed/39/c5/325462-sdm-vol-1-2abcd-3abcd.pdf),
 /// [AMD Manual](https://www.amd.com/system/files/TechDocs/24593.pdf)
 pub const GlobalDescriptorTable = struct {
-    table: [8]u64,
-    next_free: u16,
-
-    /// Creates an empty GDT.
-    pub fn init() GlobalDescriptorTable {
-        return .{
-            .table = [_]u64{0} ** 8,
-            .next_free = 1,
-        };
-    }
+    table: [8]u64 = [_]u64{0} ** 8,
+    next_free: u16 = 1,
 
     /// Create a GDT from a slice of `u64`.
     /// The length of the slice must not exceed 8.
@@ -161,7 +153,7 @@ pub const GlobalDescriptorTable = struct {
 };
 
 test "GlobalDescriptorTable" {
-    var gdt = GlobalDescriptorTable.init();
+    var gdt: GlobalDescriptorTable = .{};
     _ = gdt.addEntry(createKernelCodeSegment());
     _ = gdt.addEntry(createUserCodeSegment());
     _ = gdt.addEntry(createUserDataSegment());
@@ -169,25 +161,25 @@ test "GlobalDescriptorTable" {
 
 /// Creates a segment descriptor for a 64-bit kernel code segment.
 /// Suitable for use with `syscall` or 64-bit `sysenter`.
-pub inline fn createKernelCodeSegment() Descriptor {
+pub fn createKernelCodeSegment() Descriptor {
     return .{ .UserSegment = Descriptor.KERNEL_CODE64 };
 }
 
 /// Creates a segment descriptor for a ring 0 data segment (32-bit or 64-bit).
 /// Suitable for use with `syscall` or 64-bit `sysenter`.
-pub inline fn createKernelDataSegment() Descriptor {
+pub fn createKernelDataSegment() Descriptor {
     return .{ .UserSegment = Descriptor.KERNEL_DATA };
 }
 
 /// Creates a segment descriptor for a ring 3 data segment (32-bit or 64-bit).
 /// Suitable for use with `sysret` or `sysexit`.
-pub inline fn createUserDataSegment() Descriptor {
+pub fn createUserDataSegment() Descriptor {
     return .{ .UserSegment = Descriptor.USER_DATA };
 }
 
 /// Creates a segment descriptor for a 64-bit ring 3 code segment. #
 /// Suitable for use with `sysret` or `sysexit`.
-pub inline fn createUserCodeSegment() Descriptor {
+pub fn createUserCodeSegment() Descriptor {
     return .{ .UserSegment = Descriptor.USER_CODE64 };
 }
 

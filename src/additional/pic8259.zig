@@ -77,7 +77,7 @@ pub const SimplePic = struct {
         };
     }
 
-    inline fn handlesInterrupt(offset: u8, interrupt_id: u8) bool {
+    fn handlesInterrupt(offset: u8, interrupt_id: u8) bool {
         return offset <= interrupt_id and interrupt_id < offset + 8;
     }
 
@@ -91,19 +91,19 @@ pub const SimplePic = struct {
         }
     }
 
-    pub inline fn rawGetPrimaryInterruptMask() PicPrimaryInterruptMask {
+    pub fn rawGetPrimaryInterruptMask() PicPrimaryInterruptMask {
         return PicPrimaryInterruptMask.fromU8(PRIMARY_DATA_PORT.read());
     }
 
-    pub inline fn rawSetPrimaryInterruptMask(mask: PicPrimaryInterruptMask) void {
+    pub fn rawSetPrimaryInterruptMask(mask: PicPrimaryInterruptMask) void {
         PRIMARY_DATA_PORT.write(mask.toU8());
     }
 
-    pub inline fn rawGetSecondaryInterruptMask() PicSecondaryInterruptMask {
+    pub fn rawGetSecondaryInterruptMask() PicSecondaryInterruptMask {
         return PicSecondaryInterruptMask.fromU8(SECONDARY_DATA_PORT.read());
     }
 
-    pub inline fn rawSetSecondaryInterruptMask(mask: PicSecondaryInterruptMask) void {
+    pub fn rawSetSecondaryInterruptMask(mask: PicSecondaryInterruptMask) void {
         SECONDARY_DATA_PORT.write(mask.toU8());
     }
 
@@ -131,7 +131,7 @@ pub const SimplePic = struct {
         };
     }
 
-    inline fn isPrimaryPic(interrupt: PicInterrupt) bool {
+    fn isPrimaryPic(interrupt: PicInterrupt) bool {
         return switch (interrupt) {
             .Timer, .Keyboard, .Chain, .SerialPort2, .SerialPort1, .ParallelPort23, .FloppyDisk, .ParallelPort1 => true,
             else => false,
@@ -204,19 +204,19 @@ pub const PicPrimaryInterruptMask = packed struct {
     floppy_disk: bool,
     parallel_port_1: bool,
 
-    pub inline fn noneMasked() PicPrimaryInterruptMask {
+    pub fn noneMasked() PicPrimaryInterruptMask {
         return fromU8(0);
     }
 
-    pub inline fn allMasked() PicPrimaryInterruptMask {
+    pub fn allMasked() PicPrimaryInterruptMask {
         return fromU8(0b11111111);
     }
 
-    pub inline fn toU8(value: PicPrimaryInterruptMask) u8 {
+    pub fn toU8(value: PicPrimaryInterruptMask) u8 {
         return @bitCast(u8, value);
     }
 
-    pub inline fn fromU8(value: u8) PicPrimaryInterruptMask {
+    pub fn fromU8(value: u8) PicPrimaryInterruptMask {
         return @bitCast(PicPrimaryInterruptMask, value);
     }
 
@@ -237,19 +237,19 @@ pub const PicSecondaryInterruptMask = packed struct {
     primary_ata: bool,
     secondary_ata: bool,
 
-    pub inline fn noneMasked() PicSecondaryInterruptMask {
+    pub fn noneMasked() PicSecondaryInterruptMask {
         return fromU8(0);
     }
 
-    pub inline fn allMasked() PicSecondaryInterruptMask {
+    pub fn allMasked() PicSecondaryInterruptMask {
         return fromU8(0b11111111);
     }
 
-    pub inline fn toU8(value: PicSecondaryInterruptMask) u8 {
+    pub fn toU8(value: PicSecondaryInterruptMask) u8 {
         return @bitCast(u8, value);
     }
 
-    pub inline fn fromU8(value: u8) PicSecondaryInterruptMask {
+    pub fn fromU8(value: u8) PicSecondaryInterruptMask {
         return @bitCast(PicSecondaryInterruptMask, value);
     }
 

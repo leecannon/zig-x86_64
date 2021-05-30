@@ -64,7 +64,7 @@ pub const RecursivePageTable = struct {
         }
 
         const recursive_index_frame = table.getAtIndex(recursive_index).getFrame() catch return InvalidPageTable.NotRecursive;
-        if (x86_64.registers.control.Cr3.read().physFrame.start_address.value != recursive_index_frame.start_address.value) {
+        if (x86_64.registers.control.Cr3.read().phys_frame.start_address.value != recursive_index_frame.start_address.value) {
             return InvalidPageTable.NotActive;
         }
 
@@ -121,8 +121,7 @@ pub const RecursivePageTable = struct {
         entry.setAddr(frame.start_address);
 
         var new_flags = flags;
-        new_flags.value |= paging.PageTableFlags.HUGE_PAGE;
-
+        new_flags.huge = true;
         entry.setFlags(new_flags);
 
         return mapping.MapperFlush1GiB.init(page);
@@ -144,8 +143,8 @@ pub const RecursivePageTable = struct {
         const p3_entry = p3.getAtIndex(page.p3Index());
         const flags = p3_entry.getFlags();
 
-        if (flags.value & paging.PageTableFlags.PRESENT == 0) return mapping.UnmapError.PageNotMapped;
-        if (flags.value & paging.PageTableFlags.HUGE_PAGE == 0) return mapping.UnmapError.ParentEntryHugePage;
+        if (!flags.present) return mapping.UnmapError.PageNotMapped;
+        if (!flags.huge) return mapping.UnmapError.ParentEntryHugePage;
 
         const frame = paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch |err| return mapping.UnmapError.InvalidFrameAddress;
 
@@ -175,7 +174,7 @@ pub const RecursivePageTable = struct {
         if (p3_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
 
         var new_flags = flags;
-        new_flags.value |= paging.PageTableFlags.HUGE_PAGE;
+        new_flags.huge = true;
         p3_entry.setFlags(new_flags);
 
         return mapping.MapperFlush1GiB.init(page);
@@ -252,8 +251,7 @@ pub const RecursivePageTable = struct {
         entry.setAddr(frame.start_address);
 
         var new_flags = flags;
-        new_flags.value |= paging.PageTableFlags.HUGE_PAGE;
-
+        new_flags.huge = true;
         entry.setFlags(new_flags);
 
         return mapping.MapperFlush2MiB.init(page);
@@ -283,8 +281,8 @@ pub const RecursivePageTable = struct {
         const p2_entry = p2.getAtIndex(page.p2Index());
         const flags = p2_entry.getFlags();
 
-        if (flags.value & paging.PageTableFlags.PRESENT == 0) return mapping.UnmapError.PageNotMapped;
-        if (flags.value & paging.PageTableFlags.HUGE_PAGE == 0) return mapping.UnmapError.ParentEntryHugePage;
+        if (!flags.present) return mapping.UnmapError.PageNotMapped;
+        if (!flags.huge) return mapping.UnmapError.ParentEntryHugePage;
 
         const frame = paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch |err| return mapping.UnmapError.InvalidFrameAddress;
 
@@ -320,7 +318,7 @@ pub const RecursivePageTable = struct {
         if (p2_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
 
         var new_flags = flags;
-        new_flags.value |= paging.PageTableFlags.HUGE_PAGE;
+        new_flags.huge = true;
         p2_entry.setFlags(new_flags);
 
         return mapping.MapperFlush2MiB.init(page);
@@ -612,7 +610,8 @@ pub const RecursivePageTable = struct {
         if (p4_entry.isUnused()) {
             return mapping.TranslateError.NotMapped;
         }
-        if (p4_entry.getFlags().value & paging.PageTableFlags.HUGE_PAGE != 0) {
+
+        if (p4_entry.getFlags().huge) {
             @panic("level 4 entry has huge page bit set");
         }
 
@@ -622,7 +621,7 @@ pub const RecursivePageTable = struct {
         if (p3_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
         const p3_flags = p3_entry.getFlags();
-        if (p3_flags.value & paging.PageTableFlags.HUGE_PAGE != 0) {
+        if (p3_flags.huge) {
             return mapping.TranslateResult{
                 .Frame1GiB = .{
                     .frame = paging.PhysFrame1GiB.containingAddress(p3_entry.getAddr()),
@@ -638,7 +637,7 @@ pub const RecursivePageTable = struct {
         if (p2_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
         const p2_flags = p2_entry.getFlags();
-        if (p2_flags.value & paging.PageTableFlags.HUGE_PAGE != 0) {
+        if (p2_flags.huge) {
             return mapping.TranslateResult{
                 .Frame2MiB = .{
                     .frame = paging.PhysFrame2MiB.containingAddress(p2_entry.getAddr()),
@@ -654,7 +653,7 @@ pub const RecursivePageTable = struct {
         if (p1_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
         const p1_flags = p1_entry.getFlags();
-        if (p1_flags.value & paging.PageTableFlags.HUGE_PAGE != 0) {
+        if (p1_flags.huge) {
             @panic("level 1 entry has huge page bit set");
         }
 
@@ -724,22 +723,23 @@ fn createNextTable(
     if (entry.isUnused()) {
         if (frameAllocator.allocateFrame(.Size4KiB)) |frame| {
             entry.setAddr(frame.start_address);
-            entry.setFlags(
-                paging.PageTableFlags.init(
-                    paging.PageTableFlags.PRESENT | paging.PageTableFlags.WRITABLE | insertFlags.value,
-                ),
-            );
+
+            var flags = insertFlags;
+            flags.present = true;
+            flags.writeable = true;
+            entry.setFlags(flags);
+
             created = true;
         } else {
             return mapping.MapToError.FrameAllocationFailed;
         }
     } else {
-        const raw_insert_flags = insertFlags.value;
-        const raw_entry_flags = entry.getFlags().value;
+        const raw_insert_flags = insertFlags.toU64();
+        const raw_entry_flags = entry.getFlags().toU64();
         const combined_raw_flags = raw_insert_flags | raw_entry_flags;
 
         if (raw_insert_flags != 0 and combined_raw_flags != raw_insert_flags) {
-            entry.setFlags(.{ .value = combined_raw_flags });
+            entry.setFlags(paging.PageTableFlags.fromU64(combined_raw_flags));
         }
     }
 

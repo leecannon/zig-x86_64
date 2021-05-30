@@ -27,7 +27,7 @@ pub fn hlt() void {
 /// optimized away (see https://github.com/rust-lang/rust/issues/28728). By invoking this
 /// instruction (which is marked as volatile), the compiler should no longer optimize the
 /// endless loop away.
-pub inline fn nop() void {
+pub fn nop() void {
     asm volatile ("nop");
 }
 
@@ -37,7 +37,7 @@ pub fn bochsBreakpoint() void {
     asm volatile ("xchgw %%bx, %%bx");
 }
 
-pub inline fn pause() void {
+pub fn pause() void {
     asm volatile ("pause" ::: "memory");
 }
 

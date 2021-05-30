@@ -15,21 +15,21 @@ pub const EnsureNoInterrupts = struct {
 };
 
 /// Returns whether interrupts are enabled.
-pub inline fn areEnabled() bool {
-    return (x86_64.registers.RFlags.read().value & x86_64.registers.RFlags.INTERRUPT_FLAG) != 0;
+pub fn areEnabled() bool {
+    return x86_64.registers.RFlags.read().interrupt;
 }
 
 /// Enable interrupts.
 ///
 /// This is a wrapper around the `sti` instruction.
-pub inline fn enable() void {
+pub fn enable() void {
     asm volatile ("sti");
 }
 
 /// Disable interrupts.
 ///
 /// This is a wrapper around the `cli` instruction.
-pub inline fn disable() void {
+pub fn disable() void {
     asm volatile ("cli");
 }
 

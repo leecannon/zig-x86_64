@@ -1,9 +1,14 @@
 usingnamespace @import("../common.zig");
 
+pub const NUMBER_OF_INTERRUPT_HANDLERS = 256;
+
 /// An Interrupt Descriptor Table with 256 entries.
 /// ## **IMPORTANT** - must be align(16)
 ///
 /// The first 32 entries are used for CPU exceptions. The remaining entries are used for interrupts.
+///
+/// This differs from `SimpleInterruptDescriptorTable` by providing function types per handler using
+/// `Interrupt` calling convention.
 pub const InterruptDescriptorTable = extern struct {
     /// A divide error (`#DE`) occurs when the denominator of a DIV instruction or
     /// an IDIV instruction is 0. A `#DE` also occurs if the result is too large to be
@@ -333,7 +338,7 @@ pub const InterruptDescriptorTable = extern struct {
     ///   external interrupt was recognized.
     /// - If the interrupt occurs as a result of executing the INTn instruction, the saved
     ///   instruction pointer points to the instruction after the INTn.
-    interrupts: [256 - 32]HandlerFuncEntry,
+    interrupts: [NUMBER_OF_INTERRUPT_HANDLERS - 32]HandlerFuncEntry,
 
     pub fn init() InterruptDescriptorTable {
         return .{
@@ -408,8 +413,8 @@ pub const InterruptDescriptorTable = extern struct {
 
     test {
         std.testing.refAllDecls(@This());
-        try std.testing.expectEqual(@bitSizeOf(u64) * 2 * 256, @bitSizeOf(InterruptDescriptorTable));
-        try std.testing.expectEqual(@sizeOf(u64) * 2 * 256, @sizeOf(InterruptDescriptorTable));
+        try std.testing.expectEqual(@bitSizeOf(u64) * 2 * NUMBER_OF_INTERRUPT_HANDLERS, @bitSizeOf(InterruptDescriptorTable));
+        try std.testing.expectEqual(@sizeOf(u64) * 2 * NUMBER_OF_INTERRUPT_HANDLERS, @sizeOf(InterruptDescriptorTable));
     }
 };
 
@@ -465,14 +470,14 @@ fn Entry(comptime handler_type: type) type {
         /// Set the handler function for the IDT entry and sets the present bit.
         ///
         /// For the code selector field, this function uses the code segment selector currently active in the CPU.
-        pub fn setHandler(self: *Self, handler: handler_type) void {
+        pub fn setHandler(self: *Self, handler: handler_type, code_selector: x86_64.structures.gdt.SegmentSelector) void {
             const addr = @ptrToInt(handler);
 
             self.pointer_low = @truncate(u16, addr);
             self.pointer_middle = @truncate(u16, (addr >> 16));
             self.pointer_high = @truncate(u32, (addr >> 32));
 
-            self.gdt_selector = x86_64.instructions.segmentation.getCs().value;
+            self.gdt_selector = code_selector.value;
 
             self.options.setPresent(true);
         }
@@ -502,7 +507,7 @@ fn dummyFn(interrupt_stack_frame: InterruptStackFrame) callconv(.Interrupt) void
 
 test "Entry" {
     var a = HandlerFuncEntry.missing();
-    a.setHandler(dummyFn);
+    a.setHandler(dummyFn, x86_64.structures.gdt.SegmentSelector{ .value = 0 });
 }
 
 /// Represents the options field of an IDT entry.
@@ -510,7 +515,7 @@ pub const EntryOptions = packed struct {
     value: u16,
 
     /// Creates a minimal options field with all the must-be-one bits set.
-    pub inline fn minimal() EntryOptions {
+    pub fn minimal() EntryOptions {
         return EntryOptions{ .value = 0b1110_0000_0000 };
     }
 
@@ -578,7 +583,7 @@ pub const InterruptStackFrame = extern struct {
 
     /// `volatile` is used because LLVM optimizations remove non-volatile
     /// modifications of the interrupt stack frame.
-    pub inline fn asMut(self: *const InterruptStackFrame) *volatile InterruptStackFrame {
+    pub fn asMut(self: *const InterruptStackFrame) *volatile InterruptStackFrame {
         return @intToPtr(*volatile InterruptStackFrame, @ptrToInt(self));
     }
 
@@ -603,90 +608,145 @@ pub const InterruptStackFrame = extern struct {
 };
 
 /// Describes an page fault error code.
-pub const PageFaultErrorCode = extern struct {
-    value: u64,
-
-    pub const ALL: u64 = PROTECTION_VIOLATION | CAUSED_BY_WRITE | USER_MODE | MALFORMED_TABLE | INSTRUCTION_FETCH;
-    pub const NOT_ALL: u64 = ~ALL;
-
+pub const PageFaultErrorCode = packed struct {
     /// If this flag is set, the page fault was caused by a page-protection violation,
     /// else the page fault was caused by a not-present page.
-    pub const PROTECTION_VIOLATION: u64 = 1;
-    pub const NOT_PROTECTION_VIOLATION: u64 = ~PROTECTION_VIOLATION;
-    pub inline fn isPROTECTION_VIOLATION(self: PageFaultErrorCode) bool {
-        return self.value & PROTECTION_VIOLATION != 0;
-    }
+    protection_violation: bool,
 
     /// If this flag is set, the memory access that caused the page fault was a write.
     /// Else the access that caused the page fault is a memory read. This bit does not
     /// necessarily indicate the cause of the page fault was a read or write violation.
-    pub const CAUSED_BY_WRITE: u64 = 1 << 1;
-    pub const NOT_CAUSED_BY_WRITE: u64 = ~CAUSED_BY_WRITE;
-    pub inline fn isCAUSED_BY_WRITE(self: PageFaultErrorCode) bool {
-        return self.value & CAUSED_BY_WRITE != 0;
-    }
+    caused_by_write: bool,
 
     /// If this flag is set, an access in user mode (CPL=3) caused the page fault. Else
     /// an access in supervisor mode (CPL=0, 1, or 2) caused the page fault. This bit
     /// does not necessarily indicate the cause of the page fault was a privilege violation.
-    pub const USER_MODE: u64 = 1 << 2;
-    pub const NOT_USER_MODE: u64 = ~USER_MODE;
-    pub inline fn isUSER_MODE(self: PageFaultErrorCode) bool {
-        return self.value & USER_MODE != 0;
-    }
+    user_mode: bool,
 
     /// If this flag is set, the page fault is a result of the processor reading a 1 from
     /// a reserved field within a page-translation-table entry.
-    pub const MALFORMED_TABLE: u64 = 1 << 3;
-    pub const NOT_MALFORMED_TABLE: u64 = ~MALFORMED_TABLE;
-    pub inline fn isMALFORMED_TABLE(self: PageFaultErrorCode) bool {
-        return self.value & MALFORMED_TABLE != 0;
-    }
+    malformed_table: bool,
 
     /// If this flag is set, it indicates that the access that caused the page fault was an
     /// instruction fetch.
-    pub const INSTRUCTION_FETCH: u64 = 1 << 4;
-    pub const NOT_INSTRUCTION_FETCH: u64 = ~INSTRUCTION_FETCH;
-    pub inline fn isINSTRUCTION_FETCH(self: PageFaultErrorCode) bool {
-        return self.value & INSTRUCTION_FETCH != 0;
+    instruction_fetch: bool,
+
+    z_reserved5_7: u3,
+    z_reserved8_15: u8,
+    z_reserved16_31: u16,
+    z_reserved32_63: u32,
+
+    const ALL_RESERVED: u64 = blk: {
+        var flags = std.mem.zeroes(PageFaultErrorCode);
+        flags.z_reserved5_7 = std.math.maxInt(u3);
+        flags.z_reserved8_15 = std.math.maxInt(u8);
+        flags.z_reserved16_31 = std.math.maxInt(u16);
+        flags.z_reserved32_63 = std.math.maxInt(u32);
+        break :blk @bitCast(u64, flags);
+    };
+
+    const ALL_NOT_RESERVED: u64 = ~ALL_RESERVED;
+
+    pub fn fromU64(value: u64) PageFaultErrorCode {
+        return @bitCast(PageFaultErrorCode, value & ALL_NOT_RESERVED);
     }
 
-    pub fn format(value: PageFaultErrorCode, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        try writer.writeAll("PageFaultErrorCode(");
-
-        if (value.isPROTECTION_VIOLATION()) {
-            try writer.writeAll(" PROTECTION_VIOLATION ");
-        } else {
-            try writer.writeAll(" NOT_PRESENT ");
-        }
-
-        if (value.isMALFORMED_TABLE()) {
-            try writer.writeAll("- MALFORMED_TABLE ");
-        }
-
-        if (value.isINSTRUCTION_FETCH()) {
-            try writer.writeAll("- INSTRUCTION_FETCH ");
-        }
-
-        if (value.isCAUSED_BY_WRITE()) {
-            try writer.writeAll("- WRITE ");
-        } else {
-            try writer.writeAll("- READ ");
-        }
-
-        if (value.isUSER_MODE()) {
-            try writer.writeAll("- USER ");
-        } else {
-            try writer.writeAll("- SUPER ");
-        }
-
-        try writer.writeAll(")");
+    pub fn toU64(self: PageFaultErrorCode) u64 {
+        return @bitCast(u64, self) & ALL_NOT_RESERVED;
     }
 
     test {
+        try std.testing.expectEqual(@as(usize, 64), @bitSizeOf(PageFaultErrorCode));
+        try std.testing.expectEqual(@as(usize, 8), @sizeOf(PageFaultErrorCode));
+    }
+
+    comptime {
         std.testing.refAllDecls(@This());
-        try std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageFaultErrorCode));
-        try std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageFaultErrorCode));
+    }
+};
+
+/// An Interrupt Descriptor Table with 256 entries.
+/// ## **IMPORTANT** - must be align(16)
+///
+/// The first 32 entries are used for CPU exceptions. The remaining entries are used for interrupts.
+///
+/// This differs from `InterruptDescriptorTable` by providing a simplifed view
+/// of the IDT with only `naked` handlers.
+/// Handling the interrupt stack frame and/or error code is left up to the user.
+pub const SimpleInterruptDescriptorTable = extern struct {
+    entries: [NUMBER_OF_INTERRUPT_HANDLERS]SimpleIDTEntry = [_]SimpleIDTEntry{SimpleIDTEntry.missing()} ** NUMBER_OF_INTERRUPT_HANDLERS,
+
+    /// Loads the IDT in the CPU using the `lidt` command.
+    pub fn load(self: *SimpleInterruptDescriptorTable) void {
+        const ptr = x86_64.structures.DescriptorTablePointer{
+            .base = x86_64.VirtAddr.fromPtr(self),
+            .limit = @as(u16, @sizeOf(SimpleInterruptDescriptorTable) - 1),
+        };
+
+        x86_64.instructions.tables.lidt(&ptr);
+    }
+
+    test {
+        try std.testing.expectEqual(@bitSizeOf(u64) * 2 * NUMBER_OF_INTERRUPT_HANDLERS, @bitSizeOf(SimpleInterruptDescriptorTable));
+        try std.testing.expectEqual(@sizeOf(u64) * 2 * NUMBER_OF_INTERRUPT_HANDLERS, @sizeOf(SimpleInterruptDescriptorTable));
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
+
+pub fn interruptNumberHasErrorCode(interrupt_number: u8) bool {
+    return switch (interrupt_number) {
+        0x00...0x07 => false,
+        0x08 => true,
+        0x09 => false,
+        0x0A...0x0E => true,
+        0x0F...0x10 => false,
+        0x11 => true,
+        0x12...0x14 => false,
+        0x1E => true,
+        else => false,
+    };
+}
+
+pub const SimpleIDTEntry = extern struct {
+    pointer_low: u16,
+    gdt_selector: u16,
+    options: EntryOptions,
+    pointer_middle: u16,
+    pointer_high: u32,
+    reserved: u32,
+
+    /// Creates a non-present IDT entry (but sets the must-be-one bits).
+    pub fn missing() SimpleIDTEntry {
+        return .{
+            .pointer_low = 0,
+            .gdt_selector = 0,
+            .options = EntryOptions.minimal(),
+            .pointer_middle = 0,
+            .pointer_high = 0,
+            .reserved = 0,
+        };
+    }
+
+    /// Set the handler function for the IDT entry and sets the present bit.
+    ///
+    /// For the code selector field, this function uses the code segment selector currently active in the CPU.
+    pub fn setHandler(self: *SimpleIDTEntry, handler: fn () callconv(.Naked) void, code_selector: x86_64.structures.gdt.SegmentSelector) void {
+        const addr = @ptrToInt(handler);
+
+        self.pointer_low = @truncate(u16, addr);
+        self.pointer_middle = @truncate(u16, (addr >> 16));
+        self.pointer_high = @truncate(u32, (addr >> 32));
+
+        self.gdt_selector = code_selector.value;
+
+        self.options.setPresent(true);
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
     }
 };
 

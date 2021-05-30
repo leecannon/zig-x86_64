@@ -39,6 +39,17 @@ pub const PrivilegeLevel = enum(u8) {
     Ring3 = 3,
 };
 
+/// In concurrent programming, sometimes it is desirable to make sure commonly accessed pieces of
+/// data are not placed into the same cache line. Updating an atomic value invalidates the whole
+/// cache line it belongs to, which makes the next access to the same cache line slower for other
+/// CPU cores.
+///
+/// Note that 128 is just a reasonable guess and is not guaranteed to match the actual cache line
+/// length of the machine the program is running on. On modern Intel architectures, spatial
+/// prefetcher is pulling pairs of 64-byte cache lines at a time, so we pessimistically assume that
+/// cache lines are 128 bytes long.
+pub const CACHE_LINE_LENGTH: usize = 128;
+
 /// Result of the `cpuid` instruction.
 pub const CpuidResult = struct {
     /// EAX register.

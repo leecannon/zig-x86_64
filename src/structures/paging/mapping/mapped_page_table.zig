@@ -70,8 +70,7 @@ pub fn MappedPageTable(
             entry.setAddr(frame.start_address);
 
             var new_flags = flags;
-            new_flags.value |= paging.PageTableFlags.HUGE_PAGE;
-
+            new_flags.huge = true;
             entry.setFlags(new_flags);
 
             return mapping.MapperFlush1GiB.init(page);
@@ -91,8 +90,8 @@ pub fn MappedPageTable(
             const p3_entry = p3.getAtIndex(page.p3Index());
             const flags = p3_entry.getFlags();
 
-            if (flags.value & paging.PageTableFlags.PRESENT == 0) return mapping.UnmapError.PageNotMapped;
-            if (flags.value & paging.PageTableFlags.HUGE_PAGE != 0) return mapping.UnmapError.ParentEntryHugePage;
+            if (!flags.present) return mapping.UnmapError.PageNotMapped;
+            if (flags.huge) return mapping.UnmapError.ParentEntryHugePage;
 
             const frame = paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch |err| return mapping.UnmapError.InvalidFrameAddress;
 
@@ -121,7 +120,7 @@ pub fn MappedPageTable(
             if (p3_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
 
             var new_flags = flags;
-            new_flags.value |= paging.PageTableFlags.HUGE_PAGE;
+            new_flags.huge = true;
             p3_entry.setFlags(new_flags);
 
             return mapping.MapperFlush1GiB.init(page);
@@ -193,8 +192,7 @@ pub fn MappedPageTable(
             entry.setAddr(frame.start_address);
 
             var new_flags = flags;
-            new_flags.value |= paging.PageTableFlags.HUGE_PAGE;
-
+            new_flags.huge = true;
             entry.setFlags(new_flags);
 
             return mapping.MapperFlush2MiB.init(page);
@@ -218,8 +216,8 @@ pub fn MappedPageTable(
             const p2_entry = p2.getAtIndex(page.p2Index());
             const flags = p2_entry.getFlags();
 
-            if (flags.value & paging.PageTableFlags.PRESENT == 0) return mapping.UnmapError.PageNotMapped;
-            if (flags.value & paging.PageTableFlags.HUGE_PAGE != 0) return mapping.UnmapError.ParentEntryHugePage;
+            if (!flags.present) return mapping.UnmapError.PageNotMapped;
+            if (flags.huge) return mapping.UnmapError.ParentEntryHugePage;
 
             const frame = paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch |err| return mapping.UnmapError.InvalidFrameAddress;
 
@@ -252,7 +250,7 @@ pub fn MappedPageTable(
             if (p2_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
 
             var new_flags = flags;
-            new_flags.value |= paging.PageTableFlags.HUGE_PAGE;
+            new_flags.huge = true;
             p2_entry.setFlags(new_flags);
 
             return mapping.MapperFlush2MiB.init(page);
@@ -380,8 +378,8 @@ pub fn MappedPageTable(
             const p1_entry = p1.getAtIndex(page.p1Index());
             const flags = p1_entry.getFlags();
 
-            if (flags.value & paging.PageTableFlags.PRESENT == 0) return mapping.UnmapError.PageNotMapped;
-            if (flags.value & paging.PageTableFlags.HUGE_PAGE != 0) return mapping.UnmapError.ParentEntryHugePage;
+            if (!flags.present) return mapping.UnmapError.PageNotMapped;
+            if (flags.huge) return mapping.UnmapError.ParentEntryHugePage;
 
             const frame = paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return mapping.UnmapError.InvalidFrameAddress;
 
@@ -624,12 +622,12 @@ fn PageTableWalker(
                     return PageTableCreateError.FrameAllocationFailed;
                 }
             } else {
-                const raw_insert_flags = insert_flags.value;
-                const raw_entry_flags = entry.getFlags().value;
+                const raw_insert_flags = insert_flags.toU64();
+                const raw_entry_flags = entry.getFlags().toU64();
                 const combined_raw_flags = raw_insert_flags | raw_entry_flags;
 
                 if (raw_insert_flags != 0 and combined_raw_flags != raw_insert_flags) {
-                    entry.setFlags(.{ .value = combined_raw_flags });
+                    entry.setFlags(paging.PageTableFlags.fromU64(combined_raw_flags));
                 }
             }
 
