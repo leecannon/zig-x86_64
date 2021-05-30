@@ -88,7 +88,7 @@ pub fn cpuidWithSubleaf(leaf: u32, sub_leaf: u32) CpuidResult {
     var ecx: u32 = undefined;
     var edx: u32 = undefined;
 
-    asm volatile ("mov %%rbx, %%rsi; cpuid; xchg %%rbx, %%rsi;"
+    asm volatile ("cpuid"
         : [eax] "={eax}" (eax),
           [ebx] "={ebx}" (ebx),
           [ecx] "={ecx}" (ecx),
@@ -115,12 +115,6 @@ pub fn cpuidMax(leaf: u32) [2]u32 {
         result.eax,
         result.ebx,
     };
-}
-
-/// Get the id of the currently executing cpu/core (Local APIC id)
-pub fn getCurrentCpuId() u16 {
-    const bits = @import("bits.zig");
-    return @truncate(u16, bits.getBits(cpuid(0x1).ebx, 24, 32));
 }
 
 comptime {
