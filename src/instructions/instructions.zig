@@ -21,6 +21,22 @@ pub fn hlt() void {
     asm volatile ("hlt");
 }
 
+/// Set the AC (alignment check) bit in the RFLAGS register.
+///
+/// This is used to enable accessing user mapped pages when 
+/// SMAP (Supervisor Memory Access Protection) is enabled
+pub fn setac() void {
+    asm volatile ("stac" ::: "cc");
+}
+
+/// Clear the AC (alignment check) bit in the RFLAGS register.
+///
+/// This is used to disable accessing user mapped pages when 
+/// SMAP (Supervisor Memory Access Protection) is enabled
+pub fn clearac() void {
+    asm volatile ("clac" ::: "cc");
+}
+
 /// Executes the `nop` instructions, which performs no operation (i.e. does nothing).
 ///
 /// This operation is useful to work around the LLVM bug that endless loops are illegally
