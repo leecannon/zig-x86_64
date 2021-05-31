@@ -193,14 +193,7 @@ pub const PageTableFlags = packed struct {
 /// Always page-sized.
 /// **IMPORTANT** Must be align(4096)
 pub const PageTable = extern struct {
-    entries: [PAGE_TABLE_ENTRY_COUNT]PageTableEntry,
-
-    /// Creates an empty page table.
-    pub fn init() PageTable {
-        return .{
-            .entries = [_]PageTableEntry{PageTableEntry.init()} ** PAGE_TABLE_ENTRY_COUNT,
-        };
-    }
+    entries: [PAGE_TABLE_ENTRY_COUNT]PageTableEntry = [_]PageTableEntry{PageTableEntry.init()} ** PAGE_TABLE_ENTRY_COUNT,
 
     /// Clears all entries.
     pub fn zero(self: *PageTable) void {

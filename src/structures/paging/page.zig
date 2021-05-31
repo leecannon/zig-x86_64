@@ -140,134 +140,212 @@ pub fn pageFromTableIndices(p4_index: PageTableIndex, p3_index: PageTableIndex, 
     return Page.containingAddress(x86_64.VirtAddr.initPanic(addr));
 }
 
-/// An range of pages, exclusive the upper bound. Page size 4 KiB
-pub const PageRange = CreatePageRange(Page);
+/// A range of pages, exclusive the upper bound. Page size 4 KiB
+pub const PageRange = struct {
+    /// The start of the range, inclusive.
+    start: Page,
+    /// The end of the range, exclusive.
+    end: Page,
 
-/// An range of pages, exclusive the upper bound. Page size 2 MiB
-pub const PageRange2MiB = CreatePageRange(Page2MiB);
-
-/// An range of pages, exclusive the upper bound. Page size 1 GiB
-pub const PageRange1GiB = CreatePageRange(Page1GiB);
-
-pub fn CreatePageRange(comptime page_type: type) type {
-    comptime {
-        if (page_type != Page and page_type != Page2MiB and page_type != Page1GiB) {
-            @compileError("Non-Page type given");
-        }
+    /// Returns whether the range contains no frames.
+    pub fn isEmpty(self: PageRange) bool {
+        return self.start.start_address.value >= self.end.start_address.value;
     }
 
-    return struct {
-        const Self = @This();
-
-        /// The start of the range, inclusive.
-        start: page_type,
-        /// The end of the range, exclusive.
-        end: page_type,
-
-        /// Returns whether the range contains no frames.
-        pub fn isEmpty(self: Self) bool {
-            return self.start.start_address.value >= self.end.start_address.value;
+    pub fn next(self: *PageRange) ?Page {
+        if (self.start.start_address.value < self.end.start_address.value) {
+            const page = self.start;
+            self.start = Page.containingAddress(.{ .value = self.start.start_address.value + Page.bytes });
+            return page;
         }
-
-        pub fn next(self: *Self) ?page_type {
-            if (self.start.start_address.value < self.end.start_address.value) {
-                const page = self.start;
-                self.start = page_type.containingAddress(.{ .value = self.start.start_address.value + page_type.bytes });
-                return page;
-            }
-            return null;
-        }
-
-        comptime {
-            std.testing.refAllDecls(@This());
-        }
-    };
-}
-
-/// An range of pages, inclusive the upper bound. Page size 4 KiB
-pub const PageRangeInclusive = CreatePageRangeInclusive(Page);
-
-/// An range of pages, inclusive the upper bound. Page size 2 MiB
-pub const PageRange2MiBInclusive = CreatePageRangeInclusive(Page2MiB);
-
-/// An range of pages, inclusive the upper bound. Page size 1 GiB
-pub const PageRange1GiBInclusive = CreatePageRangeInclusive(Page1GiB);
-
-pub fn CreatePageRangeInclusive(comptime page_type: type) type {
-    comptime {
-        if (page_type != Page and page_type != Page2MiB and page_type != Page1GiB) {
-            @compileError("Non-Page type given");
-        }
+        return null;
     }
 
-    return struct {
-        const Self = @This();
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
-        /// The start of the range, inclusive.
-        start: page_type,
-        /// The end of the range, exclusive.
-        end: page_type,
+/// A range of pages, exclusive the upper bound. Page size 2 MiB
+pub const PageRange2MiB = struct {
+    /// The start of the range, inclusive.
+    start: Page2MiB,
+    /// The end of the range, exclusive.
+    end: Page2MiB,
 
-        /// Returns whether the range contains no frames.
-        pub fn isEmpty(self: Self) bool {
-            return self.start.start_address.value > self.end.start_address.value;
+    /// Returns whether the range contains no frames.
+    pub fn isEmpty(self: PageRange2MiB) bool {
+        return self.start.start_address.value >= self.end.start_address.value;
+    }
+
+    pub fn next(self: *PageRange2MiB) ?Page2MiB {
+        if (self.start.start_address.value < self.end.start_address.value) {
+            const page = self.start;
+            self.start = Page2MiB.containingAddress(.{ .value = self.start.start_address.value + Page2MiB.bytes });
+            return page;
         }
+        return null;
+    }
 
-        pub fn next(self: *Self) ?page_type {
-            if (self.start.start_address.value <= self.end.start_address.value) {
-                const page = self.start;
-                self.start = page_type.containingAddress(x86_64.VirtAddr{ .value = self.start.start_address.value + page_type.bytes });
-                return page;
-            }
-            return null;
-        }
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
-        comptime {
-            std.testing.refAllDecls(@This());
+/// A range of pages, exclusive the upper bound. Page size 1 GiB
+pub const PageRange1GiB = struct {
+    /// The start of the range, inclusive.
+    start: Page1GiB,
+    /// The end of the range, exclusive.
+    end: Page1GiB,
+
+    /// Returns whether the range contains no frames.
+    pub fn isEmpty(self: PageRange1GiB) bool {
+        return self.start.start_address.value >= self.end.start_address.value;
+    }
+
+    pub fn next(self: *PageRange1GiB) ?Page1GiB {
+        if (self.start.start_address.value < self.end.start_address.value) {
+            const page = self.start;
+            self.start = Page1GiB.containingAddress(.{ .value = self.start.start_address.value + Page1GiB.bytes });
+            return page;
         }
-    };
-}
+        return null;
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
+
+/// A range of pages, inclusive the upper bound. Page size 4 KiB
+pub const PageRangeInclusive = struct {
+    /// The start of the range, inclusive.
+    start: Page,
+    /// The end of the range, exclusive.
+    end: Page,
+
+    /// Returns whether the range contains no frames.
+    pub fn isEmpty(self: PageRangeInclusive) bool {
+        return self.start.start_address.value > self.end.start_address.value;
+    }
+
+    pub fn next(self: *PageRangeInclusive) ?Page {
+        if (self.start.start_address.value <= self.end.start_address.value) {
+            const page = self.start;
+            self.start = Page.containingAddress(x86_64.VirtAddr{ .value = self.start.start_address.value + Page.bytes });
+            return page;
+        }
+        return null;
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
+
+/// A range of pages, inclusive the upper bound. Page size 2 MiB
+pub const PageRange2MiBInclusive = struct {
+    /// The start of the range, inclusive.
+    start: Page2MiB,
+    /// The end of the range, exclusive.
+    end: Page2MiB,
+
+    /// Returns whether the range contains no frames.
+    pub fn isEmpty(self: PageRange2MiBInclusive) bool {
+        return self.start.start_address.value > self.end.start_address.value;
+    }
+
+    pub fn next(self: *PageRange2MiBInclusive) ?Page2MiB {
+        if (self.start.start_address.value <= self.end.start_address.value) {
+            const page = self.start;
+            self.start = Page2MiB.containingAddress(x86_64.VirtAddr{ .value = self.start.start_address.value + Page2MiB.bytes });
+            return page;
+        }
+        return null;
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
+
+/// A range of pages, inclusive the upper bound. Page size 1 GiB
+pub const PageRange1GiBInclusive = struct {
+    /// The start of the range, inclusive.
+    start: Page1GiB,
+    /// The end of the range, exclusive.
+    end: Page1GiB,
+
+    /// Returns whether the range contains no frames.
+    pub fn isEmpty(self: PageRange1GiBInclusive) bool {
+        return self.start.start_address.value > self.end.start_address.value;
+    }
+
+    pub fn next(self: *PageRange1GiBInclusive) ?Page1GiB {
+        if (self.start.start_address.value <= self.end.start_address.value) {
+            const page = self.start;
+            self.start = Page1GiB.containingAddress(x86_64.VirtAddr{ .value = self.start.start_address.value + Page1GiB.bytes });
+            return page;
+        }
+        return null;
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// Generates iterators for ranges of physical memory frame. Page size 4 KiB
-pub const PageIterator = CreatePageIterator(Page);
+pub const PageIterator = struct {
+    /// Returns a range of pages, exclusive `end`.
+    pub fn range(start: Page, end: Page) PageRange {
+        return .{ .start = start, .end = end };
+    }
+
+    /// Returns a range of pages, inclusive `end`.
+    pub fn rangeInclusive(start: Page, end: Page) PageRangeInclusive {
+        return .{ .start = start, .end = end };
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// Generates iterators for ranges of physical memory frame. Page size 2 MiB
-pub const PageIterator2MiB = CreatePageIterator(Page2MiB);
+pub const PageIterator2MiB = struct {
+    /// Returns a range of pages, exclusive `end`.
+    pub fn range(start: Page2MiB, end: Page2MiB) PageRange2MiB {
+        return .{ .start = start, .end = end };
+    }
+
+    /// Returns a range of pages, inclusive `end`.
+    pub fn rangeInclusive(start: Page2MiB, end: Page2MiB) PageRange2MiBInclusive {
+        return .{ .start = start, .end = end };
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// Generates iterators for ranges of physical memory frame. Page size 1 GiB
-pub const PageIterator1GiB = CreatePageIterator(Page1GiB);
+pub const PageIterator1GiB = struct {
+    /// Returns a range of pages, exclusive `end`.
+    pub fn range(start: Page1GiB, end: Page1GiB) PageRange1GiB {
+        return .{ .start = start, .end = end };
+    }
 
-pub fn CreatePageIterator(comptime page_type: type) type {
-    const page_range_type = switch (page_type) {
-        Page => PageRange,
-        Page2MiB => PageRange2MiB,
-        Page1GiB => PageRange1GiB,
-        else => @compileError("Non-Page type given"),
-    };
+    /// Returns a range of pages, inclusive `end`.
+    pub fn rangeInclusive(start: Page1GiB, end: Page1GiB) PageRange1GiBInclusive {
+        return .{ .start = start, .end = end };
+    }
 
-    const page_range_inclusive_type = switch (page_type) {
-        Page => PageRangeInclusive,
-        Page2MiB => PageRange2MiBInclusive,
-        Page1GiB => PageRange1GiBInclusive,
-        else => @compileError("Non-Page type given"),
-    };
-
-    return struct {
-        /// Returns a range of pages, exclusive `end`.
-        pub fn range(start: page_type, end: page_type) page_range_type {
-            return page_range_type{ .start = start, .end = end };
-        }
-
-        /// Returns a range of pages, inclusive `end`.
-        pub fn rangeInclusive(start: page_type, end: page_type) page_range_inclusive_type {
-            return page_range_inclusive_type{ .start = start, .end = end };
-        }
-
-        comptime {
-            std.testing.refAllDecls(@This());
-        }
-    };
-}
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 test "PageIterator" {
     var virtAddrA = x86_64.VirtAddr.initPanic(0x00000FFFFFFF0000);

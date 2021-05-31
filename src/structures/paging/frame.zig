@@ -57,159 +57,289 @@ pub fn CreatePhysFrame(comptime page_size: x86_64.structures.paging.PageSize) ty
 }
 
 /// Generates iterators for ranges of physical memory frame. Page size 4 KiB
-pub const PhysFrameIterator = CreatePhysFrameIterator(PhysFrame);
+pub const PhysFrameIterator = struct {
+    /// Returns a range of frames, exclusive `end`.
+    pub fn range(start: PhysFrame, end: PhysFrame) PhysFrameRange {
+        return .{ .start = start, .end = end };
+    }
+
+    /// Returns a range of frames, inclusive `end`.
+    pub fn rangeInclusive(start: PhysFrame, end: PhysFrame) PhysFrameRangeInclusive {
+        return .{ .start = start, .end = end };
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// Generates iterators for ranges of physical memory frame. Page size 2 MiB
-pub const PhysFrameIterator2MiB = CreatePhysFrameIterator(PhysFrame2MiB);
+pub const PhysFrameIterator2MiB = struct {
+    /// Returns a range of frames, exclusive `end`.
+    pub fn range(start: PhysFrame2MiB, end: PhysFrame2MiB) PhysFrameRange2MiB {
+        return .{ .start = start, .end = end };
+    }
+
+    /// Returns a range of frames, inclusive `end`.
+    pub fn rangeInclusive(start: PhysFrame2MiB, end: PhysFrame2MiB) PhysFrameRange2MiBInclusive {
+        return .{ .start = start, .end = end };
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// Generates iterators for ranges of physical memory frame. Page size 1 GiB
-pub const PhysFrameIterator1GiB = CreatePhysFrameIterator(PhysFrame1GiB);
-
-pub fn CreatePhysFrameIterator(comptime phys_frame_type: type) type {
-    const phy_frame_range_type = switch (phys_frame_type) {
-        PhysFrame => PhysFrameRange,
-        PhysFrame2MiB => PhysFrameRange2MiB,
-        PhysFrame1GiB => PhysFrameRange1GiB,
-        else => @compileError("Non-PhysFrame type given"),
-    };
-
-    const phys_frame_range_inclusive_type = switch (phys_frame_type) {
-        PhysFrame => PhysFrameRangeInclusive,
-        PhysFrame2MiB => PhysFrameRange2MiBInclusive,
-        PhysFrame1GiB => PhysFrameRange1GiBInclusive,
-        else => @compileError("Non-PhysFrame type given"),
-    };
-
-    return struct {
-        /// Returns a range of frames, exclusive `end`.
-        pub fn range(start: phys_frame_type, end: phys_frame_type) phy_frame_range_type {
-            return phy_frame_range_type{ .start = start, .end = end };
-        }
-
-        /// Returns a range of frames, inclusive `end`.
-        pub fn rangeInclusive(start: phys_frame_type, end: phys_frame_type) phys_frame_range_inclusive_type {
-            return phys_frame_range_inclusive_type{ .start = start, .end = end };
-        }
-
-        comptime {
-            std.testing.refAllDecls(@This());
-        }
-    };
-}
-
-/// An range of physical memory frames, exclusive the upper bound. Page size 4 KiB
-pub const PhysFrameRange = CreatePhysFrameRange(PhysFrame);
-
-/// An range of physical memory frames, exclusive the upper bound. Page size 2 MiB
-pub const PhysFrameRange2MiB = CreatePhysFrameRange(PhysFrame2MiB);
-
-/// An range of physical memory frames, exclusive the upper bound. Page size 1 GiB
-pub const PhysFrameRange1GiB = CreatePhysFrameRange(PhysFrame1GiB);
-
-pub fn CreatePhysFrameRange(comptime phys_frame_type: type) type {
-    comptime {
-        if (phys_frame_type != PhysFrame and phys_frame_type != PhysFrame2MiB and phys_frame_type != PhysFrame1GiB) {
-            @compileError("Non-PhysFrame type given");
-        }
+pub const PhysFrameIterator1GiB = struct {
+    /// Returns a range of frames, exclusive `end`.
+    pub fn range(start: PhysFrame1GiB, end: PhysFrame1GiB) PhysFrameRange1GiB {
+        return .{ .start = start, .end = end };
     }
 
-    return struct {
-        const Self = @This();
+    /// Returns a range of frames, inclusive `end`.
+    pub fn rangeInclusive(start: PhysFrame1GiB, end: PhysFrame1GiB) PhysFrameRange1GiBInclusive {
+        return .{ .start = start, .end = end };
+    }
 
-        /// The start of the range, inclusive.
-        start: ?phys_frame_type,
-        /// The end of the range, exclusive.
-        end: phys_frame_type,
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
-        /// Returns whether the range contains no frames.
-        pub fn isEmpty(self: Self) bool {
-            if (self.start) |x| {
-                return x.start_address.value >= self.end.start_address.value;
-            }
-            return true;
+/// A range of physical memory frames, exclusive the upper bound. Page size 4 KiB
+pub const PhysFrameRange = struct {
+    /// The start of the range, inclusive.
+    start: ?PhysFrame,
+    /// The end of the range, exclusive.
+    end: PhysFrame,
+
+    /// Returns whether the range contains no frames.
+    pub fn isEmpty(self: PhysFrameRange) bool {
+        if (self.start) |x| {
+            return x.start_address.value >= self.end.start_address.value;
         }
+        return true;
+    }
 
-        pub fn next(self: *Self) ?phys_frame_type {
-            if (self.start) |start| {
-                if (start.start_address.value < self.end.start_address.value) {
-                    const frame = start;
+    pub fn next(self: *PhysFrameRange) ?PhysFrame {
+        if (self.start) |start| {
+            if (start.start_address.value < self.end.start_address.value) {
+                const frame = start;
 
-                    const opt_addr = x86_64.PhysAddr.init(start.start_address.value + phys_frame_type.size.bytes()) catch null;
+                const opt_addr = x86_64.PhysAddr.init(start.start_address.value + PhysFrame.size.bytes()) catch null;
 
-                    if (opt_addr) |addr| {
-                        self.start = phys_frame_type.containingAddress(addr);
-                    } else {
-                        self.start = null;
-                    }
-
-                    return frame;
+                if (opt_addr) |addr| {
+                    self.start = PhysFrame.containingAddress(addr);
+                } else {
+                    self.start = null;
                 }
-            }
-            return null;
-        }
 
-        comptime {
-            std.testing.refAllDecls(@This());
+                return frame;
+            }
         }
-    };
-}
+        return null;
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
+
+/// A range of physical memory frames, exclusive the upper bound. Page size 2 MiB
+pub const PhysFrameRange2MiB = struct {
+    /// The start of the range, inclusive.
+    start: ?PhysFrame2MiB,
+    /// The end of the range, exclusive.
+    end: PhysFrame2MiB,
+
+    /// Returns whether the range contains no frames.
+    pub fn isEmpty(self: PhysFrameRange2MiB) bool {
+        if (self.start) |x| {
+            return x.start_address.value >= self.end.start_address.value;
+        }
+        return true;
+    }
+
+    pub fn next(self: *PhysFrameRange2MiB) ?PhysFrame2MiB {
+        if (self.start) |start| {
+            if (start.start_address.value < self.end.start_address.value) {
+                const frame = start;
+
+                const opt_addr = x86_64.PhysAddr.init(start.start_address.value + PhysFrame2MiB.size.bytes()) catch null;
+
+                if (opt_addr) |addr| {
+                    self.start = PhysFrame2MiB.containingAddress(addr);
+                } else {
+                    self.start = null;
+                }
+
+                return frame;
+            }
+        }
+        return null;
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
+
+/// A range of physical memory frames, exclusive the upper bound. Page size 1 GiB
+pub const PhysFrameRange1GiB = struct {
+    /// The start of the range, inclusive.
+    start: ?PhysFrame1GiB,
+    /// The end of the range, exclusive.
+    end: PhysFrame1GiB,
+
+    /// Returns whether the range contains no frames.
+    pub fn isEmpty(self: PhysFrameRange1GiB) bool {
+        if (self.start) |x| {
+            return x.start_address.value >= self.end.start_address.value;
+        }
+        return true;
+    }
+
+    pub fn next(self: *PhysFrameRange1GiB) ?PhysFrame1GiB {
+        if (self.start) |start| {
+            if (start.start_address.value < self.end.start_address.value) {
+                const frame = start;
+
+                const opt_addr = x86_64.PhysAddr.init(start.start_address.value + PhysFrame1GiB.size.bytes()) catch null;
+
+                if (opt_addr) |addr| {
+                    self.start = PhysFrame1GiB.containingAddress(addr);
+                } else {
+                    self.start = null;
+                }
+
+                return frame;
+            }
+        }
+        return null;
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// An range of physical memory frames, inclusive the upper bound. Page size 4 KiB
-pub const PhysFrameRangeInclusive = CreatePhysFrameRangeInclusive(PhysFrame);
+pub const PhysFrameRangeInclusive = struct {
+    /// The start of the range, inclusive.
+    start: ?PhysFrame,
+    /// The end of the range, inclusive.
+    end: PhysFrame,
 
-/// An range of physical memory frames, inclusive the upper bound. Page size 2 MiB
-pub const PhysFrameRange2MiBInclusive = CreatePhysFrameRangeInclusive(PhysFrame2MiB);
-
-/// An range of physical memory frames, inclusive the upper bound. Page size 1 GiB
-pub const PhysFrameRange1GiBInclusive = CreatePhysFrameRangeInclusive(PhysFrame1GiB);
-
-pub fn CreatePhysFrameRangeInclusive(comptime phys_frame_type: type) type {
-    comptime {
-        if (phys_frame_type != PhysFrame and phys_frame_type != PhysFrame2MiB and phys_frame_type != PhysFrame1GiB) {
-            @compileError("Non-PhysFrame type given");
+    /// Returns whether the range contains no frames.
+    pub fn isEmpty(self: PhysFrameRangeInclusive) bool {
+        if (self.start) |x| {
+            return x.start_address.value > self.end.start_address.value;
         }
+        return true;
     }
 
-    return struct {
-        const Self = @This();
+    pub fn next(self: *PhysFrameRangeInclusive) ?PhysFrame {
+        if (self.start) |start| {
+            if (start.start_address.value <= self.end.start_address.value) {
+                const frame = start;
 
-        /// The start of the range, inclusive.
-        start: ?phys_frame_type,
-        /// The end of the range, inclusive.
-        end: phys_frame_type,
+                const opt_addr = x86_64.PhysAddr.init(start.start_address.value + PhysFrame.size.bytes()) catch null;
 
-        /// Returns whether the range contains no frames.
-        pub fn isEmpty(self: Self) bool {
-            if (self.start) |x| {
-                return x.start_address.value > self.end.start_address.value;
-            }
-            return true;
-        }
-
-        pub fn next(self: *Self) ?phys_frame_type {
-            if (self.start) |start| {
-                if (start.start_address.value <= self.end.start_address.value) {
-                    const frame = start;
-
-                    const opt_addr = x86_64.PhysAddr.init(start.start_address.value + phys_frame_type.size.bytes()) catch null;
-
-                    if (opt_addr) |addr| {
-                        self.start = phys_frame_type.containingAddress(addr);
-                    } else {
-                        self.start = null;
-                    }
-
-                    return frame;
+                if (opt_addr) |addr| {
+                    self.start = PhysFrame.containingAddress(addr);
+                } else {
+                    self.start = null;
                 }
-            }
-            return null;
-        }
 
-        comptime {
-            std.testing.refAllDecls(@This());
+                return frame;
+            }
         }
-    };
-}
+        return null;
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
+
+/// An range of physical memory frames, inclusive the upper bound. Page size 2 MiB
+pub const PhysFrameRange2MiBInclusive = struct {
+    /// The start of the range, inclusive.
+    start: ?PhysFrame2MiB,
+    /// The end of the range, inclusive.
+    end: PhysFrame2MiB,
+
+    /// Returns whether the range contains no frames.
+    pub fn isEmpty(self: PhysFrameRange2MiBInclusive) bool {
+        if (self.start) |x| {
+            return x.start_address.value > self.end.start_address.value;
+        }
+        return true;
+    }
+
+    pub fn next(self: *PhysFrameRange2MiBInclusive) ?PhysFrame2MiB {
+        if (self.start) |start| {
+            if (start.start_address.value <= self.end.start_address.value) {
+                const frame = start;
+
+                const opt_addr = x86_64.PhysAddr.init(start.start_address.value + PhysFrame2MiB.size.bytes()) catch null;
+
+                if (opt_addr) |addr| {
+                    self.start = PhysFrame2MiB.containingAddress(addr);
+                } else {
+                    self.start = null;
+                }
+
+                return frame;
+            }
+        }
+        return null;
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
+
+/// An range of physical memory frames, inclusive the upper bound. Page size 1 GiB
+pub const PhysFrameRange1GiBInclusive = struct {
+    /// The start of the range, inclusive.
+    start: ?PhysFrame1GiB,
+    /// The end of the range, inclusive.
+    end: PhysFrame1GiB,
+
+    /// Returns whether the range contains no frames.
+    pub fn isEmpty(self: PhysFrameRange1GiBInclusive) bool {
+        if (self.start) |x| {
+            return x.start_address.value > self.end.start_address.value;
+        }
+        return true;
+    }
+
+    pub fn next(self: *PhysFrameRange1GiBInclusive) ?PhysFrame1GiB {
+        if (self.start) |start| {
+            if (start.start_address.value <= self.end.start_address.value) {
+                const frame = start;
+
+                const opt_addr = x86_64.PhysAddr.init(start.start_address.value + PhysFrame1GiB.size.bytes()) catch null;
+
+                if (opt_addr) |addr| {
+                    self.start = PhysFrame1GiB.containingAddress(addr);
+                } else {
+                    self.start = null;
+                }
+
+                return frame;
+            }
+        }
+        return null;
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 test "PhysFrameIterator" {
     var physAddrA = x86_64.PhysAddr.initPanic(0x000FFFFFFFFF0000);

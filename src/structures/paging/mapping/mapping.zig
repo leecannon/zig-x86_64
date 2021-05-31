@@ -1,6 +1,5 @@
 usingnamespace @import("../../../common.zig");
 
-pub const NoOffsetPageTable = @import("mapped_page_table.zig").NoOffsetPageTable;
 pub const OffsetPageTable = @import("mapped_page_table.zig").OffsetPageTable;
 pub const MappedPageTable = @import("mapped_page_table.zig").MappedPageTable;
 pub const RecursivePageTable = @import("recursive_page_table.zig").RecursivePageTable;
