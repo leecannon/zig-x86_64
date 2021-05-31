@@ -90,6 +90,15 @@ pub const XCr0 = packed struct {
         return @bitCast(u64, self) & ALL_NOT_RESERVED;
     }
 
+    pub fn format(value: XCr0, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        return formatWithoutFields(
+            value,
+            options,
+            writer,
+            &.{"z_reserved"},
+        );
+    }
+
     test {
         try std.testing.expectEqual(@as(usize, 64), @bitSizeOf(XCr0));
         try std.testing.expectEqual(@as(usize, 8), @sizeOf(XCr0));

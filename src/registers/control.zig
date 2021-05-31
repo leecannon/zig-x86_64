@@ -96,6 +96,15 @@ pub const Cr0 = packed struct {
         return @bitCast(u64, self) & ALL_NOT_RESERVED;
     }
 
+    pub fn format(value: Cr0, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        return formatWithoutFields(
+            value,
+            options,
+            writer,
+            &.{"z_reserved"},
+        );
+    }
+
     test {
         try std.testing.expectEqual(@as(usize, 64), @bitSizeOf(Cr0));
         try std.testing.expectEqual(@as(usize, 8), @sizeOf(Cr0));
@@ -152,6 +161,15 @@ pub const Cr3Flags = packed struct {
 
     pub fn toU64(self: Cr3Flags) u64 {
         return @bitCast(u64, self) & ALL_NOT_RESERVED;
+    }
+
+    pub fn format(value: Cr3Flags, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        return formatWithoutFields(
+            value,
+            options,
+            writer,
+            &.{"z_reserved"},
+        );
     }
 
     test {
@@ -369,6 +387,15 @@ pub const Cr4 = packed struct {
 
     pub fn toU64(self: Cr4) u64 {
         return @bitCast(u64, self) & ALL_NOT_RESERVED;
+    }
+
+    pub fn format(value: Cr4, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        return formatWithoutFields(
+            value,
+            options,
+            writer,
+            &.{"z_reserved"},
+        );
     }
 
     test {

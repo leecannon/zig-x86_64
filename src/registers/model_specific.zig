@@ -67,6 +67,15 @@ pub const Efer = packed struct {
         return @bitCast(u64, self) & ALL_NOT_RESERVED;
     }
 
+    pub fn format(value: Efer, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        return formatWithoutFields(
+            value,
+            options,
+            writer,
+            &.{"z_reserved"},
+        );
+    }
+
     test {
         try std.testing.expectEqual(@as(usize, 64), @bitSizeOf(Efer));
         try std.testing.expectEqual(@as(usize, 8), @sizeOf(Efer));

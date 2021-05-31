@@ -167,6 +167,18 @@ pub const PageTableFlags = packed struct {
 
     const ALL_NOT_RESERVED: u64 = ~ALL_RESERVED;
 
+    pub fn format(value: PageTableFlags, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        return formatWithoutFields(
+            value,
+            options,
+            writer,
+            &.{
+                "z_reserved",
+                "bit_",
+            },
+        );
+    }
+
     test {
         try std.testing.expectEqual(@bitSizeOf(u64), @bitSizeOf(PageTableFlags));
         try std.testing.expectEqual(@sizeOf(u64), @sizeOf(PageTableFlags));

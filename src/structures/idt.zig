@@ -655,6 +655,15 @@ pub const PageFaultErrorCode = packed struct {
         return @bitCast(u64, self) & ALL_NOT_RESERVED;
     }
 
+    pub fn format(value: PageFaultErrorCode, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        return formatWithoutFields(
+            value,
+            options,
+            writer,
+            &.{"z_reserved"},
+        );
+    }
+
     test {
         try std.testing.expectEqual(@as(usize, 64), @bitSizeOf(PageFaultErrorCode));
         try std.testing.expectEqual(@as(usize, 8), @sizeOf(PageFaultErrorCode));
