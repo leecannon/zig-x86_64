@@ -34,24 +34,6 @@ pub const FrameAllocator = struct {
         return frame_allocator.z_impl_deallocateFrame1GiB(frame_allocator, frame);
     }
 
-    /// Allocate a frame of the appropriate size and return it if possible.
-    pub inline fn allocateFrame(frameAllocator: *FrameAllocator, comptime size: paging.PageSize) ?paging.getPageFromSize(size) {
-        return switch (size) {
-            .Size4KiB => frameAllocator.z_impl_allocateFrame(frameAllocator),
-            .Size2MiB => frameAllocator.z_impl_allocateFrame2MiB(frameAllocator),
-            .Size1GiB => frameAllocator.z_impl_allocateFrame1GiB(frameAllocator),
-        };
-    }
-
-    /// Deallocate the given unused frame.
-    pub inline fn deallocateFrame(frameAllocator: *FrameAllocator, comptime size: paging.PageSize, frame: paging.getPageFromSize(size)) void {
-        switch (size) {
-            .Size4KiB => frameAllocator.z_impl_deallocateFrame(frameAllocator, frame),
-            .Size2MiB => frameAllocator.z_impl_deallocateFrame2MiB(frameAllocator, frame),
-            .Size1GiB => frameAllocator.z_impl_deallocateFrame1GiB(frameAllocator, frame),
-        }
-    }
-
     comptime {
         std.testing.refAllDecls(@This());
     }

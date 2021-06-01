@@ -80,7 +80,7 @@ pub const Page = extern struct {
     }
 
     pub fn format(value: Page, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        try writer.print("Frame[" ++ page_size.sizeString() ++ "](0x{x})", .{value.start_address.value});
+        try writer.print("Page[" ++ page_size.sizeString() ++ "](0x{x})", .{value.start_address.value});
     }
 
     comptime {
@@ -131,7 +131,7 @@ pub const Page2MiB = extern struct {
     }
 
     pub fn format(value: Page2MiB, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        try writer.print("Frame[" ++ page_size.sizeString() ++ "](0x{x})", .{value.start_address.value});
+        try writer.print("Page[" ++ page_size.sizeString() ++ "](0x{x})", .{value.start_address.value});
     }
 
     comptime {
@@ -177,7 +177,7 @@ pub const Page1GiB = extern struct {
     }
 
     pub fn format(value: Page1GiB, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-        try writer.print("Frame[" ++ page_size.sizeString() ++ "](0x{x})", .{value.start_address.value});
+        try writer.print("Page[" ++ page_size.sizeString() ++ "](0x{x})", .{value.start_address.value});
     }
 
     comptime {
@@ -188,7 +188,7 @@ pub const Page1GiB = extern struct {
 pub const PageError = error{AddressNotAligned};
 
 /// Returns the 1GiB memory page with the specified page table indices.
-pub fn pageFromTableIndices1gib(p4_index: PageTableIndex, p3_index: PageTableIndex) Page1GiB {
+pub fn pageFromTableIndices1GiB(p4_index: PageTableIndex, p3_index: PageTableIndex) Page1GiB {
     var addr: u64 = 0;
     setBits(&addr, 39, 48, @as(u64, p4_index.value));
     setBits(&addr, 30, 39, @as(u64, p3_index.value));
@@ -196,7 +196,7 @@ pub fn pageFromTableIndices1gib(p4_index: PageTableIndex, p3_index: PageTableInd
 }
 
 /// Returns the 2MiB memory page with the specified page table indices.
-pub fn pageFromTableIndices2mib(p4_index: PageTableIndex, p3_index: PageTableIndex, p2_index: PageTableIndex) Page2MiB {
+pub fn pageFromTableIndices2MiB(p4_index: PageTableIndex, p3_index: PageTableIndex, p2_index: PageTableIndex) Page2MiB {
     var addr: u64 = 0;
     setBits(&addr, 39, 48, @as(u64, p4_index.value));
     setBits(&addr, 30, 39, @as(u64, p3_index.value));

@@ -750,9 +750,17 @@ fn createNextTable(
     return page_table;
 }
 
+fn getPageFromSize(comptime page_size: paging.PageSize) type {
+    return switch (page_size) {
+        .Size4KiB => paging.Page,
+        .Size2MiB => paging.Page2MiB,
+        .Size1GiB => paging.Page1GiB,
+    };
+}
+
 fn p3Ptr(
     comptime size: paging.PageSize,
-    page: paging.getPageFromSize(size),
+    page: getPageFromSize(size),
     recursive_index: paging.PageTableIndex,
 ) *paging.PageTable {
     return p3Page(size, page, recursive_index).start_address.toPtr(*paging.PageTable);
@@ -760,7 +768,7 @@ fn p3Ptr(
 
 fn p3Page(
     comptime size: paging.PageSize,
-    page: paging.getPageFromSize(size),
+    page: getPageFromSize(size),
     recursive_index: paging.PageTableIndex,
 ) paging.Page {
     return paging.pageFromTableIndices(
@@ -773,7 +781,7 @@ fn p3Page(
 
 fn p2Ptr(
     comptime size: paging.PageSize,
-    page: paging.getPageFromSize(size),
+    page: getPageFromSize(size),
     recursive_index: paging.PageTableIndex,
 ) *paging.PageTable {
     return p2Page(size, page, recursive_index).start_address.toPtr(*paging.PageTable);
@@ -781,7 +789,7 @@ fn p2Ptr(
 
 fn p2Page(
     comptime size: paging.PageSize,
-    page: paging.getPageFromSize(size),
+    page: getPageFromSize(size),
     recursive_index: paging.PageTableIndex,
 ) paging.Page {
     return paging.pageFromTableIndices(
@@ -794,7 +802,7 @@ fn p2Page(
 
 fn p1Ptr(
     comptime size: paging.PageSize,
-    page: paging.getPageFromSize(size),
+    page: getPageFromSize(size),
     recursive_index: paging.PageTableIndex,
 ) *paging.PageTable {
     return p1Page(size, page, recursive_index).start_address.toPtr(*paging.PageTable);
@@ -802,7 +810,7 @@ fn p1Ptr(
 
 fn p1Page(
     comptime size: paging.PageSize,
-    page: paging.getPageFromSize(size),
+    page: getPageFromSize(size),
     recursive_index: paging.PageTableIndex,
 ) paging.Page {
     return paging.pageFromTableIndices(
