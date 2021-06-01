@@ -607,7 +607,7 @@ fn PageTableWalker(
             var created = false;
 
             if (entry.isUnused()) {
-                if (frame_allocator.allocateFrame(.Size4KiB)) |frame| {
+                if (frame_allocator.allocate4KiB()) |frame| {
                     entry.setAddr(frame.start_address);
                     entry.setFlags(insert_flags);
                     created = true;

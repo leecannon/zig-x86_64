@@ -410,7 +410,7 @@ pub const TranslateError = error{
 /// made the change to ensure that the TLB flush is not forgotten.
 pub const MapperFlushAll = struct {
     /// Flush all pages from the TLB to ensure that the newest mapping is used.
-    pub fn flushAll(self: Self) void {
+    pub fn flushAll(self: MapperFlushAll) void {
         x86_64.instructions.tlb.flushAll();
     }
 };
@@ -425,7 +425,7 @@ pub const MapperFlush = struct {
 
     /// Create a new flush promise
     pub fn init(page: paging.Page) MapperFlush {
-        return .{ .page = paging.Page };
+        return .{ .page = page };
     }
 
     /// Flush the page from the TLB to ensure that the newest mapping is used.
@@ -448,7 +448,7 @@ pub const MapperFlush2MiB = struct {
 
     /// Create a new flush promise
     pub fn init(page: paging.Page2MiB) MapperFlush2MiB {
-        return .{ .page = paging.Page2MiB };
+        return .{ .page = page };
     }
 
     /// Flush the page from the TLB to ensure that the newest mapping is used.
@@ -471,7 +471,7 @@ pub const MapperFlush1GiB = struct {
 
     /// Create a new flush promise
     pub fn init(page: paging.Page1GiB) MapperFlush1GiB {
-        return .{ .page = paging.Page1GiB };
+        return .{ .page = page };
     }
 
     /// Flush the page from the TLB to ensure that the newest mapping is used.

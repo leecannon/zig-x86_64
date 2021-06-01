@@ -8,7 +8,14 @@ pub const PageTableIndex = page_table.PageTableIndex;
 pub const PageOffset = page_table.PageOffset;
 
 const frame = @import("frame.zig");
-pub const CreatePhysFrame = frame.CreatePhysFrame;
+
+pub fn getFrameFromSize(comptime page_size: PageSize) type {
+    return switch (page_size) {
+        .Size4KiB => PhysFrame,
+        .Size2MiB => PhysFrame2MiB,
+        .Size1GiB => PhysFrame1GiB,
+    };
+}
 pub const PhysFrame = frame.PhysFrame;
 pub const PhysFrame2MiB = frame.PhysFrame2MiB;
 pub const PhysFrame1GiB = frame.PhysFrame1GiB;
@@ -24,8 +31,15 @@ pub const PhysFrameRange2MiBInclusive = frame.PhysFrameRange2MiBInclusive;
 pub const PhysFrameRange1GiBInclusive = frame.PhysFrameRange1GiBInclusive;
 
 const page = @import("page.zig");
+
+pub fn getPageFromSize(comptime page_size: PageSize) type {
+    return switch (page_size) {
+        .Size4KiB => Page,
+        .Size2MiB => Page2MiB,
+        .Size1GiB => Page1GiB,
+    };
+}
 pub const PageSize = page.PageSize;
-pub const CreatePage = page.CreatePage;
 pub const Page = page.Page;
 pub const Page2MiB = page.Page2MiB;
 pub const Page1GiB = page.Page1GiB;

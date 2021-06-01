@@ -104,7 +104,7 @@ pub const PhysFrame1GiB = extern struct {
 
     /// Returns the frame that starts at the given physical address.
     /// Without validaing the addresses alignment
-    pub fn fromStartAddressUnchecked(address: x86_64.PhysAddr) PhysFram1GiB {
+    pub fn fromStartAddressUnchecked(address: x86_64.PhysAddr) PhysFrame1GiB {
         return .{ .start_address = address };
     }
 

@@ -419,88 +419,225 @@ pub const InterruptDescriptorTable = extern struct {
 };
 
 pub const HandlerFunc = fn (interrupt_stack_frame: InterruptStackFrame) callconv(.Interrupt) void;
-pub const HandlerFuncEntry = Entry(HandlerFunc);
+pub const HandlerFuncEntry = extern struct {
+    pointer_low: u16,
+    gdt_selector: u16,
+    options: EntryOptions,
+    pointer_middle: u16,
+    pointer_high: u32,
+    reserved: u32,
 
-pub const HandlerWithErrorCodeFunc = fn (interrupt_stack_frame: InterruptStackFrame, error_code: u64) callconv(.Interrupt) void;
-pub const HandlerWithErrorCodeFuncEntry = Entry(HandlerWithErrorCodeFunc);
-
-pub const PageFaultHandlerFunc = fn (interrupt_stack_frame: InterruptStackFrame, error_code: PageFaultErrorCode) callconv(.Interrupt) void;
-pub const PageFaultHandlerFuncEntry = Entry(PageFaultHandlerFunc);
-
-pub const HandlerDivergingFunc = fn (interrupt_stack_frame: InterruptStackFrame) callconv(.Interrupt) noreturn;
-pub const HandlerDivergingFuncEntry = Entry(HandlerDivergingFunc);
-
-pub const HandlerDivergingWithErrorCodeFunc = fn (interrupt_stack_frame: InterruptStackFrame, error_code: u64) callconv(.Interrupt) noreturn;
-pub const HandlerDivergingWithErrorCodeFuncEntry = Entry(HandlerDivergingWithErrorCodeFunc);
-
-fn Entry(comptime handler_type: type) type {
-    comptime {
-        if (handler_type != HandlerFunc and
-            handler_type != HandlerWithErrorCodeFunc and
-            handler_type != HandlerDivergingFunc and
-            handler_type != HandlerDivergingWithErrorCodeFunc and
-            handler_type != PageFaultHandlerFunc)
-        {
-            @compileError("Non-Interupt handler func type given");
-        }
+    /// Creates a non-present IDT entry (but sets the must-be-one bits).
+    pub fn missing() HandlerFuncEntry {
+        return .{
+            .pointer_low = 0,
+            .gdt_selector = 0,
+            .options = EntryOptions.minimal(),
+            .pointer_middle = 0,
+            .pointer_high = 0,
+            .reserved = 0,
+        };
     }
 
-    return extern struct {
-        const Self = @This();
+    /// Set the handler function for the IDT entry and sets the present bit.
+    ///
+    /// For the code selector field, this function uses the code segment selector currently active in the CPU.
+    pub fn setHandler(self: *HandlerFuncEntry, handler: HandlerFunc, code_selector: x86_64.structures.gdt.SegmentSelector) void {
+        const addr = @ptrToInt(handler);
 
-        pointer_low: u16,
-        gdt_selector: u16,
-        options: EntryOptions,
-        pointer_middle: u16,
-        pointer_high: u32,
-        reserved: u32,
+        self.pointer_low = @truncate(u16, addr);
+        self.pointer_middle = @truncate(u16, (addr >> 16));
+        self.pointer_high = @truncate(u32, (addr >> 32));
 
-        /// Creates a non-present IDT entry (but sets the must-be-one bits).
-        pub fn missing() Self {
-            return .{
-                .pointer_low = 0,
-                .gdt_selector = 0,
-                .options = EntryOptions.minimal(),
-                .pointer_middle = 0,
-                .pointer_high = 0,
-                .reserved = 0,
-            };
-        }
+        self.gdt_selector = code_selector.value;
 
-        /// Set the handler function for the IDT entry and sets the present bit.
-        ///
-        /// For the code selector field, this function uses the code segment selector currently active in the CPU.
-        pub fn setHandler(self: *Self, handler: handler_type, code_selector: x86_64.structures.gdt.SegmentSelector) void {
-            const addr = @ptrToInt(handler);
+        self.options.setPresent(true);
+    }
 
-            self.pointer_low = @truncate(u16, addr);
-            self.pointer_middle = @truncate(u16, (addr >> 16));
-            self.pointer_high = @truncate(u32, (addr >> 32));
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
-            self.gdt_selector = code_selector.value;
+pub const HandlerWithErrorCodeFunc = fn (interrupt_stack_frame: InterruptStackFrame, error_code: u64) callconv(.Interrupt) void;
+pub const HandlerWithErrorCodeFuncEntry = extern struct {
+    pointer_low: u16,
+    gdt_selector: u16,
+    options: EntryOptions,
+    pointer_middle: u16,
+    pointer_high: u32,
+    reserved: u32,
 
-            self.options.setPresent(true);
-        }
+    /// Creates a non-present IDT entry (but sets the must-be-one bits).
+    pub fn missing() HandlerWithErrorCodeFuncEntry {
+        return .{
+            .pointer_low = 0,
+            .gdt_selector = 0,
+            .options = EntryOptions.minimal(),
+            .pointer_middle = 0,
+            .pointer_high = 0,
+            .reserved = 0,
+        };
+    }
 
-        test {
-            std.testing.refAllDecls(@This());
+    /// Set the handler function for the IDT entry and sets the present bit.
+    ///
+    /// For the code selector field, this function uses the code segment selector currently active in the CPU.
+    pub fn setHandler(self: *HandlerWithErrorCodeFuncEntry, handler: HandlerWithErrorCodeFunc, code_selector: x86_64.structures.gdt.SegmentSelector) void {
+        const addr = @ptrToInt(handler);
 
-            try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerFuncEntry));
-            try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerFuncEntry));
+        self.pointer_low = @truncate(u16, addr);
+        self.pointer_middle = @truncate(u16, (addr >> 16));
+        self.pointer_high = @truncate(u32, (addr >> 32));
 
-            try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerWithErrorCodeFuncEntry));
-            try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerWithErrorCodeFuncEntry));
+        self.gdt_selector = code_selector.value;
 
-            try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerDivergingFuncEntry));
-            try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerDivergingFuncEntry));
+        self.options.setPresent(true);
+    }
 
-            try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerDivergingWithErrorCodeFuncEntry));
-            try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerDivergingWithErrorCodeFuncEntry));
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
-            try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(PageFaultHandlerFuncEntry));
-            try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(PageFaultHandlerFuncEntry));
-        }
-    };
+pub const PageFaultHandlerFunc = fn (interrupt_stack_frame: InterruptStackFrame, error_code: PageFaultErrorCode) callconv(.Interrupt) void;
+pub const PageFaultHandlerFuncEntry = extern struct {
+    pointer_low: u16,
+    gdt_selector: u16,
+    options: EntryOptions,
+    pointer_middle: u16,
+    pointer_high: u32,
+    reserved: u32,
+
+    /// Creates a non-present IDT entry (but sets the must-be-one bits).
+    pub fn missing() PageFaultHandlerFuncEntry {
+        return .{
+            .pointer_low = 0,
+            .gdt_selector = 0,
+            .options = EntryOptions.minimal(),
+            .pointer_middle = 0,
+            .pointer_high = 0,
+            .reserved = 0,
+        };
+    }
+
+    /// Set the handler function for the IDT entry and sets the present bit.
+    ///
+    /// For the code selector field, this function uses the code segment selector currently active in the CPU.
+    pub fn setHandler(self: *PageFaultHandlerFuncEntry, handler: PageFaultHandlerFunc, code_selector: x86_64.structures.gdt.SegmentSelector) void {
+        const addr = @ptrToInt(handler);
+
+        self.pointer_low = @truncate(u16, addr);
+        self.pointer_middle = @truncate(u16, (addr >> 16));
+        self.pointer_high = @truncate(u32, (addr >> 32));
+
+        self.gdt_selector = code_selector.value;
+
+        self.options.setPresent(true);
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
+
+pub const HandlerDivergingFunc = fn (interrupt_stack_frame: InterruptStackFrame) callconv(.Interrupt) noreturn;
+pub const HandlerDivergingFuncEntry = extern struct {
+    pointer_low: u16,
+    gdt_selector: u16,
+    options: EntryOptions,
+    pointer_middle: u16,
+    pointer_high: u32,
+    reserved: u32,
+
+    /// Creates a non-present IDT entry (but sets the must-be-one bits).
+    pub fn missing() HandlerDivergingFuncEntry {
+        return .{
+            .pointer_low = 0,
+            .gdt_selector = 0,
+            .options = EntryOptions.minimal(),
+            .pointer_middle = 0,
+            .pointer_high = 0,
+            .reserved = 0,
+        };
+    }
+
+    /// Set the handler function for the IDT entry and sets the present bit.
+    ///
+    /// For the code selector field, this function uses the code segment selector currently active in the CPU.
+    pub fn setHandler(self: *HandlerDivergingFuncEntry, handler: HandlerDivergingFunc, code_selector: x86_64.structures.gdt.SegmentSelector) void {
+        const addr = @ptrToInt(handler);
+
+        self.pointer_low = @truncate(u16, addr);
+        self.pointer_middle = @truncate(u16, (addr >> 16));
+        self.pointer_high = @truncate(u32, (addr >> 32));
+
+        self.gdt_selector = code_selector.value;
+
+        self.options.setPresent(true);
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
+
+pub const HandlerDivergingWithErrorCodeFunc = fn (interrupt_stack_frame: InterruptStackFrame, error_code: u64) callconv(.Interrupt) noreturn;
+pub const HandlerDivergingWithErrorCodeFuncEntry = extern struct {
+    pointer_low: u16,
+    gdt_selector: u16,
+    options: EntryOptions,
+    pointer_middle: u16,
+    pointer_high: u32,
+    reserved: u32,
+
+    /// Creates a non-present IDT entry (but sets the must-be-one bits).
+    pub fn missing() HandlerDivergingWithErrorCodeFuncEntry {
+        return .{
+            .pointer_low = 0,
+            .gdt_selector = 0,
+            .options = EntryOptions.minimal(),
+            .pointer_middle = 0,
+            .pointer_high = 0,
+            .reserved = 0,
+        };
+    }
+
+    /// Set the handler function for the IDT entry and sets the present bit.
+    ///
+    /// For the code selector field, this function uses the code segment selector currently active in the CPU.
+    pub fn setHandler(self: *HandlerDivergingWithErrorCodeFuncEntry, handler: HandlerDivergingWithErrorCodeFunc, code_selector: x86_64.structures.gdt.SegmentSelector) void {
+        const addr = @ptrToInt(handler);
+
+        self.pointer_low = @truncate(u16, addr);
+        self.pointer_middle = @truncate(u16, (addr >> 16));
+        self.pointer_high = @truncate(u32, (addr >> 32));
+
+        self.gdt_selector = code_selector.value;
+
+        self.options.setPresent(true);
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
+
+test {
+    try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerFuncEntry));
+    try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerFuncEntry));
+
+    try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerWithErrorCodeFuncEntry));
+    try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerWithErrorCodeFuncEntry));
+
+    try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerDivergingFuncEntry));
+    try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerDivergingFuncEntry));
+
+    try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(HandlerDivergingWithErrorCodeFuncEntry));
+    try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(HandlerDivergingWithErrorCodeFuncEntry));
+
+    try std.testing.expectEqual(@bitSizeOf(u64) * 2, @bitSizeOf(PageFaultHandlerFuncEntry));
+    try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(PageFaultHandlerFuncEntry));
 }
 
 fn dummyFn(interrupt_stack_frame: InterruptStackFrame) callconv(.Interrupt) void {}

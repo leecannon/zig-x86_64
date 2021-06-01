@@ -721,7 +721,7 @@ fn createNextTable(
     var created = false;
 
     if (entry.isUnused()) {
-        if (frameAllocator.allocateFrame(.Size4KiB)) |frame| {
+        if (frameAllocator.allocate4KiB()) |frame| {
             entry.setAddr(frame.start_address);
 
             var flags = insertFlags;
@@ -752,7 +752,7 @@ fn createNextTable(
 
 fn p3Ptr(
     comptime size: paging.PageSize,
-    page: paging.CreatePage(size),
+    page: paging.getPageFromSize(size),
     recursive_index: paging.PageTableIndex,
 ) *paging.PageTable {
     return p3Page(size, page, recursive_index).start_address.toPtr(*paging.PageTable);
@@ -760,7 +760,7 @@ fn p3Ptr(
 
 fn p3Page(
     comptime size: paging.PageSize,
-    page: paging.CreatePage(size),
+    page: paging.getPageFromSize(size),
     recursive_index: paging.PageTableIndex,
 ) paging.Page {
     return paging.pageFromTableIndices(
@@ -773,7 +773,7 @@ fn p3Page(
 
 fn p2Ptr(
     comptime size: paging.PageSize,
-    page: paging.CreatePage(size),
+    page: paging.getPageFromSize(size),
     recursive_index: paging.PageTableIndex,
 ) *paging.PageTable {
     return p2Page(size, page, recursive_index).start_address.toPtr(*paging.PageTable);
@@ -781,7 +781,7 @@ fn p2Ptr(
 
 fn p2Page(
     comptime size: paging.PageSize,
-    page: paging.CreatePage(size),
+    page: paging.getPageFromSize(size),
     recursive_index: paging.PageTableIndex,
 ) paging.Page {
     return paging.pageFromTableIndices(
@@ -794,7 +794,7 @@ fn p2Page(
 
 fn p1Ptr(
     comptime size: paging.PageSize,
-    page: paging.CreatePage(size),
+    page: paging.getPageFromSize(size),
     recursive_index: paging.PageTableIndex,
 ) *paging.PageTable {
     return p1Page(size, page, recursive_index).start_address.toPtr(*paging.PageTable);
@@ -802,7 +802,7 @@ fn p1Ptr(
 
 fn p1Page(
     comptime size: paging.PageSize,
-    page: paging.CreatePage(size),
+    page: paging.getPageFromSize(size),
     recursive_index: paging.PageTableIndex,
 ) paging.Page {
     return paging.pageFromTableIndices(

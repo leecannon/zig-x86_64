@@ -1,61 +1,79 @@
 usingnamespace @import("../common.zig");
 
 /// A u8 I/O port
-pub const Portu8 = Port(.u8);
+pub const Portu8 = struct {
+    port: u16,
 
-/// A u16 I/O port
-pub const Portu16 = Port(.u16);
+    pub fn init(port: u16) Portu8 {
+        return .{
+            .port = port,
+        };
+    }
 
-/// A u32 I/O port
-pub const Portu32 = Port(.u32);
+    /// Read from the port
+    pub fn read(self: Portu8) u8 {
+        return x86_64.instructions.port.readU8(self.port);
+    }
 
-const PortBitness = enum {
-    u8,
-    u16,
-    u32,
+    /// Write to the port
+    pub fn write(self: Portu8, value: u8) void {
+        x86_64.instructions.port.writeU8(self.port, value);
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
 };
 
-fn Port(comptime portBitness: PortBitness) type {
-    const int_type = switch (portBitness) {
-        .u8 => u8,
-        .u16 => u16,
-        .u32 => u32,
-    };
+/// A u16 I/O port
+pub const Portu16 = struct {
+    port: u16,
 
-    return struct {
-        const Self = @This();
+    pub fn init(port: u16) Portu16 {
+        return .{
+            .port = port,
+        };
+    }
 
-        port: u16,
+    /// Read from the port
+    pub fn read(self: Portu16) u16 {
+        return x86_64.instructions.port.readU16(self.port);
+    }
 
-        pub fn init(port: u16) Self {
-            return .{
-                .port = port,
-            };
-        }
+    /// Write to the port
+    pub fn write(self: Portu16, value: u16) void {
+        x86_64.instructions.port.writeU16(self.port, value);
+    }
 
-        /// Read from the port
-        pub fn read(self: Self) int_type {
-            return switch (portBitness) {
-                .u8 => x86_64.instructions.port.readU8(self.port),
-                .u16 => x86_64.instructions.port.readU16(self.port),
-                .u32 => x86_64.instructions.port.readU32(self.port),
-            };
-        }
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
-        /// Write to the port
-        pub fn write(self: Self, value: int_type) void {
-            switch (portBitness) {
-                .u8 => x86_64.instructions.port.writeU8(self.port, value),
-                .u16 => x86_64.instructions.port.writeU16(self.port, value),
-                .u32 => x86_64.instructions.port.writeU32(self.port, value),
-            }
-        }
+/// A u32 I/O port
+pub const Portu32 = struct {
+    port: u16,
 
-        comptime {
-            std.testing.refAllDecls(@This());
-        }
-    };
-}
+    pub fn init(port: u16) Portu32 {
+        return .{
+            .port = port,
+        };
+    }
+
+    /// Read from the port
+    pub fn read(self: Portu32) u32 {
+        return x86_64.instructions.port.readU32(self.port);
+    }
+
+    /// Write to the port
+    pub fn write(self: Portu32, value: u32) void {
+        x86_64.instructions.port.writeU32(self.port, value);
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 comptime {
     std.testing.refAllDecls(@This());
