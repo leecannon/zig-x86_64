@@ -1,60 +1,135 @@
 usingnamespace @import("../../common.zig");
 
 /// A physical memory frame. Page size 4 KiB
-pub const PhysFrame = CreatePhysFrame(x86_64.structures.paging.PageSize.Size4KiB);
+pub const PhysFrame = extern struct {
+    const size: x86_64.structures.paging.PageSize = .Size4KiB;
+
+    start_address: x86_64.PhysAddr,
+
+    /// Returns the frame that starts at the given physical address.
+    ///
+    /// Returns an error if the address is not correctly aligned (i.e. is not a valid frame start)
+    pub fn fromStartAddress(address: x86_64.PhysAddr) PhysFrameError!PhysFrame {
+        if (!address.isAligned(size.bytes())) {
+            return PhysFrameError.AddressNotAligned;
+        }
+        return containingAddress(address);
+    }
+
+    /// Returns the frame that starts at the given physical address.
+    /// Without validaing the addresses alignment
+    pub fn fromStartAddressUnchecked(address: x86_64.PhysAddr) PhysFrame {
+        return .{ .start_address = address };
+    }
+
+    /// Returns the frame that contains the given physical address.
+    pub fn containingAddress(address: x86_64.PhysAddr) PhysFrame {
+        return .{
+            .start_address = address.alignDown(size.bytes()),
+        };
+    }
+
+    /// Returns the size of the frame (4KB, 2MB or 1GB).
+    pub fn sizeOf(self: PhysFrame) u64 {
+        return size.bytes();
+    }
+
+    pub fn format(value: PhysFrame, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        try writer.print("PhysFrame[" ++ size.sizeString() ++ "](0x{x})", .{value.start_address.value});
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// A physical memory frame. Page size 2 MiB
-pub const PhysFrame2MiB = CreatePhysFrame(x86_64.structures.paging.PageSize.Size2MiB);
+pub const PhysFrame2MiB = extern struct {
+    const size: x86_64.structures.paging.PageSize = .Size2MiB;
+
+    start_address: x86_64.PhysAddr,
+
+    /// Returns the frame that starts at the given physical address.
+    ///
+    /// Returns an error if the address is not correctly aligned (i.e. is not a valid frame start)
+    pub fn fromStartAddress(address: x86_64.PhysAddr) PhysFrameError!PhysFrame2MiB {
+        if (!address.isAligned(size.bytes())) {
+            return PhysFrameError.AddressNotAligned;
+        }
+        return containingAddress(address);
+    }
+
+    /// Returns the frame that starts at the given physical address.
+    /// Without validaing the addresses alignment
+    pub fn fromStartAddressUnchecked(address: x86_64.PhysAddr) PhysFrame2MiB {
+        return .{ .start_address = address };
+    }
+
+    /// Returns the frame that contains the given physical address.
+    pub fn containingAddress(address: x86_64.PhysAddr) PhysFrame2MiB {
+        return .{
+            .start_address = address.alignDown(size.bytes()),
+        };
+    }
+
+    /// Returns the size of the frame (4KB, 2MB or 1GB).
+    pub fn sizeOf(self: PhysFrame2MiB) u64 {
+        return size.bytes();
+    }
+
+    pub fn format(value: PhysFrame2MiB, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        try writer.print("PhysFrame[" ++ size.sizeString() ++ "](0x{x})", .{value.start_address.value});
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// A physical memory frame. Page size 1 GiB
-pub const PhysFrame1GiB = CreatePhysFrame(x86_64.structures.paging.PageSize.Size1GiB);
+pub const PhysFrame1GiB = extern struct {
+    const size: x86_64.structures.paging.PageSize = .Size1GiB;
+
+    start_address: x86_64.PhysAddr,
+
+    /// Returns the frame that starts at the given physical address.
+    ///
+    /// Returns an error if the address is not correctly aligned (i.e. is not a valid frame start)
+    pub fn fromStartAddress(address: x86_64.PhysAddr) PhysFrameError!PhysFrame1GiB {
+        if (!address.isAligned(size.bytes())) {
+            return PhysFrameError.AddressNotAligned;
+        }
+        return containingAddress(address);
+    }
+
+    /// Returns the frame that starts at the given physical address.
+    /// Without validaing the addresses alignment
+    pub fn fromStartAddressUnchecked(address: x86_64.PhysAddr) PhysFram1GiB {
+        return .{ .start_address = address };
+    }
+
+    /// Returns the frame that contains the given physical address.
+    pub fn containingAddress(address: x86_64.PhysAddr) PhysFrame1GiB {
+        return .{
+            .start_address = address.alignDown(size.bytes()),
+        };
+    }
+
+    /// Returns the size of the frame (4KB, 2MB or 1GB).
+    pub fn sizeOf(self: PhysFrame1GiB) u64 {
+        return size.bytes();
+    }
+
+    pub fn format(value: PhysFrame1GiB, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        try writer.print("PhysFrame[" ++ size.sizeString() ++ "](0x{x})", .{value.start_address.value});
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 pub const PhysFrameError = error{AddressNotAligned};
-
-pub fn CreatePhysFrame(comptime page_size: x86_64.structures.paging.PageSize) type {
-    return extern struct {
-        const Self = @This();
-        const size: x86_64.structures.paging.PageSize = page_size;
-
-        start_address: x86_64.PhysAddr,
-
-        /// Returns the frame that starts at the given physical address.
-        ///
-        /// Returns an error if the address is not correctly aligned (i.e. is not a valid frame start)
-        pub fn fromStartAddress(address: x86_64.PhysAddr) PhysFrameError!Self {
-            if (!address.isAligned(size.bytes())) {
-                return PhysFrameError.AddressNotAligned;
-            }
-            return containingAddress(address);
-        }
-
-        /// Returns the frame that starts at the given physical address.
-        /// Without validaing the addresses alignment
-        pub fn fromStartAddressUnchecked(address: x86_64.PhysAddr) Self {
-            return .{ .start_address = address };
-        }
-
-        /// Returns the frame that contains the given physical address.
-        pub fn containingAddress(address: x86_64.PhysAddr) Self {
-            return .{
-                .start_address = address.alignDown(size.bytes()),
-            };
-        }
-
-        /// Returns the size of the frame (4KB, 2MB or 1GB).
-        pub fn sizeOf(self: Self) u64 {
-            return size.bytes();
-        }
-
-        pub fn format(value: Self, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-            try writer.print("PhysFrame[" ++ size.sizeString() ++ "](0x{x})", .{value.start_address.value});
-        }
-
-        comptime {
-            std.testing.refAllDecls(@This());
-        }
-    };
-}
 
 /// Generates iterators for ranges of physical memory frame. Page size 4 KiB
 pub const PhysFrameIterator = struct {

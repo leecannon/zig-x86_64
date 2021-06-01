@@ -33,85 +33,159 @@ pub const PageSize = enum {
 };
 
 /// A virtual memory page. Page size 4 KiB
-pub const Page = CreatePage(.Size4KiB);
+pub const Page = extern struct {
+    const page_size = PageSize.Size4KiB;
+    const bytes: u64 = page_size.bytes();
+
+    start_address: x86_64.VirtAddr,
+
+    /// Returns the page that starts at the given virtual address.
+    ///
+    /// Returns an error if the address is not correctly aligned (i.e. is not a valid page start).
+    pub fn fromStartAddress(address: x86_64.VirtAddr) PageError!Page {
+        if (!address.isAligned(page_size.bytes())) {
+            return PageError.AddressNotAligned;
+        }
+        return containingAddress(address);
+    }
+
+    /// Returns the page that starts at the given virtual address.
+    pub fn fromStartAddressUnchecked(address: x86_64.VirtAddr) Page {
+        return .{ .start_address = address };
+    }
+
+    /// Returns the page that contains the given virtual address.
+    pub fn containingAddress(address: x86_64.VirtAddr) Page {
+        return .{ .start_address = address.alignDown(page_size.bytes()) };
+    }
+
+    /// Returns the level 4 page table index of this page.
+    pub fn p4Index(self: Page) PageTableIndex {
+        return self.start_address.p4Index();
+    }
+
+    /// Returns the level 3 page table index of this page.
+    pub fn p3Index(self: Page) PageTableIndex {
+        return self.start_address.p3Index();
+    }
+
+    /// Returns the level 2 page table index of this page.
+    pub fn p2Index(self: Page) PageTableIndex {
+        return self.start_address.p2Index();
+    }
+
+    /// Returns the level 1 page table index of this page.
+    pub fn p1Index(self: Page) PageTableIndex {
+        return self.start_address.p1Index();
+    }
+
+    pub fn format(value: Page, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        try writer.print("Frame[" ++ page_size.sizeString() ++ "](0x{x})", .{value.start_address.value});
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// A virtual memory page. Page size 2 MiB
-pub const Page2MiB = CreatePage(.Size2MiB);
+pub const Page2MiB = extern struct {
+    const page_size = PageSize.Size2MiB;
+    const bytes: u64 = page_size.bytes();
+
+    start_address: x86_64.VirtAddr,
+
+    /// Returns the page that starts at the given virtual address.
+    ///
+    /// Returns an error if the address is not correctly aligned (i.e. is not a valid page start).
+    pub fn fromStartAddress(address: x86_64.VirtAddr) PageError!Page2MiB {
+        if (!address.isAligned(page_size.bytes())) {
+            return PageError.AddressNotAligned;
+        }
+        return containingAddress(address);
+    }
+
+    /// Returns the page that starts at the given virtual address.
+    pub fn fromStartAddressUnchecked(address: x86_64.VirtAddr) Page2MiB {
+        return .{ .start_address = address };
+    }
+
+    /// Returns the page that contains the given virtual address.
+    pub fn containingAddress(address: x86_64.VirtAddr) Page2MiB {
+        return .{ .start_address = address.alignDown(page_size.bytes()) };
+    }
+
+    /// Returns the level 4 page table index of this page.
+    pub fn p4Index(self: Page2MiB) PageTableIndex {
+        return self.start_address.p4Index();
+    }
+
+    /// Returns the level 3 page table index of this page.
+    pub fn p3Index(self: Page2MiB) PageTableIndex {
+        return self.start_address.p3Index();
+    }
+
+    /// Returns the level 2 page table index of this page.
+    pub fn p2Index(self: Page2MiB) PageTableIndex {
+        return self.start_address.p2Index();
+    }
+
+    pub fn format(value: Page2MiB, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        try writer.print("Frame[" ++ page_size.sizeString() ++ "](0x{x})", .{value.start_address.value});
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// A virtual memory page. Page size 1 GiB
-pub const Page1GiB = CreatePage(.Size1GiB);
+pub const Page1GiB = extern struct {
+    const page_size = PageSize.Size1GiB;
+    const bytes: u64 = page_size.bytes();
+
+    start_address: x86_64.VirtAddr,
+
+    /// Returns the page that starts at the given virtual address.
+    ///
+    /// Returns an error if the address is not correctly aligned (i.e. is not a valid page start).
+    pub fn fromStartAddress(address: x86_64.VirtAddr) PageError!Page1GiB {
+        if (!address.isAligned(page_size.bytes())) {
+            return PageError.AddressNotAligned;
+        }
+        return containingAddress(address);
+    }
+
+    /// Returns the page that starts at the given virtual address.
+    pub fn fromStartAddressUnchecked(address: x86_64.VirtAddr) Page1GiB {
+        return .{ .start_address = address };
+    }
+
+    /// Returns the page that contains the given virtual address.
+    pub fn containingAddress(address: x86_64.VirtAddr) Page1GiB {
+        return .{ .start_address = address.alignDown(page_size.bytes()) };
+    }
+
+    /// Returns the level 4 page table index of this page.
+    pub fn p4Index(self: Page1GiB) PageTableIndex {
+        return self.start_address.p4Index();
+    }
+
+    /// Returns the level 3 page table index of this page.
+    pub fn p3Index(self: Page1GiB) PageTableIndex {
+        return self.start_address.p3Index();
+    }
+
+    pub fn format(value: Page1GiB, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        try writer.print("Frame[" ++ page_size.sizeString() ++ "](0x{x})", .{value.start_address.value});
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 pub const PageError = error{AddressNotAligned};
-
-pub fn CreatePage(comptime page_size: PageSize) type {
-    return extern struct {
-        const Self = @This();
-        const bytes: u64 = page_size.bytes();
-
-        start_address: x86_64.VirtAddr,
-
-        /// Returns the page that starts at the given virtual address.
-        ///
-        /// Returns an error if the address is not correctly aligned (i.e. is not a valid page start).
-        pub fn fromStartAddress(address: x86_64.VirtAddr) PageError!Self {
-            if (!address.isAligned(page_size.bytes())) {
-                return PageError.AddressNotAligned;
-            }
-            return containingAddress(address);
-        }
-
-        /// Returns the page that starts at the given virtual address.
-        pub fn fromStartAddressUnchecked(address: x86_64.VirtAddr) Self {
-            return .{ .start_address = address };
-        }
-
-        /// Returns the page that contains the given virtual address.
-        pub fn containingAddress(address: x86_64.VirtAddr) Self {
-            return .{ .start_address = address.alignDown(page_size.bytes()) };
-        }
-
-        /// Returns the level 4 page table index of this page.
-        pub fn p4Index(self: Self) PageTableIndex {
-            return self.start_address.p4Index();
-        }
-
-        /// Returns the level 3 page table index of this page.
-        pub fn p3Index(self: Self) PageTableIndex {
-            return self.start_address.p3Index();
-        }
-
-        /// Returns the level 2 page table index of this page.
-        /// Not usable for Size1GiB
-        pub fn p2Index(self: Self) PageTableIndex {
-            comptime {
-                if (page_size == .Size1GiB) {
-                    @compileError("Not usable for Size1GiB");
-                }
-            }
-            return self.start_address.p2Index();
-        }
-
-        /// Returns the level 1 page table index of this page.
-        /// Only usable for Size4KiB
-        pub fn p1Index(self: Self) PageTableIndex {
-            comptime {
-                if (page_size != .Size4KiB) {
-                    @compileError("Only usable for Size4KiB");
-                }
-            }
-            return self.start_address.p1Index();
-        }
-
-        pub fn format(value: Self, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
-            try writer.print("Frame[" ++ page_size.sizeString() ++ "](0x{x})", .{value.start_address.value});
-        }
-
-        // This is disabled to stop testings failing to compile due to `p1Index`, the compileError fires
-        // comptime {
-        //     std.testing.refAllDecls(@This());
-        // }
-    };
-}
 
 /// Returns the 1GiB memory page with the specified page table indices.
 pub fn pageFromTableIndices1gib(p4_index: PageTableIndex, p3_index: PageTableIndex) Page1GiB {

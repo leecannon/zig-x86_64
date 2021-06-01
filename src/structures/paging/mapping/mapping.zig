@@ -315,29 +315,34 @@ pub const Mapper = struct {
 };
 
 /// Unmap result. Page size 4 KiB
-pub const UnmapResult = CreateUnmapResult(paging.PageSize.Size4KiB);
+pub const UnmapResult = struct {
+    frame: paging.PhysFrame,
+    flush: MapperFlush,
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// Unmap result. Page size 2 MiB
-pub const UnmapResult2MiB = CreateUnmapResult(paging.PageSize.Size2MiB);
+pub const UnmapResult2MiB = struct {
+    frame: paging.PhysFrame2MiB,
+    flush: MapperFlush2MiB,
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// Unmap result. Page size 1 GiB
-pub const UnmapResult1GiB = CreateUnmapResult(paging.PageSize.Size1GiB);
+pub const UnmapResult1GiB = struct {
+    frame: paging.PhysFrame1GiB,
+    flush: MapperFlush1GiB,
 
-pub fn CreateUnmapResult(comptime page_size: paging.PageSize) type {
-    const frame_type = switch (page_size) {
-        .Size4KiB => paging.PhysFrame,
-        .Size2MiB => paging.PhysFrame2MiB,
-        .Size1GiB => paging.PhysFrame1GiB,
-    };
-
-    const flush_type = switch (page_size) {
-        .Size4KiB => MapperFlush,
-        .Size2MiB => MapperFlush2MiB,
-        .Size1GiB => MapperFlush1GiB,
-    };
-
-    return struct { frame: frame_type, flush: flush_type };
-}
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 pub const TranslateResultType = enum {
     Frame4KiB,
@@ -351,28 +356,44 @@ pub const TranslateResult = union(TranslateResultType) {
     Frame1GiB: TranslateResult1GiBContents,
 };
 
-pub const TranslateResultContents = CreateTranslateResultContents(paging.PageSize.Size4KiB);
+pub const TranslateResultContents = struct {
+    /// The mapped frame.
+    frame: paging.PhysFrame,
+    /// The offset whithin the mapped frame.
+    offset: u64,
+    /// The flags for the frame.
+    flags: paging.PageTableFlags,
 
-pub const TranslateResult2MiBContents = CreateTranslateResultContents(paging.PageSize.Size2MiB);
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
-pub const TranslateResult1GiBContents = CreateTranslateResultContents(paging.PageSize.Size1GiB);
+pub const TranslateResult2MiBContents = struct {
+    /// The mapped frame.
+    frame: paging.PhysFrame2MiB,
+    /// The offset whithin the mapped frame.
+    offset: u64,
+    /// The flags for the frame.
+    flags: paging.PageTableFlags,
 
-pub fn CreateTranslateResultContents(comptime page_size: paging.PageSize) type {
-    const frame_type = switch (page_size) {
-        .Size4KiB => paging.PhysFrame,
-        .Size2MiB => paging.PhysFrame2MiB,
-        .Size1GiB => paging.PhysFrame1GiB,
-    };
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
-    return struct {
-        /// The mapped frame.
-        frame: frame_type,
-        /// The offset whithin the mapped frame.
-        offset: u64,
-        /// The flags for the frame.
-        flags: paging.PageTableFlags,
-    };
-}
+pub const TranslateResult1GiBContents = struct {
+    /// The mapped frame.
+    frame: paging.PhysFrame1GiB,
+    /// The offset whithin the mapped frame.
+    offset: u64,
+    /// The flags for the frame.
+    flags: paging.PageTableFlags,
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// An error indicating that a `translate` call failed.
 pub const TranslateError = error{
@@ -399,48 +420,69 @@ pub const MapperFlushAll = struct {
 /// The old mapping might be still cached in the translation lookaside buffer (TLB), so it needs
 /// to be flushed from the TLB before it's accessed. This type is returned from function that
 /// change the mapping of a page to ensure that the TLB flush is not forgotten.
-pub const MapperFlush = CreateMapperFlush(paging.PageSize.Size4KiB);
+pub const MapperFlush = struct {
+    page: paging.Page,
+
+    /// Create a new flush promise
+    pub fn init(page: paging.Page) MapperFlush {
+        return .{ .page = paging.Page };
+    }
+
+    /// Flush the page from the TLB to ensure that the newest mapping is used.
+    pub fn flush(self: MapperFlush) void {
+        x86_64.instructions.tlb.flush(self.page.start_address);
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// This type represents a page whose mapping has changed in the page table. Page size 2 MiB
 ///
 /// The old mapping might be still cached in the translation lookaside buffer (TLB), so it needs
 /// to be flushed from the TLB before it's accessed. This type is returned from function that
 /// change the mapping of a page to ensure that the TLB flush is not forgotten.
-pub const MapperFlush2MiB = CreateMapperFlush(paging.PageSize.Size2MiB);
+pub const MapperFlush2MiB = struct {
+    page: paging.Page2MiB,
+
+    /// Create a new flush promise
+    pub fn init(page: paging.Page2MiB) MapperFlush2MiB {
+        return .{ .page = paging.Page2MiB };
+    }
+
+    /// Flush the page from the TLB to ensure that the newest mapping is used.
+    pub fn flush(self: MapperFlush2MiB) void {
+        x86_64.instructions.tlb.flush(self.page.start_address);
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 /// This type represents a page whose mapping has changed in the page table. Page size 1 GiB
 ///
 /// The old mapping might be still cached in the translation lookaside buffer (TLB), so it needs
 /// to be flushed from the TLB before it's accessed. This type is returned from function that
 /// change the mapping of a page to ensure that the TLB flush is not forgotten.
-pub const MapperFlush1GiB = CreateMapperFlush(paging.PageSize.Size1GiB);
+pub const MapperFlush1GiB = struct {
+    page: paging.Page1GiB,
 
-pub fn CreateMapperFlush(comptime page_size: paging.PageSize) type {
-    const page_type = switch (page_size) {
-        .Size4KiB => paging.Page,
-        .Size2MiB => paging.Page2MiB,
-        .Size1GiB => paging.Page1GiB,
-    };
+    /// Create a new flush promise
+    pub fn init(page: paging.Page1GiB) MapperFlush1GiB {
+        return .{ .page = paging.Page1GiB };
+    }
 
-    return struct {
-        const Self = @This();
-        page: page_type,
+    /// Flush the page from the TLB to ensure that the newest mapping is used.
+    pub fn flush(self: MapperFlush1GiB) void {
+        x86_64.instructions.tlb.flush(self.page.start_address);
+    }
 
-        /// Create a new flush promise
-        pub fn init(page: page_type) Self {
-            return Self{ .page = page };
-        }
-
-        /// Flush the page from the TLB to ensure that the newest mapping is used.
-        pub fn flush(self: Self) void {
-            x86_64.instructions.tlb.flush(self.page.start_address);
-        }
-
-        comptime {
-            std.testing.refAllDecls(@This());
-        }
-    };
-}
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
 
 pub const MapToError = error{
     /// An additional frame was needed for the mapping process, but the frame allocator
