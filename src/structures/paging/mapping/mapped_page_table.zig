@@ -47,10 +47,12 @@ pub fn MappedPageTable(
         ) mapping.MapToError!mapping.MapperFlush1GiB {
             var self = getSelfPtr(mapper);
 
+            const parent_flags = parent_table_flags.sanitizeForParent();
+
             const p3 = page_table_walker.createNextTable(
                 self.context,
                 self.level_4_table.getAtIndex(page.p4Index()),
-                parent_table_flags,
+                parent_flags,
                 frame_allocator,
             ) catch |err| switch (err) {
                 PageTableCreateError.MappedToHugePage => return mapping.MapToError.ParentEntryHugePage,
@@ -160,10 +162,12 @@ pub fn MappedPageTable(
         ) mapping.MapToError!mapping.MapperFlush2MiB {
             var self = getSelfPtr(mapper);
 
+            const parent_flags = parent_table_flags.sanitizeForParent();
+
             const p3 = page_table_walker.createNextTable(
                 self.context,
                 self.level_4_table.getAtIndex(page.p4Index()),
-                parent_table_flags,
+                parent_flags,
                 frame_allocator,
             ) catch |err| switch (err) {
                 PageTableCreateError.MappedToHugePage => return mapping.MapToError.ParentEntryHugePage,
@@ -172,7 +176,7 @@ pub fn MappedPageTable(
             const p2 = page_table_walker.createNextTable(
                 self.context,
                 p3.getAtIndex(page.p3Index()),
-                parent_table_flags,
+                parent_flags,
                 frame_allocator,
             ) catch |err| switch (err) {
                 PageTableCreateError.MappedToHugePage => return mapping.MapToError.ParentEntryHugePage,
@@ -312,10 +316,12 @@ pub fn MappedPageTable(
         ) mapping.MapToError!mapping.MapperFlush {
             var self = getSelfPtr(mapper);
 
+            const parent_flags = parent_table_flags.sanitizeForParent();
+
             const p3 = page_table_walker.createNextTable(
                 self.context,
                 self.level_4_table.getAtIndex(page.p4Index()),
-                parent_table_flags,
+                parent_flags,
                 frame_allocator,
             ) catch |err| switch (err) {
                 PageTableCreateError.MappedToHugePage => return mapping.MapToError.ParentEntryHugePage,
@@ -324,7 +330,7 @@ pub fn MappedPageTable(
             const p2 = page_table_walker.createNextTable(
                 self.context,
                 p3.getAtIndex(page.p3Index()),
-                parent_table_flags,
+                parent_flags,
                 frame_allocator,
             ) catch |err| switch (err) {
                 PageTableCreateError.MappedToHugePage => return mapping.MapToError.ParentEntryHugePage,
@@ -333,7 +339,7 @@ pub fn MappedPageTable(
             const p1 = page_table_walker.createNextTable(
                 self.context,
                 p2.getAtIndex(page.p2Index()),
-                parent_table_flags,
+                parent_flags,
                 frame_allocator,
             ) catch |err| switch (err) {
                 PageTableCreateError.MappedToHugePage => return mapping.MapToError.ParentEntryHugePage,

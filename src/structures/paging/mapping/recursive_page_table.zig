@@ -104,6 +104,8 @@ pub const RecursivePageTable = struct {
     ) mapping.MapToError!mapping.MapperFlush1GiB {
         var self = getSelfPtr(mapper);
 
+        const parent_flags = parent_table_flags.sanitizeForParent();
+
         const p3 = try createNextTable(
             self.level_4_table.getAtIndex(page.p4Index()),
             p3Page(
@@ -111,7 +113,7 @@ pub const RecursivePageTable = struct {
                 page,
                 self.recursive_index,
             ),
-            parent_table_flags,
+            parent_flags,
             frame_allocator,
         );
 
@@ -223,6 +225,8 @@ pub const RecursivePageTable = struct {
     ) mapping.MapToError!mapping.MapperFlush2MiB {
         var self = getSelfPtr(mapper);
 
+        const parent_flags = parent_table_flags.sanitizeForParent();
+
         const p3 = try createNextTable(
             self.level_4_table.getAtIndex(page.p4Index()),
             p3Page(
@@ -230,7 +234,7 @@ pub const RecursivePageTable = struct {
                 page,
                 self.recursive_index,
             ),
-            parent_table_flags,
+            parent_flags,
             frame_allocator,
         );
 
@@ -241,7 +245,7 @@ pub const RecursivePageTable = struct {
                 page,
                 self.recursive_index,
             ),
-            parent_table_flags,
+            parent_flags,
             frame_allocator,
         );
 
@@ -391,6 +395,8 @@ pub const RecursivePageTable = struct {
     ) mapping.MapToError!mapping.MapperFlush {
         var self = getSelfPtr(mapper);
 
+        const parent_flags = parent_table_flags.sanitizeForParent();
+
         const p3 = try createNextTable(
             self.level_4_table.getAtIndex(page.p4Index()),
             p3Page(
@@ -398,7 +404,7 @@ pub const RecursivePageTable = struct {
                 page,
                 self.recursive_index,
             ),
-            parent_table_flags,
+            parent_flags,
             frame_allocator,
         );
 
@@ -409,7 +415,7 @@ pub const RecursivePageTable = struct {
                 page,
                 self.recursive_index,
             ),
-            parent_table_flags,
+            parent_flags,
             frame_allocator,
         );
 
@@ -420,7 +426,7 @@ pub const RecursivePageTable = struct {
                 page,
                 self.recursive_index,
             ),
-            parent_table_flags,
+            parent_flags,
             frame_allocator,
         );
 
