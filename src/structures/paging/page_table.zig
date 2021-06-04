@@ -151,7 +151,7 @@ pub const PageTableFlags = packed struct {
 
     pub fn sanitizeForParent(self: PageTableFlags) PageTableFlags {
         var parent_flags = PageTableFlags.init();
-        parent_flags.present = true;
+        if (self.present) parent_flags.present = true;
         if (self.writeable) parent_flags.writeable = true;
         if (self.user_accessible) parent_flags.user_accessible = true;
         return parent_flags;
