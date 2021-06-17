@@ -37,16 +37,14 @@ pub fn MappedPageTable(
             return @fieldParentPtr(Self, "mapper", mapper);
         }
 
-        fn mapToWithTableFlags1GiB(
-            mapper: *Mapper,
+        pub fn mapToWithTableFlags1GiB(
+            self: *Self,
             page: paging.Page1GiB,
             frame: paging.PhysFrame1GiB,
             flags: paging.PageTableFlags,
             parent_table_flags: paging.PageTableFlags,
             frame_allocator: *paging.FrameAllocator,
         ) mapping.MapToError!mapping.MapperFlush1GiB {
-            var self = getSelfPtr(mapper);
-
             const parent_flags = parent_table_flags.sanitizeForParent();
 
             const p3 = page_table_walker.createNextTable(
@@ -71,12 +69,18 @@ pub fn MappedPageTable(
             return mapping.MapperFlush1GiB.init(page);
         }
 
-        fn unmap1GiB(
+        fn impl_mapToWithTableFlags1GiB(
             mapper: *Mapper,
             page: paging.Page1GiB,
-        ) mapping.UnmapError!mapping.UnmapResult1GiB {
-            var self = getSelfPtr(mapper);
+            frame: paging.PhysFrame1GiB,
+            flags: paging.PageTableFlags,
+            parent_table_flags: paging.PageTableFlags,
+            frame_allocator: *paging.FrameAllocator,
+        ) mapping.MapToError!mapping.MapperFlush1GiB {
+            return getSelfPtr(mapper).mapToWithTableFlags1GiB(page, frame, flags, parent_table_flags, frame_allocator);
+        }
 
+        pub fn unmap1GiB(self: *Self, page: paging.Page1GiB) mapping.UnmapError!mapping.UnmapResult1GiB {
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.UnmapError.ParentEntryHugePage,
                 PageTableWalkError.NotMapped => return mapping.UnmapError.PageNotMapped,
@@ -98,13 +102,15 @@ pub fn MappedPageTable(
             };
         }
 
-        fn updateFlags1GiB(
-            mapper: *Mapper,
+        fn impl_unmap1GiB(mapper: *Mapper, page: paging.Page1GiB) mapping.UnmapError!mapping.UnmapResult1GiB {
+            return getSelfPtr(mapper).unmap1GiB(page);
+        }
+
+        pub fn updateFlags1GiB(
+            self: *Self,
             page: paging.Page1GiB,
             flags: paging.PageTableFlags,
         ) mapping.FlagUpdateError!mapping.MapperFlush1GiB {
-            var self = getSelfPtr(mapper);
-
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.FlagUpdateError.ParentEntryHugePage,
                 PageTableWalkError.NotMapped => return mapping.FlagUpdateError.PageNotMapped,
@@ -121,25 +127,34 @@ pub fn MappedPageTable(
             return mapping.MapperFlush1GiB.init(page);
         }
 
-        fn setFlagsP4Entry1GiB(
+        fn impl_updateFlags1GiB(
             mapper: *Mapper,
             page: paging.Page1GiB,
             flags: paging.PageTableFlags,
-        ) mapping.FlagUpdateError!mapping.MapperFlushAll {
-            var self = getSelfPtr(mapper);
+        ) mapping.FlagUpdateError!mapping.MapperFlush1GiB {
+            return getSelfPtr(mapper).updateFlags1GiB(page, flags);
+        }
 
+        pub fn setFlagsP4Entry1GiB(
+            self: *Self,
+            page: paging.Page1GiB,
+            flags: paging.PageTableFlags,
+        ) mapping.FlagUpdateError!mapping.MapperFlushAll {
             const p4_entry = self.level_4_table.getAtIndex(page.p4Index());
             if (p4_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
             p4_entry.setFlags(flags);
             return mapping.MapperFlushAll{};
         }
 
-        fn translatePage1GiB(
+        fn impl_setFlagsP4Entry1GiB(
             mapper: *Mapper,
             page: paging.Page1GiB,
-        ) mapping.TranslateError!paging.PhysFrame1GiB {
-            var self = getSelfPtr(mapper);
+            flags: paging.PageTableFlags,
+        ) mapping.FlagUpdateError!mapping.MapperFlushAll {
+            return getSelfPtr(mapper).setFlagsP4Entry1GiB(page, flags);
+        }
 
+        pub fn translatePage1GiB(self: *Self, page: paging.Page1GiB) mapping.TranslateError!paging.PhysFrame1GiB {
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.TranslateError.InvalidFrameAddress,
                 PageTableWalkError.NotMapped => return mapping.TranslateError.NotMapped,
@@ -152,16 +167,18 @@ pub fn MappedPageTable(
             return paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
         }
 
-        fn mapToWithTableFlags2MiB(
-            mapper: *Mapper,
+        fn impl_translatePage1GiB(mapper: *Mapper, page: paging.Page1GiB) mapping.TranslateError!paging.PhysFrame1GiB {
+            return getSelfPtr(mapper).translatePage1GiB(page);
+        }
+
+        pub fn mapToWithTableFlags2MiB(
+            self: *Self,
             page: paging.Page2MiB,
             frame: paging.PhysFrame2MiB,
             flags: paging.PageTableFlags,
             parent_table_flags: paging.PageTableFlags,
             frame_allocator: *paging.FrameAllocator,
         ) mapping.MapToError!mapping.MapperFlush2MiB {
-            var self = getSelfPtr(mapper);
-
             const parent_flags = parent_table_flags.sanitizeForParent();
 
             const p3 = page_table_walker.createNextTable(
@@ -195,12 +212,18 @@ pub fn MappedPageTable(
             return mapping.MapperFlush2MiB.init(page);
         }
 
-        fn unmap2MiB(
+        fn impl_mapToWithTableFlags2MiB(
             mapper: *Mapper,
             page: paging.Page2MiB,
-        ) mapping.UnmapError!mapping.UnmapResult2MiB {
-            var self = getSelfPtr(mapper);
+            frame: paging.PhysFrame2MiB,
+            flags: paging.PageTableFlags,
+            parent_table_flags: paging.PageTableFlags,
+            frame_allocator: *paging.FrameAllocator,
+        ) mapping.MapToError!mapping.MapperFlush2MiB {
+            return getSelfPtr(mapper).mapToWithTableFlags2MiB(page, frame, flags, parent_table_flags, frame_allocator);
+        }
 
+        pub fn unmap2MiB(self: *Self, page: paging.Page2MiB) mapping.UnmapError!mapping.UnmapResult2MiB {
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.UnmapError.ParentEntryHugePage,
                 PageTableWalkError.NotMapped => return mapping.UnmapError.PageNotMapped,
@@ -226,13 +249,15 @@ pub fn MappedPageTable(
             };
         }
 
-        fn updateFlags2MiB(
-            mapper: *Mapper,
+        fn impl_unmap2MiB(mapper: *Mapper, page: paging.Page2MiB) mapping.UnmapError!mapping.UnmapResult2MiB {
+            return getSelfPtr(mapper).unmap2MiB(page);
+        }
+
+        pub fn updateFlags2MiB(
+            self: *Self,
             page: paging.Page2MiB,
             flags: paging.PageTableFlags,
         ) mapping.FlagUpdateError!mapping.MapperFlush2MiB {
-            var self = getSelfPtr(mapper);
-
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.FlagUpdateError.ParentEntryHugePage,
                 PageTableWalkError.NotMapped => return mapping.FlagUpdateError.PageNotMapped,
@@ -253,26 +278,38 @@ pub fn MappedPageTable(
             return mapping.MapperFlush2MiB.init(page);
         }
 
-        fn setFlagsP4Entry2MiB(
+        fn impl_updateFlags2MiB(
             mapper: *Mapper,
             page: paging.Page2MiB,
             flags: paging.PageTableFlags,
-        ) mapping.FlagUpdateError!mapping.MapperFlushAll {
-            var self = getSelfPtr(mapper);
+        ) mapping.FlagUpdateError!mapping.MapperFlush2MiB {
+            return getSelfPtr(mapper).updateFlags2MiB(page, flags);
+        }
 
+        pub fn setFlagsP4Entry2MiB(
+            self: *Self,
+            page: paging.Page2MiB,
+            flags: paging.PageTableFlags,
+        ) mapping.FlagUpdateError!mapping.MapperFlushAll {
             const p4_entry = self.level_4_table.getAtIndex(page.p4Index());
             if (p4_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
             p4_entry.setFlags(flags);
             return mapping.MapperFlushAll{};
         }
 
-        fn setFlagsP3Entry2MiB(
+        fn impl_setFlagsP4Entry2MiB(
             mapper: *Mapper,
             page: paging.Page2MiB,
             flags: paging.PageTableFlags,
         ) mapping.FlagUpdateError!mapping.MapperFlushAll {
-            var self = getSelfPtr(mapper);
+            return getSelfPtr(mapper).setFlagsP4Entry2MiB(page, flags);
+        }
 
+        pub fn setFlagsP3Entry2MiB(
+            self: *Self,
+            page: paging.Page2MiB,
+            flags: paging.PageTableFlags,
+        ) mapping.FlagUpdateError!mapping.MapperFlushAll {
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.FlagUpdateError.ParentEntryHugePage,
                 PageTableWalkError.NotMapped => return mapping.FlagUpdateError.PageNotMapped,
@@ -284,12 +321,15 @@ pub fn MappedPageTable(
             return mapping.MapperFlushAll{};
         }
 
-        fn translatePage2MiB(
+        fn impl_setFlagsP3Entry2MiB(
             mapper: *Mapper,
             page: paging.Page2MiB,
-        ) mapping.TranslateError!paging.PhysFrame2MiB {
-            var self = getSelfPtr(mapper);
+            flags: paging.PageTableFlags,
+        ) mapping.FlagUpdateError!mapping.MapperFlushAll {
+            return getSelfPtr(mapper).setFlagsP3Entry2MiB(page, flags);
+        }
 
+        pub fn translatePage2MiB(self: *Self, page: paging.Page2MiB) mapping.TranslateError!paging.PhysFrame2MiB {
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.TranslateError.InvalidFrameAddress,
                 PageTableWalkError.NotMapped => return mapping.TranslateError.NotMapped,
@@ -306,16 +346,18 @@ pub fn MappedPageTable(
             return paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
         }
 
-        fn mapToWithTableFlags(
-            mapper: *Mapper,
+        fn impl_translatePage2MiB(mapper: *Mapper, page: paging.Page2MiB) mapping.TranslateError!paging.PhysFrame2MiB {
+            return getSelfPtr(mapper).translatePage2MiB(page);
+        }
+
+        pub fn mapToWithTableFlags(
+            self: *Self,
             page: paging.Page,
             frame: paging.PhysFrame,
             flags: paging.PageTableFlags,
             parent_table_flags: paging.PageTableFlags,
             frame_allocator: *paging.FrameAllocator,
         ) mapping.MapToError!mapping.MapperFlush {
-            var self = getSelfPtr(mapper);
-
             const parent_flags = parent_table_flags.sanitizeForParent();
 
             const p3 = page_table_walker.createNextTable(
@@ -355,12 +397,18 @@ pub fn MappedPageTable(
             return mapping.MapperFlush.init(page);
         }
 
-        fn unmap(
+        fn impl_mapToWithTableFlags(
             mapper: *Mapper,
             page: paging.Page,
-        ) mapping.UnmapError!mapping.UnmapResult {
-            var self = getSelfPtr(mapper);
+            frame: paging.PhysFrame,
+            flags: paging.PageTableFlags,
+            parent_table_flags: paging.PageTableFlags,
+            frame_allocator: *paging.FrameAllocator,
+        ) mapping.MapToError!mapping.MapperFlush {
+            return getSelfPtr(mapper).mapToWithTableFlags(page, frame, flags, parent_table_flags, frame_allocator);
+        }
 
+        pub fn unmap(self: *Self, page: paging.Page) mapping.UnmapError!mapping.UnmapResult {
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.UnmapError.ParentEntryHugePage,
                 PageTableWalkError.NotMapped => return mapping.UnmapError.PageNotMapped,
@@ -390,13 +438,15 @@ pub fn MappedPageTable(
             };
         }
 
-        fn updateFlags(
-            mapper: *Mapper,
+        fn impl_unmap(mapper: *Mapper, page: paging.Page) mapping.UnmapError!mapping.UnmapResult {
+            return getSelfPtr(mapper).unmap(page);
+        }
+
+        pub fn updateFlags(
+            self: *Self,
             page: paging.Page,
             flags: paging.PageTableFlags,
         ) mapping.FlagUpdateError!mapping.MapperFlush {
-            var self = getSelfPtr(mapper);
-
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.FlagUpdateError.ParentEntryHugePage,
                 PageTableWalkError.NotMapped => return mapping.FlagUpdateError.PageNotMapped,
@@ -419,26 +469,38 @@ pub fn MappedPageTable(
             return mapping.MapperFlush.init(page);
         }
 
-        fn setFlagsP4Entry(
+        fn impl_updateFlags(
             mapper: *Mapper,
             page: paging.Page,
             flags: paging.PageTableFlags,
-        ) mapping.FlagUpdateError!mapping.MapperFlushAll {
-            var self = getSelfPtr(mapper);
+        ) mapping.FlagUpdateError!mapping.MapperFlush {
+            return getSelfPtr(mapper).updateFlags(page, flags);
+        }
 
+        pub fn setFlagsP4Entry(
+            self: *Self,
+            page: paging.Page,
+            flags: paging.PageTableFlags,
+        ) mapping.FlagUpdateError!mapping.MapperFlushAll {
             const p4_entry = self.level_4_table.getAtIndex(page.p4Index());
             if (p4_entry.isUnused()) return mapping.FlagUpdateError.PageNotMapped;
             p4_entry.setFlags(flags);
             return mapping.MapperFlushAll{};
         }
 
-        fn setFlagsP3Entry(
+        fn impl_setFlagsP4Entry(
             mapper: *Mapper,
             page: paging.Page,
             flags: paging.PageTableFlags,
         ) mapping.FlagUpdateError!mapping.MapperFlushAll {
-            var self = getSelfPtr(mapper);
+            return getSelfPtr(mapper).setFlagsP4Entry(page, flags);
+        }
 
+        pub fn setFlagsP3Entry(
+            self: *Self,
+            page: paging.Page,
+            flags: paging.PageTableFlags,
+        ) mapping.FlagUpdateError!mapping.MapperFlushAll {
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.FlagUpdateError.ParentEntryHugePage,
                 PageTableWalkError.NotMapped => return mapping.FlagUpdateError.PageNotMapped,
@@ -450,13 +512,19 @@ pub fn MappedPageTable(
             return mapping.MapperFlushAll{};
         }
 
-        fn setFlagsP2Entry(
+        fn impl_setFlagsP3Entry(
             mapper: *Mapper,
             page: paging.Page,
             flags: paging.PageTableFlags,
         ) mapping.FlagUpdateError!mapping.MapperFlushAll {
-            var self = getSelfPtr(mapper);
+            return getSelfPtr(mapper).setFlagsP3Entry(page, flags);
+        }
 
+        pub fn setFlagsP2Entry(
+            self: *Self,
+            page: paging.Page,
+            flags: paging.PageTableFlags,
+        ) mapping.FlagUpdateError!mapping.MapperFlushAll {
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.FlagUpdateError.ParentEntryHugePage,
                 PageTableWalkError.NotMapped => return mapping.FlagUpdateError.PageNotMapped,
@@ -472,12 +540,18 @@ pub fn MappedPageTable(
             return mapping.MapperFlushAll{};
         }
 
-        fn translatePage(
+        fn impl_setFlagsP2Entry(
             mapper: *Mapper,
             page: paging.Page,
-        ) mapping.TranslateError!paging.PhysFrame {
-            var self = getSelfPtr(mapper);
+            flags: paging.PageTableFlags,
+        ) mapping.FlagUpdateError!mapping.MapperFlushAll {
+            return getSelfPtr(mapper).setFlagsP2Entry(page, flags);
+        }
 
+        pub fn translatePage(
+            self: *Self,
+            page: paging.Page,
+        ) mapping.TranslateError!paging.PhysFrame {
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.TranslateError.InvalidFrameAddress,
                 PageTableWalkError.NotMapped => return mapping.TranslateError.NotMapped,
@@ -498,12 +572,17 @@ pub fn MappedPageTable(
             return paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
         }
 
-        fn translate(
+        fn impl_translatePage(
             mapper: *Mapper,
+            page: paging.Page,
+        ) mapping.TranslateError!paging.PhysFrame {
+            return getSelfPtr(mapper).translatePage(page);
+        }
+
+        pub fn translate(
+            self: *Self,
             addr: x86_64.VirtAddr,
         ) mapping.TranslateError!mapping.TranslateResult {
-            var self = getSelfPtr(mapper);
-
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(addr.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => @panic("level 4 entry has huge page bit set"),
                 PageTableWalkError.NotMapped => return mapping.TranslateError.NotMapped,
@@ -558,27 +637,34 @@ pub fn MappedPageTable(
             };
         }
 
+        fn impl_translate(
+            mapper: *Mapper,
+            addr: x86_64.VirtAddr,
+        ) mapping.TranslateError!mapping.TranslateResult {
+            return getSelfPtr(mapper).translate(addr);
+        }
+
         fn makeMapper() Mapper {
             return .{
-                .z_impl_mapToWithTableFlags1GiB = mapToWithTableFlags1GiB,
-                .z_impl_unmap1GiB = unmap1GiB,
-                .z_impl_updateFlags1GiB = updateFlags1GiB,
-                .z_impl_setFlagsP4Entry1GiB = setFlagsP4Entry1GiB,
-                .z_impl_translatePage1GiB = translatePage1GiB,
-                .z_impl_mapToWithTableFlags2MiB = mapToWithTableFlags2MiB,
-                .z_impl_unmap2MiB = unmap2MiB,
-                .z_impl_updateFlags2MiB = updateFlags2MiB,
-                .z_impl_setFlagsP4Entry2MiB = setFlagsP4Entry2MiB,
-                .z_impl_setFlagsP3Entry2MiB = setFlagsP3Entry2MiB,
-                .z_impl_translatePage2MiB = translatePage2MiB,
-                .z_impl_mapToWithTableFlags = mapToWithTableFlags,
-                .z_impl_unmap = unmap,
-                .z_impl_updateFlags = updateFlags,
-                .z_impl_setFlagsP4Entry = setFlagsP4Entry,
-                .z_impl_setFlagsP3Entry = setFlagsP3Entry,
-                .z_impl_setFlagsP2Entry = setFlagsP2Entry,
-                .z_impl_translatePage = translatePage,
-                .z_impl_translate = translate,
+                .z_impl_mapToWithTableFlags1GiB = impl_mapToWithTableFlags1GiB,
+                .z_impl_unmap1GiB = impl_unmap1GiB,
+                .z_impl_updateFlags1GiB = impl_updateFlags1GiB,
+                .z_impl_setFlagsP4Entry1GiB = impl_setFlagsP4Entry1GiB,
+                .z_impl_translatePage1GiB = impl_translatePage1GiB,
+                .z_impl_mapToWithTableFlags2MiB = impl_mapToWithTableFlags2MiB,
+                .z_impl_unmap2MiB = impl_unmap2MiB,
+                .z_impl_updateFlags2MiB = impl_updateFlags2MiB,
+                .z_impl_setFlagsP4Entry2MiB = impl_setFlagsP4Entry2MiB,
+                .z_impl_setFlagsP3Entry2MiB = impl_setFlagsP3Entry2MiB,
+                .z_impl_translatePage2MiB = impl_translatePage2MiB,
+                .z_impl_mapToWithTableFlags = impl_mapToWithTableFlags,
+                .z_impl_unmap = impl_unmap,
+                .z_impl_updateFlags = impl_updateFlags,
+                .z_impl_setFlagsP4Entry = impl_setFlagsP4Entry,
+                .z_impl_setFlagsP3Entry = impl_setFlagsP3Entry,
+                .z_impl_setFlagsP2Entry = impl_setFlagsP2Entry,
+                .z_impl_translatePage = impl_translatePage,
+                .z_impl_translate = impl_translate,
             };
         }
 
