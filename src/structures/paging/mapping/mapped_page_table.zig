@@ -154,7 +154,7 @@ pub fn MappedPageTable(
             return getSelfPtr(mapper).setFlagsP4Entry1GiB(page, flags);
         }
 
-        pub fn translatePage1GiB(self: *Self, page: paging.Page1GiB) mapping.TranslateError!paging.PhysFrame1GiB {
+        pub fn translatePage1GiB(self: *const Self, page: paging.Page1GiB) mapping.TranslateError!paging.PhysFrame1GiB {
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.TranslateError.InvalidFrameAddress,
                 PageTableWalkError.NotMapped => return mapping.TranslateError.NotMapped,
@@ -329,7 +329,7 @@ pub fn MappedPageTable(
             return getSelfPtr(mapper).setFlagsP3Entry2MiB(page, flags);
         }
 
-        pub fn translatePage2MiB(self: *Self, page: paging.Page2MiB) mapping.TranslateError!paging.PhysFrame2MiB {
+        pub fn translatePage2MiB(self: *const Self, page: paging.Page2MiB) mapping.TranslateError!paging.PhysFrame2MiB {
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.TranslateError.InvalidFrameAddress,
                 PageTableWalkError.NotMapped => return mapping.TranslateError.NotMapped,
@@ -548,10 +548,7 @@ pub fn MappedPageTable(
             return getSelfPtr(mapper).setFlagsP2Entry(page, flags);
         }
 
-        pub fn translatePage(
-            self: *Self,
-            page: paging.Page,
-        ) mapping.TranslateError!paging.PhysFrame {
+        pub fn translatePage(self: *const Self, page: paging.Page) mapping.TranslateError!paging.PhysFrame {
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(page.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => return mapping.TranslateError.InvalidFrameAddress,
                 PageTableWalkError.NotMapped => return mapping.TranslateError.NotMapped,
@@ -572,17 +569,11 @@ pub fn MappedPageTable(
             return paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
         }
 
-        fn impl_translatePage(
-            mapper: *Mapper,
-            page: paging.Page,
-        ) mapping.TranslateError!paging.PhysFrame {
+        fn impl_translatePage(mapper: *Mapper, page: paging.Page) mapping.TranslateError!paging.PhysFrame {
             return getSelfPtr(mapper).translatePage(page);
         }
 
-        pub fn translate(
-            self: *Self,
-            addr: x86_64.VirtAddr,
-        ) mapping.TranslateError!mapping.TranslateResult {
+        pub fn translate(self: *const Self, addr: x86_64.VirtAddr) mapping.TranslateError!mapping.TranslateResult {
             const p3 = page_table_walker.nextTable(self.context, self.level_4_table.getAtIndex(addr.p4Index())) catch |err| switch (err) {
                 PageTableWalkError.MappedToHugePage => @panic("level 4 entry has huge page bit set"),
                 PageTableWalkError.NotMapped => return mapping.TranslateError.NotMapped,
@@ -637,10 +628,7 @@ pub fn MappedPageTable(
             };
         }
 
-        fn impl_translate(
-            mapper: *Mapper,
-            addr: x86_64.VirtAddr,
-        ) mapping.TranslateError!mapping.TranslateResult {
+        fn impl_translate(mapper: *Mapper, addr: x86_64.VirtAddr) mapping.TranslateError!mapping.TranslateResult {
             return getSelfPtr(mapper).translate(addr);
         }
 
