@@ -632,6 +632,20 @@ pub fn MappedPageTable(
             return getSelfPtr(mapper).translate(addr);
         }
 
+        /// Translates the given virtual address to the physical address that it maps to.
+        ///
+        /// Returns `None` if there is no valid mapping for the given address.
+        ///
+        /// This is a convenience method. For more information about a mapping see the
+        /// `translate` function.
+        pub fn translateAddr(self: *const Self, addr: x86_64.VirtAddr) ?x86_64.PhysAddr {
+            return switch (self.translate(addr) catch return null) {
+                .Frame4KiB => |res| x86_64.PhysAddr.initPanic(res.frame.start_address.value + res.offset),
+                .Frame2MiB => |res| x86_64.PhysAddr.initPanic(res.frame.start_address.value + res.offset),
+                .Frame1GiB => |res| x86_64.PhysAddr.initPanic(res.frame.start_address.value + res.offset),
+            };
+        }
+
         fn makeMapper() Mapper {
             return .{
                 .z_impl_mapToWithTableFlags1GiB = impl_mapToWithTableFlags1GiB,
