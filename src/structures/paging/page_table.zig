@@ -96,61 +96,57 @@ pub const PageTableEntry = packed struct {
 
 pub const PageTableFlags = packed struct {
     /// Specifies whether the mapped frame or page table is loaded in memory.
-    present: bool,
+    present: bool = false,
 
     /// Controls whether writes to the mapped frames are allowed.
     ///
     /// If this bit is unset in a level 1 page table entry, the mapped frame is read-only.
     /// If this bit is unset in a higher level page table entry the complete range of mapped
     /// pages is read-only.
-    writeable: bool,
+    writeable: bool = false,
 
     /// Controls whether accesses from userspace (i.e. ring 3) are permitted.
-    user_accessible: bool,
+    user_accessible: bool = false,
 
     /// If this bit is set, a “write-through” policy is used for the cache, else a “write-back”
     /// policy is used.
-    write_through: bool,
+    write_through: bool = false,
 
     /// Disables caching for the pointed entry is cacheable.
-    no_cache: bool,
+    no_cache: bool = false,
 
     /// Set by the CPU when the mapped frame or page table is accessed.
-    accessed: bool,
+    accessed: bool = false,
 
     /// Set by the CPU on a write to the mapped frame.
-    dirty: bool,
+    dirty: bool = false,
 
     /// Specifies that the entry maps a huge frame instead of a page table. Only allowed in
     /// P2 or P3 tables.
-    huge: bool,
+    huge: bool = false,
 
     /// Indicates that the mapping is present in all address spaces, so it isn't flushed from
     /// the TLB on an address space switch.
-    global: bool,
+    global: bool = false,
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_9_11: u3,
+    bit_9_11: u3 = 0,
 
-    z_reserved12_15: u4,
-    z_reserved16_47: u32,
-    z_reserved48_51: u4,
+    z_reserved12_15: u4 = 0,
+    z_reserved16_47: u32 = 0,
+    z_reserved48_51: u4 = 0,
 
     /// Available to the OS, can be used to store additional data, e.g. custom flags.
-    bit_52_62: u11,
+    bit_52_62: u11 = 0,
 
     /// Forbid code execution from the mapped frames.
     ///
     /// Can be only used when the no-execute page protection feature is enabled in the EFER
     /// register.
-    no_execute: bool,
-
-    pub fn init() PageTableFlags {
-        return @bitCast(PageTableFlags, @as(u64, 0));
-    }
+    no_execute: bool = false,
 
     pub fn sanitizeForParent(self: PageTableFlags) PageTableFlags {
-        var parent_flags = PageTableFlags.init();
+        var parent_flags = PageTableFlags{};
         if (self.present) parent_flags.present = true;
         if (self.writeable) parent_flags.writeable = true;
         if (self.user_accessible) parent_flags.user_accessible = true;

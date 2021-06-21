@@ -37,6 +37,16 @@ pub fn MappedPageTable(
             return @fieldParentPtr(Self, "mapper", mapper);
         }
 
+        pub fn mapTo1GiB(
+            self: *Self,
+            page: paging.Page1GiB,
+            frame: paging.PhysFrame1GiB,
+            flags: paging.PageTableFlags,
+            frame_allocator: *paging.FrameAllocator,
+        ) mapping.MapToError!mapping.MapperFlush1GiB {
+            return self.mapToWithTableFlags1GiB(page, frame, flags, flags, frame_allocator);
+        }
+
         pub fn mapToWithTableFlags1GiB(
             self: *Self,
             page: paging.Page1GiB,
@@ -169,6 +179,16 @@ pub fn MappedPageTable(
 
         fn impl_translatePage1GiB(mapper: *Mapper, page: paging.Page1GiB) mapping.TranslateError!paging.PhysFrame1GiB {
             return getSelfPtr(mapper).translatePage1GiB(page);
+        }
+
+        pub fn mapTo2MiB(
+            self: *Self,
+            page: paging.Page2MiB,
+            frame: paging.PhysFrame2MiB,
+            flags: paging.PageTableFlags,
+            frame_allocator: *paging.FrameAllocator,
+        ) mapping.MapToError!mapping.MapperFlush2MiB {
+            return self.mapToWithTableFlags2MiB(page, frame, flags, flags, frame_allocator);
         }
 
         pub fn mapToWithTableFlags2MiB(
@@ -348,6 +368,16 @@ pub fn MappedPageTable(
 
         fn impl_translatePage2MiB(mapper: *Mapper, page: paging.Page2MiB) mapping.TranslateError!paging.PhysFrame2MiB {
             return getSelfPtr(mapper).translatePage2MiB(page);
+        }
+
+        pub fn mapTo(
+            self: *Self,
+            page: paging.Page,
+            frame: paging.PhysFrame,
+            flags: paging.PageTableFlags,
+            frame_allocator: *paging.FrameAllocator,
+        ) mapping.MapToError!mapping.MapperFlush {
+            return self.mapToWithTableFlags(page, frame, flags, flags, frame_allocator);
         }
 
         pub fn mapToWithTableFlags(

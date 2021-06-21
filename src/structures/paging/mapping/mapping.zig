@@ -143,12 +143,7 @@ pub const Mapper = struct {
         flags: paging.PageTableFlags,
         frame_allocator: *paging.FrameAllocator,
     ) MapToError!MapperFlush {
-        var parent_table_flags = paging.PageTableFlags.init();
-        if (flags.present) parent_table_flags.present = true;
-        if (flags.writeable) parent_table_flags.writeable = true;
-        if (flags.user_accessible) parent_table_flags.user_accessible = true;
-
-        return mapper.z_impl_mapToWithTableFlags(mapper, page, frame, flags, parent_table_flags, frame_allocator);
+        return mapper.z_impl_mapToWithTableFlags(mapper, page, frame, flags, flags, frame_allocator);
     }
 
     /// Creates a new mapping in the page table.
@@ -169,12 +164,7 @@ pub const Mapper = struct {
         flags: paging.PageTableFlags,
         frame_allocator: *paging.FrameAllocator,
     ) MapToError!MapperFlush2MiB {
-        var parent_table_flags = paging.PageTableFlags.init();
-        if (flags.present) parent_table_flags.present = true;
-        if (flags.writeable) parent_table_flags.writeable = true;
-        if (flags.user_accessible) parent_table_flags.user_accessible = true;
-
-        return mapper.z_impl_mapToWithTableFlags2MiB(mapper, page, frame, flags, parent_table_flags, frame_allocator);
+        return mapper.z_impl_mapToWithTableFlags2MiB(mapper, page, frame, flags, flags, frame_allocator);
     }
 
     /// Creates a new mapping in the page table.
@@ -195,12 +185,7 @@ pub const Mapper = struct {
         flags: paging.PageTableFlags,
         frame_allocator: *paging.FrameAllocator,
     ) MapToError!MapperFlush1GiB {
-        var parent_table_flags = paging.PageTableFlags.init();
-        if (flags.present) parent_table_flags.present = true;
-        if (flags.writeable) parent_table_flags.writeable = true;
-        if (flags.user_accessible) parent_table_flags.user_accessible = true;
-
-        return mapper.z_impl_mapToWithTableFlags1GiB(mapper, page, frame, flags, parent_table_flags, frame_allocator);
+        return mapper.z_impl_mapToWithTableFlags1GiB(mapper, page, frame, flags, flags, frame_allocator);
     }
 
     /// Maps the given frame to the virtual page with the same address.
