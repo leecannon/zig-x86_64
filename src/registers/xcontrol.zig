@@ -91,6 +91,7 @@ pub const XCr0 = packed struct {
     }
 
     pub fn format(value: XCr0, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
         return formatWithoutFields(
             value,
             options,

@@ -97,6 +97,7 @@ pub const Cr0 = packed struct {
     }
 
     pub fn format(value: Cr0, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
         return formatWithoutFields(
             value,
             options,
@@ -164,6 +165,7 @@ pub const Cr3Flags = packed struct {
     }
 
     pub fn format(value: Cr3Flags, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
         return formatWithoutFields(
             value,
             options,
@@ -390,6 +392,7 @@ pub const Cr4 = packed struct {
     }
 
     pub fn format(value: Cr4, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
         return formatWithoutFields(
             value,
             options,

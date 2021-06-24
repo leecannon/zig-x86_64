@@ -84,6 +84,8 @@ pub const PageTableEntry = packed struct {
     }
 
     pub fn format(value: PageTableEntry, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
+        _ = options;
         try writer.print("PageTableEntry({}, Flags = 0b{b})", .{ value.getAddr(), value.getFlags().value });
     }
 
@@ -172,6 +174,7 @@ pub const PageTableFlags = packed struct {
     const ALL_NOT_RESERVED: u64 = ~ALL_RESERVED;
 
     pub fn format(value: PageTableFlags, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
         return formatWithoutFields(
             value,
             options,
@@ -225,6 +228,8 @@ pub const PageTableIndex = struct {
     }
 
     pub fn format(value: PageTableIndex, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = options;
+        _ = fmt;
         try writer.print("PageTableIndex({})", .{value.value});
     }
 
@@ -243,6 +248,8 @@ pub const PageOffset = struct {
     }
 
     pub fn format(value: PageOffset, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = options;
+        _ = fmt;
         try writer.print("PageOffset({})", .{value.value});
     }
 

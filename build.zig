@@ -3,7 +3,6 @@ const Builder = std.build.Builder;
 
 pub fn build(b: *Builder) !void {
     const mode = b.standardReleaseOptions();
-    const target = b.standardTargetOptions(.{});
 
     var tests = b.addTest("src/index.zig");
     tests.setBuildMode(mode);

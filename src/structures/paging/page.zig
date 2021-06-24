@@ -80,6 +80,8 @@ pub const Page = extern struct {
     }
 
     pub fn format(value: Page, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = options;
+        _ = fmt;
         try writer.print("Page[" ++ page_size.sizeString() ++ "](0x{x})", .{value.start_address.value});
     }
 
@@ -131,6 +133,8 @@ pub const Page2MiB = extern struct {
     }
 
     pub fn format(value: Page2MiB, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = options;
+        _ = fmt;
         try writer.print("Page[" ++ page_size.sizeString() ++ "](0x{x})", .{value.start_address.value});
     }
 
@@ -177,6 +181,8 @@ pub const Page1GiB = extern struct {
     }
 
     pub fn format(value: Page1GiB, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = options;
+        _ = fmt;
         try writer.print("Page[" ++ page_size.sizeString() ++ "](0x{x})", .{value.start_address.value});
     }
 
@@ -438,13 +444,13 @@ test "PageIterator" {
     try std.testing.expect(!inclusive_iterator.isEmpty());
 
     var count: usize = 0;
-    while (iterator.next()) |frame| {
+    while (iterator.next()) |_| {
         count += 1;
     }
     try std.testing.expectEqual(@as(usize, 15), count);
 
     count = 0;
-    while (inclusive_iterator.next()) |frame| {
+    while (inclusive_iterator.next()) |_| {
         count += 1;
     }
     try std.testing.expectEqual(@as(usize, 16), count);

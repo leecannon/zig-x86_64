@@ -102,7 +102,7 @@ pub fn MappedPageTable(
             if (!flags.present) return mapping.UnmapError.PageNotMapped;
             if (flags.huge) return mapping.UnmapError.ParentEntryHugePage;
 
-            const frame = paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch |err| return mapping.UnmapError.InvalidFrameAddress;
+            const frame = paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch return mapping.UnmapError.InvalidFrameAddress;
 
             p3_entry.setUnused();
 
@@ -174,7 +174,7 @@ pub fn MappedPageTable(
 
             if (p3_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
-            return paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
+            return paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch return mapping.TranslateError.InvalidFrameAddress;
         }
 
         fn impl_translatePage1GiB(mapper: *Mapper, page: paging.Page1GiB) mapping.TranslateError!paging.PhysFrame1GiB {
@@ -259,7 +259,7 @@ pub fn MappedPageTable(
             if (!flags.present) return mapping.UnmapError.PageNotMapped;
             if (flags.huge) return mapping.UnmapError.ParentEntryHugePage;
 
-            const frame = paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch |err| return mapping.UnmapError.InvalidFrameAddress;
+            const frame = paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch return mapping.UnmapError.InvalidFrameAddress;
 
             p2_entry.setUnused();
 
@@ -363,7 +363,7 @@ pub fn MappedPageTable(
 
             if (p2_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
-            return paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
+            return paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch return mapping.TranslateError.InvalidFrameAddress;
         }
 
         fn impl_translatePage2MiB(mapper: *Mapper, page: paging.Page2MiB) mapping.TranslateError!paging.PhysFrame2MiB {
@@ -458,7 +458,7 @@ pub fn MappedPageTable(
             if (!flags.present) return mapping.UnmapError.PageNotMapped;
             if (flags.huge) return mapping.UnmapError.ParentEntryHugePage;
 
-            const frame = paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return mapping.UnmapError.InvalidFrameAddress;
+            const frame = paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch return mapping.UnmapError.InvalidFrameAddress;
 
             p1_entry.setUnused();
 
@@ -596,7 +596,7 @@ pub fn MappedPageTable(
 
             if (p1_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
-            return paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
+            return paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch return mapping.TranslateError.InvalidFrameAddress;
         }
 
         fn impl_translatePage(mapper: *Mapper, page: paging.Page) mapping.TranslateError!paging.PhysFrame {
@@ -647,7 +647,7 @@ pub fn MappedPageTable(
 
             if (p1_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
-            const frame = paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
+            const frame = paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch return mapping.TranslateError.InvalidFrameAddress;
 
             return mapping.TranslateResult{
                 .Frame4KiB = .{

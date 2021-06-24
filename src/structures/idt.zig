@@ -640,7 +640,9 @@ test {
     try std.testing.expectEqual(@sizeOf(u64) * 2, @sizeOf(PageFaultHandlerFuncEntry));
 }
 
-fn dummyFn(interrupt_stack_frame: InterruptStackFrame) callconv(.Interrupt) void {}
+fn dummyFn(interrupt_stack_frame: InterruptStackFrame) callconv(.Interrupt) void {
+    _ = interrupt_stack_frame;
+}
 
 test "Entry" {
     var a = HandlerFuncEntry.missing();
@@ -725,6 +727,8 @@ pub const InterruptStackFrame = extern struct {
     }
 
     pub fn format(value: InterruptStackFrame, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
+        _ = options;
         try writer.print(
             "InterruptStackFrame(.instruction_pointer: {}, .code_segment: {}, .cpu_flags: 0x{x}, .stack_pointer: {}, .stack_segment: {})",
             .{
@@ -793,6 +797,7 @@ pub const PageFaultErrorCode = packed struct {
     }
 
     pub fn format(value: PageFaultErrorCode, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
         return formatWithoutFields(
             value,
             options,

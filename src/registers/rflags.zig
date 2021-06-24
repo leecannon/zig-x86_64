@@ -122,6 +122,7 @@ pub const RFlags = packed struct {
     }
 
     pub fn format(value: RFlags, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
         return formatWithoutFields(
             value,
             options,

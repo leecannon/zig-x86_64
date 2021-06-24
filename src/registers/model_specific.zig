@@ -68,6 +68,7 @@ pub const Efer = packed struct {
     }
 
     pub fn format(value: Efer, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
         return formatWithoutFields(
             value,
             options,

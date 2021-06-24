@@ -148,7 +148,7 @@ pub const RecursivePageTable = struct {
         if (!flags.present) return mapping.UnmapError.PageNotMapped;
         if (!flags.huge) return mapping.UnmapError.ParentEntryHugePage;
 
-        const frame = paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch |err| return mapping.UnmapError.InvalidFrameAddress;
+        const frame = paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch return mapping.UnmapError.InvalidFrameAddress;
 
         p3_entry.setUnused();
 
@@ -212,7 +212,7 @@ pub const RecursivePageTable = struct {
 
         if (p3_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
-        return paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
+        return paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch return mapping.TranslateError.InvalidFrameAddress;
     }
 
     fn mapToWithTableFlags2MiB(
@@ -288,7 +288,7 @@ pub const RecursivePageTable = struct {
         if (!flags.present) return mapping.UnmapError.PageNotMapped;
         if (!flags.huge) return mapping.UnmapError.ParentEntryHugePage;
 
-        const frame = paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch |err| return mapping.UnmapError.InvalidFrameAddress;
+        const frame = paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch return mapping.UnmapError.InvalidFrameAddress;
 
         p2_entry.setUnused();
 
@@ -382,7 +382,7 @@ pub const RecursivePageTable = struct {
 
         if (p2_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
-        return paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
+        return paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch return mapping.TranslateError.InvalidFrameAddress;
     }
 
     fn mapToWithTableFlags(
@@ -602,7 +602,7 @@ pub const RecursivePageTable = struct {
 
         if (p1_entry.isUnused()) return mapping.TranslateError.NotMapped;
 
-        return paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
+        return paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch return mapping.TranslateError.InvalidFrameAddress;
     }
 
     fn translate(
@@ -663,7 +663,7 @@ pub const RecursivePageTable = struct {
             @panic("level 1 entry has huge page bit set");
         }
 
-        const frame = paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch |err| return mapping.TranslateError.InvalidFrameAddress;
+        const frame = paging.PhysFrame.fromStartAddress(p1_entry.getAddr()) catch return mapping.TranslateError.InvalidFrameAddress;
 
         return mapping.TranslateResult{
             .Frame4KiB = .{

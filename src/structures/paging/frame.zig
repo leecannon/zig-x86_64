@@ -31,10 +31,13 @@ pub const PhysFrame = extern struct {
 
     /// Returns the size of the frame (4KB, 2MB or 1GB).
     pub fn sizeOf(self: PhysFrame) u64 {
+        _ = self;
         return size.bytes();
     }
 
     pub fn format(value: PhysFrame, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
+        _ = options;
         try writer.print("PhysFrame[" ++ size.sizeString() ++ "](0x{x})", .{value.start_address.value});
     }
 
@@ -74,10 +77,13 @@ pub const PhysFrame2MiB = extern struct {
 
     /// Returns the size of the frame (4KB, 2MB or 1GB).
     pub fn sizeOf(self: PhysFrame2MiB) u64 {
+        _ = self;
         return size.bytes();
     }
 
     pub fn format(value: PhysFrame2MiB, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
+        _ = options;
         try writer.print("PhysFrame[" ++ size.sizeString() ++ "](0x{x})", .{value.start_address.value});
     }
 
@@ -117,10 +123,13 @@ pub const PhysFrame1GiB = extern struct {
 
     /// Returns the size of the frame (4KB, 2MB or 1GB).
     pub fn sizeOf(self: PhysFrame1GiB) u64 {
+        _ = self;
         return size.bytes();
     }
 
     pub fn format(value: PhysFrame1GiB, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
+        _ = options;
         try writer.print("PhysFrame[" ++ size.sizeString() ++ "](0x{x})", .{value.start_address.value});
     }
 
@@ -433,13 +442,13 @@ test "PhysFrameIterator" {
     try std.testing.expect(!inclusive_iterator.isEmpty());
 
     var count: usize = 0;
-    while (iterator.next()) |frame| {
+    while (iterator.next()) |_| {
         count += 1;
     }
     try std.testing.expectEqual(@as(usize, 15), count);
 
     count = 0;
-    while (inclusive_iterator.next()) |frame| {
+    while (inclusive_iterator.next()) |_| {
         count += 1;
     }
     try std.testing.expectEqual(@as(usize, 16), count);

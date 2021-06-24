@@ -15,6 +15,7 @@ pub const RdRand = struct {
     /// Uniformly sampled u64.
     /// May fail in rare circumstances or heavy load.
     pub fn getU64(self: RdRand) ?u64 {
+        _ = self;
         var carry: u8 = undefined;
         const num: u64 = asm ("rdrand %[result]; setc %[carry]"
             : [result] "=r" (-> u64)
@@ -27,6 +28,7 @@ pub const RdRand = struct {
     /// Uniformly sampled u32.
     /// May fail in rare circumstances or heavy load.
     pub fn getU32(self: RdRand) ?u32 {
+        _ = self;
         var carry: u8 = undefined;
         const num: u32 = asm ("rdrand %[result]; setc %[carry]"
             : [result] "=r" (-> u32)
@@ -39,6 +41,7 @@ pub const RdRand = struct {
     /// Uniformly sampled u16.
     /// May fail in rare circumstances or heavy load.
     pub fn getU16(self: RdRand) ?u16 {
+        _ = self;
         var carry: u8 = undefined;
         const num: u16 = asm ("rdrand %[result]; setc %[carry]"
             : [result] "=r" (-> u16)
@@ -67,6 +70,7 @@ pub const RdSeed = struct {
     /// Random u64 seed directly from entropy store.
     /// May fail in rare circumstances or heavy load.
     pub fn getU64(self: RdSeed) ?u64 {
+        _ = self;
         var carry: u8 = undefined;
         const num: u64 = asm ("rdseed %[result]; setc %[carry]"
             : [result] "=r" (-> u64)
@@ -79,6 +83,7 @@ pub const RdSeed = struct {
     /// Random u32 seed directly from entropy store.
     /// May fail in rare circumstances or heavy load.
     pub fn getU32(self: RdSeed) ?u32 {
+        _ = self;
         var carry: u8 = undefined;
         const num: u32 = asm ("rdseed %[result]; setc %[carry]"
             : [result] "=r" (-> u32)
@@ -91,6 +96,7 @@ pub const RdSeed = struct {
     /// Random u16 seed directly from entropy store.
     /// May fail in rare circumstances or heavy load.
     pub fn getU16(self: RdSeed) ?u16 {
+        _ = self;
         var carry: u8 = undefined;
         const num: u16 = asm ("rdseed %[result]; setc %[carry]"
             : [result] "=r" (-> u16)

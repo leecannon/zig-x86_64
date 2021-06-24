@@ -108,6 +108,8 @@ pub const SimplePic = struct {
     }
 
     pub fn isInterruptMasked(self: SimplePic, interrupt: PicInterrupt) bool {
+        _ = self;
+
         return switch (interrupt) {
             // Primary
             .Timer => rawGetPrimaryInterruptMask().timer,
@@ -139,6 +141,7 @@ pub const SimplePic = struct {
     }
 
     pub fn setInterruptMask(self: SimplePic, interrupt: PicInterrupt, mask: bool) void {
+        _ = self;
         if (isPrimaryPic(interrupt)) {
             var current_mask = rawGetPrimaryInterruptMask();
             switch (interrupt) {

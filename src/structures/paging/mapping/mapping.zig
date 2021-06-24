@@ -559,6 +559,7 @@ pub const TranslateError = error{
 pub const MapperFlushAll = struct {
     /// Flush all pages from the TLB to ensure that the newest mapping is used.
     pub fn flushAll(self: MapperFlushAll) void {
+        _ = self;
         x86_64.instructions.tlb.flushAll();
     }
 };

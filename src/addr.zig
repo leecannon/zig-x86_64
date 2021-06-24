@@ -118,6 +118,8 @@ pub const VirtAddr = packed struct {
     }
 
     pub fn format(value: VirtAddr, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
+        _ = options;
         try writer.print("VirtAddr(0x{x})", .{value.value});
     }
 
@@ -253,6 +255,8 @@ pub const PhysAddr = packed struct {
     }
 
     pub fn format(value: PhysAddr, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
+        _ = fmt;
+        _ = options;
         try writer.print("PhysAddr(0x{x})", .{value.value});
     }
 
