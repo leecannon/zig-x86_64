@@ -1,0 +1,19 @@
+name: Publish
+
+on:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: publish
+    steps:
+      - uses: mattnite/setup-gyro@v1.1.0
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+      - run: gyro publish
+        env:
+          GYRO_ACCESS_TOKEN: ${{ secrets.GYRO_ACCESS_TOKEN }}
