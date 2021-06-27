@@ -16,7 +16,7 @@ pkgs:
       src/registers/*.zig
       src/instructions/*.zig
       src/additional/*.zig
-      
+
     tags:
       x86-64
       x86
