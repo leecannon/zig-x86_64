@@ -1,5 +1,7 @@
 # zig-x86_64
 
+[![CI](https://github.com/leecannon/zig-x86_64/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/leecannon/zig-x86_64/actions/workflows/main.yml)
+
 This repo contains various functionality required to make an x86_64 kernel (following [Writing an OS in Rust](https://os.phil-opp.com/))
 
 It is mainly a zig reimplementation of the rust crate [x86_64](https://github.com/rust-osdev/x86_64).
@@ -10,28 +12,8 @@ It includes a few additonal types in the `x86_64.additional` namespace:
  
 ### Contributions are welcome!
 
-## How to use
+## How to get
 
-### Use a package manager
+Currently [gyro](https://github.com/mattnite/gyro) is the only supported way of acquiring this package.
 
-Currently [gyro](https://github.com/mattnite/gyro) is what this package supports.
-
-### Add as package in `build.zig`
-
-* To `build.zig` add:
-  
-   ```zig
-   exe.addPackagePath("x86_64", "zig-x86_64/src/index.zig"); // or whatever the path is
-   ```
-* Then the package is available within any zig file:
-  
-   ```zig
-   const x86_64 = @import("x86_64");
-   ```
-
-### Import directly
-
-In any zig file add:
-```zig
-const x86_64 = @import("../zig-x86_64/src/index.zig"); // or whatever the path is from *that* file
-```
+Just setup gyro as explained in it's documentation then `gyro add leecannon/zig-x86_64`
