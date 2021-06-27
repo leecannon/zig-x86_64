@@ -16,4 +16,4 @@ It includes a few additonal types in the `x86_64.additional` namespace:
 
 Currently [gyro](https://github.com/mattnite/gyro) is the only supported way of acquiring this package.
 
-Just setup gyro as explained in it's documentation then `gyro add leecannon/zig-x86_64`
+Just setup gyro as explained in it's documentation then `gyro add leecannon/x86_64`
