@@ -1,0 +1,15 @@
+pkgs:
+  x86_64:
+    version: 0.1.0
+    description: "Support for x86_64 specific instructions (e.g. TLB flush), registers (e.g. control registers), and structures (e.g. page tables)"
+    license: MIT
+    source_url: "https://github.com/leecannon/zig-x86_64"
+    tags:
+      x86-64
+      x86
+      osdev
+
+    root: src/index.zig
+    files:
+      README.md
+      LICENSE

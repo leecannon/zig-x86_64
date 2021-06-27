@@ -12,12 +12,9 @@ It includes a few additonal types in the `x86_64.additional` namespace:
 
 ## How to use
 
-Download the repo somehow then either:
-
 ### Use a package manager
 
-* [zigmod](https://github.com/nektro/zigmod)
-* [zkg](https://github.com/mattnite/zkg)
+Currently [gyro](https://github.com/mattnite/gyro) is what this package supports.
 
 ### Add as package in `build.zig`
 
