@@ -1,2 +1,3 @@
 zig-cache/
 .gyro/
+gyro.lock
