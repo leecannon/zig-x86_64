@@ -22,13 +22,13 @@ pub const SegmentSelector = struct {
 
     /// Set the privilege level for this Segment selector.
     pub fn setRpl(self: *SegmentSelector, rpl: x86_64.PrivilegeLevel) void {
-        setBits(&self.value, 0, 2, @as(u16, @enumToInt(rpl)));
+        bitjuggle.setBits(&self.value, 0, 2, @as(u16, @enumToInt(rpl)));
     }
 
     /// Returns the requested privilege level.
     /// Returns `error.InvalidPrivilegeLevel` if the privledge level bits are out of range of the `PrivilegeLevel` enum
     pub fn getRpl(self: SegmentSelector) error{InvalidPrivilegeLevel}!x86_64.PrivilegeLevel {
-        switch (getBits(self.value, 0, 2)) {
+        switch (bitjuggle.getBits(self.value, 0, 2)) {
             0 => return x86_64.PrivilegeLevel.Ring0,
             1 => return x86_64.PrivilegeLevel.Ring1,
             2 => return x86_64.PrivilegeLevel.Ring2,
@@ -42,7 +42,7 @@ pub const SegmentSelector = struct {
     /// ## Panic
     /// Will panic if the privledge level bits are out of range of the `PrivilegeLevel` enum
     pub fn getRplPanic(self: SegmentSelector) x86_64.PrivilegeLevel {
-        return @intToEnum(x86_64.PrivilegeLevel, @truncate(u8, getBits(self.value, 0, 2)));
+        return @intToEnum(x86_64.PrivilegeLevel, @truncate(u8, bitjuggle.getBits(self.value, 0, 2)));
     }
 
     pub fn format(value: SegmentSelector, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
@@ -192,17 +192,17 @@ pub fn tssSegment(tss: *x86_64.structures.tss.TaskStateSegment) Descriptor {
     var low = Descriptor.PRESENT;
 
     // base
-    setBits(&low, 16, 40, getBits(ptr, 0, 24));
-    setBits(&low, 56, 64, getBits(ptr, 24, 32));
+    bitjuggle.setBits(&low, 16, 40, bitjuggle.getBits(ptr, 0, 24));
+    bitjuggle.setBits(&low, 56, 64, bitjuggle.getBits(ptr, 24, 32));
 
     // limit (the `-1` in needed since the bound is inclusive)
-    setBits(&low, 0, 16, @as(u64, @sizeOf(x86_64.structures.tss.TaskStateSegment) - 1));
+    bitjuggle.setBits(&low, 0, 16, @as(u64, @sizeOf(x86_64.structures.tss.TaskStateSegment) - 1));
 
     // type (0b1001 = available 64-bit tss)
-    setBits(&low, 40, 44, 0b1001);
+    bitjuggle.setBits(&low, 40, 44, 0b1001);
 
     var high: u64 = 0;
-    setBits(&high, 0, 32, getBits(ptr, 32, 64));
+    bitjuggle.setBits(&high, 0, 32, bitjuggle.getBits(ptr, 32, 64));
 
     return .{
         .SystemSegment = .{

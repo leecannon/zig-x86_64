@@ -1,6 +1,7 @@
 pkgs:
   x86_64:
     version: 0.1.2
+    root: src/index.zig
     description: "Support for x86_64 specific instructions (e.g. TLB flush), registers (e.g. control registers), and structures (e.g. page tables)"
     license: MIT
     source_url: "https://github.com/leecannon/zig-x86_64"
@@ -8,8 +9,5 @@ pkgs:
       x86-64
       x86
       osdev
-
-    root: src/index.zig
-    files:
-      README.md
-      LICENSE
+deps:
+  leecannon/bitjuggle: ^0.1.0

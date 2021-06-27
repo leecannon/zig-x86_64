@@ -196,27 +196,27 @@ pub const PageError = error{AddressNotAligned};
 /// Returns the 1GiB memory page with the specified page table indices.
 pub fn pageFromTableIndices1GiB(p4_index: PageTableIndex, p3_index: PageTableIndex) Page1GiB {
     var addr: u64 = 0;
-    setBits(&addr, 39, 48, @as(u64, p4_index.value));
-    setBits(&addr, 30, 39, @as(u64, p3_index.value));
+    bitjuggle.setBits(&addr, 39, 48, @as(u64, p4_index.value));
+    bitjuggle.setBits(&addr, 30, 39, @as(u64, p3_index.value));
     return Page1GiB.containingAddress(x86_64.VirtAddr.initPanic(addr));
 }
 
 /// Returns the 2MiB memory page with the specified page table indices.
 pub fn pageFromTableIndices2MiB(p4_index: PageTableIndex, p3_index: PageTableIndex, p2_index: PageTableIndex) Page2MiB {
     var addr: u64 = 0;
-    setBits(&addr, 39, 48, @as(u64, p4_index.value));
-    setBits(&addr, 30, 39, @as(u64, p3_index.value));
-    setBits(&addr, 21, 30, @as(u64, p2_index.value));
+    bitjuggle.setBits(&addr, 39, 48, @as(u64, p4_index.value));
+    bitjuggle.setBits(&addr, 30, 39, @as(u64, p3_index.value));
+    bitjuggle.setBits(&addr, 21, 30, @as(u64, p2_index.value));
     return Page2MiB.containingAddress(x86_64.VirtAddr.initPanic(addr));
 }
 
 /// Returns the 4KiB memory page p4_index the specified page table indices.
 pub fn pageFromTableIndices(p4_index: PageTableIndex, p3_index: PageTableIndex, p2_index: PageTableIndex, p1_index: PageTableIndex) Page {
     var addr: u64 = 0;
-    setBits(&addr, 39, 48, @as(u64, p4_index.value));
-    setBits(&addr, 30, 39, @as(u64, p3_index.value));
-    setBits(&addr, 21, 30, @as(u64, p2_index.value));
-    setBits(&addr, 12, 21, @as(u64, p1_index.value));
+    bitjuggle.setBits(&addr, 39, 48, @as(u64, p4_index.value));
+    bitjuggle.setBits(&addr, 30, 39, @as(u64, p3_index.value));
+    bitjuggle.setBits(&addr, 21, 30, @as(u64, p2_index.value));
+    bitjuggle.setBits(&addr, 12, 21, @as(u64, p1_index.value));
     return Page.containingAddress(x86_64.VirtAddr.initPanic(addr));
 }
 

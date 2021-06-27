@@ -660,24 +660,24 @@ pub const EntryOptions = packed struct {
 
     /// Is the entry present.
     pub fn isPresent(self: EntryOptions) bool {
-        return getBit(self.value, 15);
+        return bitjuggle.isBitSet(self.value, 15);
     }
 
     /// Set or reset the preset bit.
     pub fn setPresent(self: *EntryOptions, present: bool) void {
-        setBit(&self.value, 15, present);
+        bitjuggle.setBit(&self.value, 15, present);
     }
 
     /// Let the CPU disable hardware interrupts when the handler is invoked. By default,
     /// interrupts are disabled on handler invocation.
     pub fn disableInterrupts(self: *EntryOptions, disable: bool) void {
-        setBit(&self.value, 8, !disable);
+        bitjuggle.setBit(&self.value, 8, !disable);
     }
 
     /// Set the required privilege level (DPL) for invoking the handler. The DPL can be 0, 1, 2,
     /// or 3, the default is 0. If CPL < DPL, a general protection fault occurs.
     pub fn setPrivledgeLevel(self: *EntryOptions, dpl: x86_64.PrivilegeLevel) void {
-        setBits(&self.value, 13, 15, @as(u16, @enumToInt(dpl)));
+        bitjuggle.setBits(&self.value, 13, 15, @as(u16, @enumToInt(dpl)));
     }
 
     /// Assigns a Interrupt Stack Table (IST) stack to this handler. The CPU will then always
@@ -689,7 +689,7 @@ pub const EntryOptions = packed struct {
     pub fn setStackIndex(self: *EntryOptions, index: u16) void {
         // The hardware IST index starts at 1, but our software IST index
         // starts at 0. Therefore we need to add 1 here.
-        setBits(&self.value, 0, 3, index + 1);
+        bitjuggle.setBits(&self.value, 0, 3, index + 1);
     }
 
     test {

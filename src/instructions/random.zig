@@ -6,7 +6,7 @@ pub const RdRand = struct {
     pub fn init() ?RdRand {
         // RDRAND support indicated by CPUID page 01h, ecx bit 30
         // https://en.wikipedia.org/wiki/RdRand#Overview
-        if (getBit(x86_64.cpuid(0x1).ecx, 30)) {
+        if (bitjuggle.isBitSet(x86_64.cpuid(0x1).ecx, 30)) {
             return RdRand{};
         }
         return null;
@@ -61,7 +61,7 @@ pub const RdSeed = struct {
     /// Creates RdSeed if RDSEED is supported
     pub fn init() ?RdSeed {
         // RDSEED support indicated by CPUID page 07h, ebx bit 18
-        if (getBit(x86_64.cpuid(0x7).ebx, 18)) {
+        if (bitjuggle.isBitSet(x86_64.cpuid(0x7).ebx, 18)) {
             return RdSeed{};
         }
         return null;

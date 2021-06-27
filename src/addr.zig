@@ -15,7 +15,7 @@ pub const VirtAddr = packed struct {
     ///
     /// If required this function performs sign extension of bit 47 to make the address canonical.
     pub fn init(addr: u64) error{VirtAddrNotValid}!VirtAddr {
-        return switch (getBits(addr, 47, 64)) {
+        return switch (bitjuggle.getBits(addr, 47, 64)) {
             0, 0x1ffff => VirtAddr{ .value = addr },
             1 => initTruncate(addr),
             else => return error.VirtAddrNotValid,
@@ -182,11 +182,11 @@ test "VirtAddr.pageOffset/Index" {
     var something: usize = undefined;
     var virtAddr = VirtAddr.fromPtr(&something);
 
-    try std.testing.expectEqual(@intCast(u12, getBits(virtAddr.value, 0, 12)), virtAddr.pageOffset().value);
-    try std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 12, 21)), virtAddr.p1Index().value);
-    try std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 21, 30)), virtAddr.p2Index().value);
-    try std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 30, 39)), virtAddr.p3Index().value);
-    try std.testing.expectEqual(@intCast(u9, getBits(virtAddr.value, 39, 48)), virtAddr.p4Index().value);
+    try std.testing.expectEqual(@intCast(u12, bitjuggle.getBits(virtAddr.value, 0, 12)), virtAddr.pageOffset().value);
+    try std.testing.expectEqual(@intCast(u9, bitjuggle.getBits(virtAddr.value, 12, 21)), virtAddr.p1Index().value);
+    try std.testing.expectEqual(@intCast(u9, bitjuggle.getBits(virtAddr.value, 21, 30)), virtAddr.p2Index().value);
+    try std.testing.expectEqual(@intCast(u9, bitjuggle.getBits(virtAddr.value, 30, 39)), virtAddr.p3Index().value);
+    try std.testing.expectEqual(@intCast(u9, bitjuggle.getBits(virtAddr.value, 39, 48)), virtAddr.p4Index().value);
 }
 
 /// A 64-bit physical memory address.
@@ -200,7 +200,7 @@ pub const PhysAddr = packed struct {
     ///
     /// Fails if any bits in the range 52 to 64 are set.
     pub fn init(addr: u64) error{PhysAddrNotValid}!PhysAddr {
-        return switch (getBits(addr, 52, 64)) {
+        return switch (bitjuggle.getBits(addr, 52, 64)) {
             0 => PhysAddr{ .value = addr },
             else => return error.PhysAddrNotValid,
         };
