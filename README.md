@@ -1,6 +1,7 @@
 # zig-x86_64
 
 [![CI](https://github.com/leecannon/zig-x86_64/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/leecannon/zig-x86_64/actions/workflows/main.yml)
+[![Publish](https://github.com/leecannon/zig-x86_64/actions/workflows/publish.yml/badge.svg?branch=master)](https://github.com/leecannon/zig-x86_64/actions/workflows/publish.yml)
 
 This repo contains various functionality required to make an x86_64 kernel (following [Writing an OS in Rust](https://os.phil-opp.com/))
 
