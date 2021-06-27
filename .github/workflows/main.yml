@@ -19,11 +19,8 @@ jobs:
           version: master
       - uses: mattnite/setup-gyro@v1.1.0
       
-      - name: gyro
-        run: gyro update
-      
       - name: build
-        run: zig build test
+        run: gyro build test
   lint:
     runs-on: ubuntu-latest
     steps:
