@@ -1,6 +1,9 @@
 name: Publish
 
 on:
+  push:
+    paths:
+      - 'gyro.zzz'
   workflow_dispatch:
 
 jobs:
