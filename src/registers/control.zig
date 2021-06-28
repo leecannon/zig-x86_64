@@ -189,11 +189,19 @@ pub const Cr3 = struct {
     pub const Contents = struct {
         phys_frame: x86_64.structures.paging.PhysFrame,
         cr3_flags: Cr3Flags,
+
+        pub fn toU64(self: Contents) u64 {
+            return self.phys_frame.start_address.value | self.cr3_flags.toU64();
+        }
     };
 
     pub const PcidContents = struct {
         phys_frame: x86_64.structures.paging.PhysFrame,
         pcid: x86_64.instructions.tlb.Pcid,
+
+        pub fn toU64(self: PcidContents) u64 {
+            return self.phys_frame.start_address.value | @as(u64, self.pcid.value);
+        }
     };
 
     /// Read the current P4 table address from the CR3 register.
@@ -233,7 +241,7 @@ pub const Cr3 = struct {
 
     /// Write a new P4 table address into the CR3 register.
     pub fn write(contents: Contents) void {
-        writeRaw(contents.phys_frame.start_address.value | contents.cr3_flags.toU64());
+        writeRaw(contents.toU64());
     }
 
     /// Write a new P4 table address into the CR3 register.
@@ -243,7 +251,7 @@ pub const Cr3 = struct {
     /// changing the page mapping.
     /// [`Cr4Flags::PCID`] must be set before calling this method.
     pub fn writePcid(pcidContents: PcidContents) void {
-        writeRaw(pcidContents.phys_frame.start_address.value | @as(u64, pcidContents.pcid.value));
+        writeRaw(pcidContents.toU64());
     }
 
     fn writeRaw(value: u64) void {

@@ -37,6 +37,40 @@ pub fn MappedPageTable(
             return @fieldParentPtr(Self, "mapper", mapper);
         }
 
+        /// This does *not* deallocate the physical frames that are mapped,
+        /// it deallocates the frames used for the page table itself
+        pub fn deallocateAllPageTableFrames(
+            self: *Self,
+            frame_allocator: *paging.FrameAllocator,
+        ) mapping.UnmapError!mapping.MapperFlushAll {
+            for (self.level_4_table.entries) |*l4_entry| {
+                const l4_flags = l4_entry.getFlags();
+                if (!l4_flags.present) continue;
+
+                const p3 = page_table_walker.nextTable(self.context, l4_entry) catch unreachable;
+
+                for (p3.entries) |*l3_entry| {
+                    const l3_flags = l3_entry.getFlags();
+                    if (!l3_flags.present or l3_flags.huge) continue;
+
+                    const p2 = page_table_walker.nextTable(self.context, l3_entry) catch unreachable;
+
+                    for (p2.entries) |*l2_entry| {
+                        const l2_flags = l2_entry.getFlags();
+                        if (!l2_flags.present or l2_flags.huge) continue;
+
+                        frame_allocator.deallocate4KiB(paging.PhysFrame.fromStartAddressUnchecked(l2_entry.getAddr()));
+                    }
+
+                    frame_allocator.deallocate4KiB(paging.PhysFrame.fromStartAddressUnchecked(l3_entry.getAddr()));
+                }
+
+                frame_allocator.deallocate4KiB(paging.PhysFrame.fromStartAddressUnchecked(l4_entry.getAddr()));
+            }
+
+            return mapping.MapperFlushAll{};
+        }
+
         pub fn mapTo1GiB(
             self: *Self,
             page: paging.Page1GiB,
@@ -100,7 +134,7 @@ pub fn MappedPageTable(
             const flags = p3_entry.getFlags();
 
             if (!flags.present) return mapping.UnmapError.PageNotMapped;
-            if (flags.huge) return mapping.UnmapError.ParentEntryHugePage;
+            if (!flags.huge) return mapping.UnmapError.ParentEntryHugePage;
 
             const frame = paging.PhysFrame1GiB.fromStartAddress(p3_entry.getAddr()) catch return mapping.UnmapError.InvalidFrameAddress;
 
@@ -257,7 +291,7 @@ pub fn MappedPageTable(
             const flags = p2_entry.getFlags();
 
             if (!flags.present) return mapping.UnmapError.PageNotMapped;
-            if (flags.huge) return mapping.UnmapError.ParentEntryHugePage;
+            if (!flags.huge) return mapping.UnmapError.ParentEntryHugePage;
 
             const frame = paging.PhysFrame2MiB.fromStartAddress(p2_entry.getAddr()) catch return mapping.UnmapError.InvalidFrameAddress;
 

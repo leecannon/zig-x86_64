@@ -2,3 +2,4 @@ zig-cache/
 .gyro/
 gyro.lock
 deps.zig
+build_runner.zig
