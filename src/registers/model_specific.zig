@@ -181,8 +181,8 @@ pub const Star = struct {
     pub fn readRaw() [2]u16 {
         const val = REGISTER.read();
         return [2]u16{
-            @truncate(u16, bitjuggle.getBits(val, 48, 16)),
-            @truncate(u16, bitjuggle.getBits(val, 32, 16)),
+            bitjuggle.getBits(val, 48, 16),
+            bitjuggle.getBits(val, 32, 16),
         };
     }
 
@@ -210,10 +210,10 @@ pub const Star = struct {
         if (self.syscallCsSelector.value != self.syscallSsSelector.value - 8) {
             return WriteError.InvalidSyscallOffset;
         }
-        if ((self.sysretSsSelector.getRpl() catch return WriteError.SysretNotRing3) != .Ring3) {
+        if (self.sysretSsSelector.getRpl() != .Ring3) {
             return WriteError.SysretNotRing3;
         }
-        if ((self.syscallSsSelector.getRpl() catch return WriteError.SyscallNotRing0) != .Ring0) {
+        if (self.syscallSsSelector.getRpl() != .Ring0) {
             return WriteError.SyscallNotRing0;
         }
 

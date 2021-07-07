@@ -27,13 +27,12 @@ pub const SegmentSelector = struct {
 
     /// Returns the requested privilege level.
     /// Returns `error.InvalidPrivilegeLevel` if the privledge level bits are out of range of the `PrivilegeLevel` enum
-    pub fn getRpl(self: SegmentSelector) error{InvalidPrivilegeLevel}!x86_64.PrivilegeLevel {
+    pub fn getRpl(self: SegmentSelector) x86_64.PrivilegeLevel {
         switch (bitjuggle.getBits(self.value, 0, 2)) {
             0 => return x86_64.PrivilegeLevel.Ring0,
             1 => return x86_64.PrivilegeLevel.Ring1,
             2 => return x86_64.PrivilegeLevel.Ring2,
             3 => return x86_64.PrivilegeLevel.Ring3,
-            else => return error.InvalidPrivilegeLevel,
         }
     }
 
@@ -42,7 +41,7 @@ pub const SegmentSelector = struct {
     /// ## Panic
     /// Will panic if the privledge level bits are out of range of the `PrivilegeLevel` enum
     pub fn getRplPanic(self: SegmentSelector) x86_64.PrivilegeLevel {
-        return @intToEnum(x86_64.PrivilegeLevel, @truncate(u8, bitjuggle.getBits(self.value, 0, 2)));
+        return @intToEnum(x86_64.PrivilegeLevel, bitjuggle.getBits(self.value, 0, 2));
     }
 
     pub fn format(value: SegmentSelector, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
@@ -59,10 +58,10 @@ pub const SegmentSelector = struct {
 test "SegmentSelector" {
     var a = SegmentSelector.init(1, .Ring0);
     try std.testing.expectEqual(@as(u16, 1), a.getIndex());
-    try std.testing.expectEqual(x86_64.PrivilegeLevel.Ring0, try a.getRpl());
+    try std.testing.expectEqual(x86_64.PrivilegeLevel.Ring0, a.getRpl());
     a.setRpl(.Ring3);
     try std.testing.expectEqual(@as(u16, 1), a.getIndex());
-    try std.testing.expectEqual(x86_64.PrivilegeLevel.Ring3, try a.getRpl());
+    try std.testing.expectEqual(x86_64.PrivilegeLevel.Ring3, a.getRpl());
 }
 
 /// A 64-bit mode global descriptor table (GDT).

@@ -182,11 +182,11 @@ test "VirtAddr.pageOffset/Index" {
     var something: usize = undefined;
     var virtAddr = VirtAddr.fromPtr(&something);
 
-    try std.testing.expectEqual(@intCast(u12, bitjuggle.getBits(virtAddr.value, 0, 12)), virtAddr.pageOffset().value);
-    try std.testing.expectEqual(@intCast(u9, bitjuggle.getBits(virtAddr.value, 12, 9)), virtAddr.p1Index().value);
-    try std.testing.expectEqual(@intCast(u9, bitjuggle.getBits(virtAddr.value, 21, 9)), virtAddr.p2Index().value);
-    try std.testing.expectEqual(@intCast(u9, bitjuggle.getBits(virtAddr.value, 30, 9)), virtAddr.p3Index().value);
-    try std.testing.expectEqual(@intCast(u9, bitjuggle.getBits(virtAddr.value, 39, 9)), virtAddr.p4Index().value);
+    try std.testing.expectEqual(bitjuggle.getBits(virtAddr.value, 0, 12), virtAddr.pageOffset().value);
+    try std.testing.expectEqual(bitjuggle.getBits(virtAddr.value, 12, 9), virtAddr.p1Index().value);
+    try std.testing.expectEqual(bitjuggle.getBits(virtAddr.value, 21, 9), virtAddr.p2Index().value);
+    try std.testing.expectEqual(bitjuggle.getBits(virtAddr.value, 30, 9), virtAddr.p3Index().value);
+    try std.testing.expectEqual(bitjuggle.getBits(virtAddr.value, 39, 9), virtAddr.p4Index().value);
 }
 
 /// A 64-bit physical memory address.
