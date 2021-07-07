@@ -677,7 +677,7 @@ pub const EntryOptions = packed struct {
     /// Set the required privilege level (DPL) for invoking the handler. The DPL can be 0, 1, 2,
     /// or 3, the default is 0. If CPL < DPL, a general protection fault occurs.
     pub fn setPrivledgeLevel(self: *EntryOptions, dpl: x86_64.PrivilegeLevel) void {
-        bitjuggle.setBits(&self.value, 13, 15, @as(u16, @enumToInt(dpl)));
+        bitjuggle.setBits(&self.value, 13, 2, @as(u16, @enumToInt(dpl)));
     }
 
     /// Assigns a Interrupt Stack Table (IST) stack to this handler. The CPU will then always

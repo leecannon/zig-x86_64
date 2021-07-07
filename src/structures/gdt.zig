@@ -192,17 +192,17 @@ pub fn tssSegment(tss: *x86_64.structures.tss.TaskStateSegment) Descriptor {
     var low = Descriptor.PRESENT;
 
     // base
-    bitjuggle.setBits(&low, 16, 40, bitjuggle.getBits(ptr, 0, 24));
-    bitjuggle.setBits(&low, 56, 64, bitjuggle.getBits(ptr, 24, 32));
+    bitjuggle.setBits(&low, 16, 24, bitjuggle.getBits(ptr, 0, 24));
+    bitjuggle.setBits(&low, 56, 8, bitjuggle.getBits(ptr, 24, 8));
 
-    // limit (the `-1` in needed since the bound is inclusive)
+    // limit (the `-1` is in needed since the bound is inclusive)
     bitjuggle.setBits(&low, 0, 16, @as(u64, @sizeOf(x86_64.structures.tss.TaskStateSegment) - 1));
 
     // type (0b1001 = available 64-bit tss)
-    bitjuggle.setBits(&low, 40, 44, 0b1001);
+    bitjuggle.setBits(&low, 40, 4, 0b1001);
 
     var high: u64 = 0;
-    bitjuggle.setBits(&high, 0, 32, bitjuggle.getBits(ptr, 32, 64));
+    bitjuggle.setBits(&high, 0, 32, bitjuggle.getBits(ptr, 32, 32));
 
     return .{
         .SystemSegment = .{

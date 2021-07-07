@@ -181,8 +181,8 @@ pub const Star = struct {
     pub fn readRaw() [2]u16 {
         const val = REGISTER.read();
         return [2]u16{
-            @truncate(u16, bitjuggle.getBits(val, 48, 64)),
-            @truncate(u16, bitjuggle.getBits(val, 32, 48)),
+            @truncate(u16, bitjuggle.getBits(val, 48, 16)),
+            @truncate(u16, bitjuggle.getBits(val, 32, 16)),
         };
     }
 
@@ -233,8 +233,8 @@ pub const Star = struct {
     /// 33:32 should be initialized to 00b.
     pub fn writeRaw(sysret: u16, syscall: u16) void {
         var value: u64 = 0;
-        bitjuggle.setBits(&value, 48, 64, sysret);
-        bitjuggle.setBits(&value, 32, 48, syscall);
+        bitjuggle.setBits(&value, 48, 16, sysret);
+        bitjuggle.setBits(&value, 32, 16, syscall);
         REGISTER.write(value);
     }
 
