@@ -135,13 +135,13 @@ test "VirtAddr.initTruncate" {
     try std.testing.expectEqual(@as(u64, 0), virtAddr.value);
 
     virtAddr = VirtAddr.initTruncate(1 << 47);
-    try std.testing.expectEqual(@as(u64, 0xfffff << 47), virtAddr.value);
+    try std.testing.expectEqual(@truncate(u64, 0xfffff << 47), virtAddr.value);
 
     virtAddr = VirtAddr.initTruncate(123);
     try std.testing.expectEqual(@as(u64, 123), virtAddr.value);
 
     virtAddr = VirtAddr.initTruncate(123 << 47);
-    try std.testing.expectEqual(@as(u64, 0xfffff << 47), virtAddr.value);
+    try std.testing.expectEqual(@truncate(u64, 0xfffff << 47), virtAddr.value);
 }
 
 test "VirtAddr.init" {
@@ -149,7 +149,7 @@ test "VirtAddr.init" {
     try std.testing.expectEqual(@as(u64, 0), virtAddr.value);
 
     virtAddr = try VirtAddr.init(1 << 47);
-    try std.testing.expectEqual(@as(u64, 0xfffff << 47), virtAddr.value);
+    try std.testing.expectEqual(@truncate(u64, 0xfffff << 47), virtAddr.value);
 
     virtAddr = try VirtAddr.init(123);
     try std.testing.expectEqual(@as(u64, 123), virtAddr.value);
