@@ -4,7 +4,7 @@ usingnamespace @import("../common.zig");
 pub fn getCs() x86_64.structures.gdt.SegmentSelector {
     return .{
         .value = asm ("mov %%cs, %[ret]"
-            : [ret] "=r" (-> u16)
+            : [ret] "=r" (-> u16),
         ),
     };
 }
@@ -22,7 +22,7 @@ pub fn getCs() x86_64.structures.gdt.SegmentSelector {
 pub fn setCs(sel: x86_64.structures.gdt.SegmentSelector) void {
     asm volatile ("pushq %[sel]; leaq 1f(%%rip), %%rax; pushq %%rax; lretq; 1:"
         :
-        : [sel] "ri" (@as(u64, sel.value))
+        : [sel] "ri" (@as(u64, sel.value)),
         : "rax", "memory"
     );
 }
@@ -31,7 +31,7 @@ pub fn setCs(sel: x86_64.structures.gdt.SegmentSelector) void {
 pub fn getSs() x86_64.structures.gdt.SegmentSelector {
     return .{
         .value = asm ("mov %%ss, %[ret]"
-            : [ret] "=r" (-> u16)
+            : [ret] "=r" (-> u16),
         ),
     };
 }
@@ -50,7 +50,7 @@ pub fn getSs() x86_64.structures.gdt.SegmentSelector {
 pub fn setSs(sel: x86_64.structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%ss"
         :
-        : [sel] "r" (sel.value)
+        : [sel] "r" (sel.value),
         : "memory"
     );
 }
@@ -59,7 +59,7 @@ pub fn setSs(sel: x86_64.structures.gdt.SegmentSelector) void {
 pub fn getDs() x86_64.structures.gdt.SegmentSelector {
     return .{
         .value = asm ("mov %%ds, %[ret]"
-            : [ret] "=r" (-> u16)
+            : [ret] "=r" (-> u16),
         ),
     };
 }
@@ -70,7 +70,7 @@ pub fn getDs() x86_64.structures.gdt.SegmentSelector {
 pub fn setDs(sel: x86_64.structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%ds"
         :
-        : [sel] "r" (sel.value)
+        : [sel] "r" (sel.value),
         : "memory"
     );
 }
@@ -79,7 +79,7 @@ pub fn setDs(sel: x86_64.structures.gdt.SegmentSelector) void {
 pub fn getEs() x86_64.structures.gdt.SegmentSelector {
     return .{
         .value = asm ("mov %%es, %[ret]"
-            : [ret] "=r" (-> u16)
+            : [ret] "=r" (-> u16),
         ),
     };
 }
@@ -90,7 +90,7 @@ pub fn getEs() x86_64.structures.gdt.SegmentSelector {
 pub fn setEs(sel: x86_64.structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%es"
         :
-        : [sel] "r" (sel.value)
+        : [sel] "r" (sel.value),
         : "memory"
     );
 }
@@ -99,7 +99,7 @@ pub fn setEs(sel: x86_64.structures.gdt.SegmentSelector) void {
 pub fn getFs() x86_64.structures.gdt.SegmentSelector {
     return .{
         .value = asm ("mov %%fs, %[ret]"
-            : [ret] "=r" (-> u16)
+            : [ret] "=r" (-> u16),
         ),
     };
 }
@@ -108,7 +108,7 @@ pub fn getFs() x86_64.structures.gdt.SegmentSelector {
 pub fn setFs(sel: x86_64.structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%fs"
         :
-        : [sel] "r" (sel.value)
+        : [sel] "r" (sel.value),
         : "memory"
     );
 }
@@ -117,7 +117,7 @@ pub fn setFs(sel: x86_64.structures.gdt.SegmentSelector) void {
 pub fn getGs() x86_64.structures.gdt.SegmentSelector {
     return .{
         .value = asm ("mov %%gs, %[ret]"
-            : [ret] "=r" (-> u16)
+            : [ret] "=r" (-> u16),
         ),
     };
 }
@@ -126,7 +126,7 @@ pub fn getGs() x86_64.structures.gdt.SegmentSelector {
 pub fn setGs(sel: x86_64.structures.gdt.SegmentSelector) void {
     asm volatile ("movw %[sel], %%gs"
         :
-        : [sel] "r" (sel.value)
+        : [sel] "r" (sel.value),
         : "memory"
     );
 }
@@ -143,7 +143,7 @@ pub fn swapGs() void {
 /// If `CR4.fsgsbase` is not set, this instruction will throw an `#UD`.
 pub fn readFsBase() u64 {
     return asm ("rdfsbase %[ret]"
-        : [ret] "=r" (-> u64)
+        : [ret] "=r" (-> u64),
     );
 }
 
@@ -159,7 +159,7 @@ pub fn readFsBase() u64 {
 pub fn writeFsBase(value: u64) void {
     asm volatile ("wrfsbase %[val]"
         :
-        : [val] "r" (value)
+        : [val] "r" (value),
     );
 }
 
@@ -170,7 +170,7 @@ pub fn writeFsBase(value: u64) void {
 /// If `CR4.fsgsbase` is not set, this instruction will throw an `#UD`.
 pub fn readGsBase() u64 {
     return asm ("rdgsbase %[ret]"
-        : [ret] "=r" (-> u64)
+        : [ret] "=r" (-> u64),
     );
 }
 
@@ -185,7 +185,7 @@ pub fn readGsBase() u64 {
 pub fn writeGsBase(value: u64) void {
     asm volatile ("wrgsbase %[val]"
         :
-        : [val] "r" (value)
+        : [val] "r" (value),
     );
 }
 

@@ -77,7 +77,7 @@ pub fn int3() void {
 pub fn softwareInterrupt(comptime num: usize) void {
     asm volatile ("int %[num]"
         :
-        : [num] "N" (num)
+        : [num] "N" (num),
     );
 }
 

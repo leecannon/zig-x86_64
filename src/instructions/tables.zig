@@ -6,7 +6,7 @@ usingnamespace @import("../common.zig");
 pub fn lgdt(gdt: *const x86_64.structures.DescriptorTablePointer) void {
     asm volatile ("lgdt (%[gdt])"
         :
-        : [gdt] "r" (gdt)
+        : [gdt] "r" (gdt),
         : "memory"
     );
 }
@@ -17,7 +17,7 @@ pub fn lgdt(gdt: *const x86_64.structures.DescriptorTablePointer) void {
 pub fn lidt(idt: *const x86_64.structures.DescriptorTablePointer) void {
     asm volatile ("lidt (%[idt])"
         :
-        : [idt] "r" (idt)
+        : [idt] "r" (idt),
         : "memory"
     );
 }
@@ -27,7 +27,7 @@ pub fn sidt() x86_64.structures.DescriptorTablePointer {
     var idt: x86_64.structures.DescriptorTablePointer = undefined;
     asm volatile ("sidt (%[idt])"
         :
-        : [idt] "r" (idt)
+        : [idt] "r" (idt),
     );
     return idt;
 }
@@ -36,7 +36,7 @@ pub fn sidt() x86_64.structures.DescriptorTablePointer {
 pub fn loadTss(sel: x86_64.structures.gdt.SegmentSelector) void {
     asm volatile ("ltr %[sel]"
         :
-        : [sel] "r" (sel.value)
+        : [sel] "r" (sel.value),
     );
 }
 

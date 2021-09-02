@@ -18,8 +18,8 @@ pub const RdRand = struct {
         _ = self;
         var carry: u8 = undefined;
         const num: u64 = asm ("rdrand %[result]; setc %[carry]"
-            : [result] "=r" (-> u64)
-            : [carry] "qm" (&carry)
+            : [result] "=r" (-> u64),
+            : [carry] "qm" (&carry),
             : "cc"
         );
         return if (carry == 0) null else num;
@@ -31,8 +31,8 @@ pub const RdRand = struct {
         _ = self;
         var carry: u8 = undefined;
         const num: u32 = asm ("rdrand %[result]; setc %[carry]"
-            : [result] "=r" (-> u32)
-            : [carry] "qm" (&carry)
+            : [result] "=r" (-> u32),
+            : [carry] "qm" (&carry),
             : "cc"
         );
         return if (carry == 0) null else num;
@@ -44,8 +44,8 @@ pub const RdRand = struct {
         _ = self;
         var carry: u8 = undefined;
         const num: u16 = asm ("rdrand %[result]; setc %[carry]"
-            : [result] "=r" (-> u16)
-            : [carry] "qm" (&carry)
+            : [result] "=r" (-> u16),
+            : [carry] "qm" (&carry),
             : "cc"
         );
         return if (carry == 0) null else num;
@@ -73,8 +73,8 @@ pub const RdSeed = struct {
         _ = self;
         var carry: u8 = undefined;
         const num: u64 = asm ("rdseed %[result]; setc %[carry]"
-            : [result] "=r" (-> u64)
-            : [carry] "qm" (&carry)
+            : [result] "=r" (-> u64),
+            : [carry] "qm" (&carry),
             : "cc"
         );
         return if (carry == 0) null else num;
@@ -86,8 +86,8 @@ pub const RdSeed = struct {
         _ = self;
         var carry: u8 = undefined;
         const num: u32 = asm ("rdseed %[result]; setc %[carry]"
-            : [result] "=r" (-> u32)
-            : [carry] "qm" (&carry)
+            : [result] "=r" (-> u32),
+            : [carry] "qm" (&carry),
             : "cc"
         );
         return if (carry == 0) null else num;
@@ -99,8 +99,8 @@ pub const RdSeed = struct {
         _ = self;
         var carry: u8 = undefined;
         const num: u16 = asm ("rdseed %[result]; setc %[carry]"
-            : [result] "=r" (-> u16)
-            : [carry] "qm" (&carry)
+            : [result] "=r" (-> u16),
+            : [carry] "qm" (&carry),
             : "cc"
         );
         return if (carry == 0) null else num;

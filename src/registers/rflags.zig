@@ -79,7 +79,7 @@ pub const RFlags = packed struct {
     /// Returns the raw current value of the RFLAGS register.
     fn readRaw() u64 {
         return asm ("pushfq; popq %[ret]"
-            : [ret] "=r" (-> u64)
+            : [ret] "=r" (-> u64),
             :
             : "memory"
         );
@@ -95,7 +95,7 @@ pub const RFlags = packed struct {
     fn writeRaw(value: u64) void {
         asm volatile ("pushq %[val]; popfq"
             :
-            : [val] "r" (value)
+            : [val] "r" (value),
             : "memory", "flags"
         );
     }

@@ -38,7 +38,7 @@ pub const XCr0 = packed struct {
 
         asm ("xor %%rcx, %%rcx; xgetbv"
             : [low] "={rax}" (low),
-              [high] "={rdx}" (high)
+              [high] "={rdx}" (high),
             :
             : "rcx"
         );
@@ -63,7 +63,7 @@ pub const XCr0 = packed struct {
         asm volatile ("xor %%ecx, %%ecx; xsetbv"
             :
             : [low] "{eax}" (low),
-              [high] "{edx}" (high)
+              [high] "{edx}" (high),
             : "ecx"
         );
     }

@@ -55,7 +55,7 @@ pub const Cr0 = packed struct {
     /// Read the current raw CR0 value.
     fn readRaw() u64 {
         return asm ("mov %%cr0, %[ret]"
-            : [ret] "=r" (-> u64)
+            : [ret] "=r" (-> u64),
         );
     }
 
@@ -72,7 +72,7 @@ pub const Cr0 = packed struct {
     fn writeRaw(value: u64) void {
         asm volatile ("mov %[val], %%cr0"
             :
-            : [val] "r" (value)
+            : [val] "r" (value),
             : "memory"
         );
     }
@@ -125,7 +125,7 @@ pub const Cr2 = struct {
     pub fn read() x86_64.VirtAddr {
         // We can use unchecked as this virtual address is set by the CPU itself
         return x86_64.VirtAddr.initUnchecked(asm ("mov %%cr2, %[ret]"
-            : [ret] "=r" (-> u64)
+            : [ret] "=r" (-> u64),
         ));
     }
 
@@ -220,7 +220,7 @@ pub const Cr3 = struct {
     /// Read the raw value from the CR3 register
     fn readRaw() u64 {
         return asm ("mov %%cr3, %[value]"
-            : [value] "=r" (-> u64)
+            : [value] "=r" (-> u64),
         );
     }
 
@@ -257,7 +257,7 @@ pub const Cr3 = struct {
     fn writeRaw(value: u64) void {
         asm volatile ("mov %[value], %%cr3"
             :
-            : [value] "r" (value)
+            : [value] "r" (value),
             : "memory"
         );
     }
@@ -358,7 +358,7 @@ pub const Cr4 = packed struct {
     /// Read the current raw CR4 value.
     fn readRaw() u64 {
         return asm ("mov %%cr4, %[ret]"
-            : [ret] "=r" (-> u64)
+            : [ret] "=r" (-> u64),
         );
     }
 
@@ -375,7 +375,7 @@ pub const Cr4 = packed struct {
     fn writeRaw(value: u64) void {
         asm volatile ("mov %[val], %%cr4"
             :
-            : [val] "r" (value)
+            : [val] "r" (value),
             : "memory"
         );
     }

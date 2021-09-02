@@ -304,8 +304,8 @@ fn Msr(comptime register: u32) type {
 
             asm volatile ("rdmsr"
                 : [low] "={eax}" (low),
-                  [high] "={edx}" (high)
-                : [reg] "{ecx}" (register)
+                  [high] "={edx}" (high),
+                : [reg] "{ecx}" (register),
                 : "memory"
             );
 
@@ -317,7 +317,7 @@ fn Msr(comptime register: u32) type {
                 :
                 : [reg] "{ecx}" (register),
                   [low] "{eax}" (@truncate(u32, value)),
-                  [high] "{edx}" (@truncate(u32, value >> 32))
+                  [high] "{edx}" (@truncate(u32, value >> 32)),
                 : "memory"
             );
         }

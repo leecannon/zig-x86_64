@@ -4,7 +4,7 @@ usingnamespace @import("../common.zig");
 pub fn flush(addr: x86_64.VirtAddr) void {
     asm volatile ("invlpg (%[addr])"
         :
-        : [addr] "r" (addr.value)
+        : [addr] "r" (addr.value),
         : "memory"
     );
 }
@@ -79,7 +79,7 @@ pub fn flushPcid(command: InvPicCommand) void {
     asm volatile ("invpcid (%[desc]), %[kind]"
         :
         : [kind] "r" (kind),
-          [desc] "r" (@ptrToInt(&desc))
+          [desc] "r" (@ptrToInt(&desc)),
         : "memory"
     );
 }

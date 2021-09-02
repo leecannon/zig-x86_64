@@ -16,7 +16,7 @@ usingnamespace @import("../common.zig");
 /// instructions to execute.
 pub inline fn readInstructionPointer() x86_64.VirtAddr {
     return x86_64.VirtAddr.initUnchecked(asm ("lea (%%rip), %[ret]"
-        : [ret] "=r" (-> u64)
+        : [ret] "=r" (-> u64),
     ));
 }
 
