@@ -13,7 +13,9 @@ pub const tss = @import("tss.zig");
 /// Provides types for the Interrupt Descriptor Table and its entries.
 pub const idt = @import("idt.zig");
 
-usingnamespace @import("../common.zig");
+const x86_64 = @import("../index.zig");
+const bitjuggle = @import("bitjuggle");
+const std = @import("std");
 
 /// A struct describing a pointer to a descriptor table (GDT / IDT).
 /// This is in a format suitable for giving to 'lgdt' or 'lidt'.

@@ -1,4 +1,6 @@
-usingnamespace @import("../common.zig");
+const x86_64 = @import("../index.zig");
+const bitjuggle = @import("bitjuggle");
+const std = @import("std");
 
 pub fn readU8(port: u16) u8 {
     return asm volatile ("inb %[port],%[ret]"

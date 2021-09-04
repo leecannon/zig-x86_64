@@ -1,4 +1,6 @@
-usingnamespace @import("../common.zig");
+const x86_64 = @import("../index.zig");
+const bitjuggle = @import("bitjuggle");
+const std = @import("std");
 
 /// A u8 I/O port
 pub const Portu8 = struct {

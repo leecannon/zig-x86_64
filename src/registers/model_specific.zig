@@ -1,4 +1,7 @@
-usingnamespace @import("../common.zig");
+const x86_64 = @import("../index.zig");
+const bitjuggle = @import("bitjuggle");
+const std = @import("std");
+const formatWithoutFields = @import("../common.zig").formatWithoutFields;
 
 /// The Extended Feature Enable Register.
 pub const Efer = packed struct {

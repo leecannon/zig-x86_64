@@ -1,4 +1,6 @@
-usingnamespace @import("../../../common.zig");
+const x86_64 = @import("../../../index.zig");
+const bitjuggle = @import("bitjuggle");
+const std = @import("std");
 
 pub const OffsetPageTable = @import("mapped_page_table.zig").OffsetPageTable;
 pub const MappedPageTable = @import("mapped_page_table.zig").MappedPageTable;

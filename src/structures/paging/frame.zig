@@ -1,4 +1,6 @@
-usingnamespace @import("../../common.zig");
+const x86_64 = @import("../../index.zig");
+const bitjuggle = @import("bitjuggle");
+const std = @import("std");
 
 /// A physical memory frame. Page size 4 KiB
 pub const PhysFrame = extern struct {

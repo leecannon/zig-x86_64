@@ -1,4 +1,6 @@
-usingnamespace @import("../common.zig");
+const x86_64 = @import("../index.zig");
+const bitjuggle = @import("bitjuggle");
+const std = @import("std");
 
 /// Invalidate the given address in the TLB using the `invlpg` instruction.
 pub fn flush(addr: x86_64.VirtAddr) void {

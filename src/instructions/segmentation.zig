@@ -1,4 +1,6 @@
-usingnamespace @import("../common.zig");
+const x86_64 = @import("../index.zig");
+const bitjuggle = @import("bitjuggle");
+const std = @import("std");
 
 /// Returns the current value of the code segment register.
 pub fn getCs() x86_64.structures.gdt.SegmentSelector {

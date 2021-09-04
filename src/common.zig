@@ -1,7 +1,4 @@
-pub const x86_64 = @import("index.zig");
-pub const bitjuggle = @import("bitjuggle");
-
-pub const std = @import("std");
+const std = @import("std");
 
 pub fn formatWithoutFields(value: anytype, options: std.fmt.FormatOptions, writer: anytype, comptime blacklist: []const []const u8) !void {
     // This ANY const is a workaround for: https://github.com/ziglang/zig/issues/7948

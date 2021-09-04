@@ -1,4 +1,6 @@
-usingnamespace @import("../common.zig");
+const x86_64 = @import("../index.zig");
+const bitjuggle = @import("bitjuggle");
+const std = @import("std");
 
 const Portu8 = x86_64.structures.port.Portu8;
 const writeU8 = x86_64.instructions.port.writeU8;

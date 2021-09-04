@@ -1,4 +1,7 @@
-usingnamespace @import("../common.zig");
+const x86_64 = @import("../index.zig");
+const bitjuggle = @import("bitjuggle");
+const std = @import("std");
+const formatWithoutFields = @import("../common.zig").formatWithoutFields;
 
 /// Various control flags modifying the basic operation of the CPU.
 pub const Cr0 = packed struct {

@@ -1,4 +1,6 @@
-usingnamespace @import("../common.zig");
+const x86_64 = @import("../index.zig");
+const bitjuggle = @import("bitjuggle");
+const std = @import("std");
 
 /// Used to obtain random numbers using x86_64's RDRAND opcode
 pub const RdRand = struct {

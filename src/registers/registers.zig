@@ -10,7 +10,9 @@ pub const RFlags = @import("rflags.zig").RFlags;
 /// Functions to read and write model specific registers.
 pub const model_specific = @import("model_specific.zig");
 
-usingnamespace @import("../common.zig");
+const x86_64 = @import("../index.zig");
+const bitjuggle = @import("bitjuggle");
+const std = @import("std");
 
 /// Gets the current instruction pointer. Note that this is only approximate as it requires a few
 /// instructions to execute.

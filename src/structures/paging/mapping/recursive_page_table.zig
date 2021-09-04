@@ -1,4 +1,6 @@
-usingnamespace @import("../../../common.zig");
+const x86_64 = @import("../../../index.zig");
+const bitjuggle = @import("bitjuggle");
+const std = @import("std");
 
 const paging = x86_64.structures.paging;
 const mapping = paging.mapping;
