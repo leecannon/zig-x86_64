@@ -182,10 +182,7 @@ pub const PageTableFlags = packed struct {
             value,
             options,
             writer,
-            &.{
-                "z_reserved",
-                "bit_",
-            },
+            &.{ "z_reserved12_15", "z_reserved16_47", "z_reserved48_51" },
         );
     }
 

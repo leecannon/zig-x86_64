@@ -6,15 +6,15 @@ const formatWithoutFields = @import("../common.zig").formatWithoutFields;
 /// Various control flags modifying the basic operation of the CPU.
 pub const Cr0 = packed struct {
     /// Enables protected mode.
-    protected: bool,
+    protected_mode: bool,
 
     /// Enables monitoring of the coprocessor, typical for x87 instructions.
     ///
-    /// Controls together with the `TASK_SWITCHED` flag whether a `wait` or `fwait`
-    /// instruction should cause a device-not-available exception.
+    /// Controls together with the `task_switched` flag whether a `wait` or `fwait`
+    /// instruction should cause an `#NE` exception.
     monitor_coprocessor: bool,
 
-    /// Force all x87 and MMX instructions to cause an exception.
+    /// Force all x87 and MMX instructions to cause an `#NE` exception.
     emulate_coprocessor: bool,
 
     /// Automatically set to 1 on _hardware_ task switch.
@@ -22,7 +22,12 @@ pub const Cr0 = packed struct {
     /// This flags allows lazily saving x87/MMX/SSE instructions on hardware context switches.
     task_switched: bool,
 
+    /// Indicates support of 387DX math coprocessor instructions.
+    ///
+    /// Always set on all recent x86 processors, cannot be cleared.
     extension_type: bool,
+
+    /// Enables the native (internal) error reporting mechanism for x87 FPU errors.
     numeric_error: bool,
 
     z_reserved6_15: u10,
@@ -34,18 +39,20 @@ pub const Cr0 = packed struct {
 
     z_reserved17: bool,
 
-    /// Enables automatic alignment checking.
-    alignment_check: bool,
+    /// Enables automatic usermode alignment checking if `RFlags.alignment_check` is also set.
+    alignment_mask: bool,
 
     z_reserved19_28: u10,
 
     /// Ignored. Used to control write-back/write-through cache strategy on older CPUs.
     not_write_through: bool,
 
-    /// Disables internal caches (only for some cases).
-    cache_disabled: bool,
+    /// Disables some processor caches, specifics are model-dependent.
+    cache_disable: bool,
 
-    /// Enables page translation.
+    /// Enables paging.
+    ///
+    /// If this bit is set, `protected_mode` must be set.
     paging: bool,
 
     z_reserved32_63: u32,
@@ -105,7 +112,7 @@ pub const Cr0 = packed struct {
             value,
             options,
             writer,
-            &.{"z_reserved"},
+            &.{ "z_reserved6_15", "z_reserved17", "z_reserved19_28", "z_reserved32_63" },
         );
     }
 
@@ -122,7 +129,7 @@ pub const Cr0 = packed struct {
 
 /// Contains the Page Fault Linear Address (PFLA).
 ///
-/// When page fault occurs, the CPU sets this register to the accessed address.
+/// When a page fault occurs, the CPU sets this register to the faulting virtual address.
 pub const Cr2 = struct {
     /// Read the current page fault linear address from the CR2 register.
     pub fn read() x86_64.VirtAddr {
@@ -137,14 +144,17 @@ pub const Cr2 = struct {
     }
 };
 
+/// Controls cache settings for the highest-level page table.
+///
+/// Unused if paging is disabled or if `Cr4Flags.pcid` is enabled.
 pub const Cr3Flags = packed struct {
     z_reserved0: bool,
     z_reserved1: bool,
 
-    /// Use a writethrough cache policy for the P4 table (else a writeback policy is used).
+    /// Use a writethrough cache policy for the table (otherwise a writeback policy is used).
     page_level_writethrough: bool,
 
-    /// Disable caching for the P4 table.
+    /// Disable caching for the table.
     page_level_cache_disable: bool,
 
     z_reserved4_63: u60,
@@ -173,7 +183,7 @@ pub const Cr3Flags = packed struct {
             value,
             options,
             writer,
-            &.{"z_reserved"},
+            &.{ "z_reserved0", "z_reserved1", "z_reserved4_63" },
         );
     }
 
@@ -187,7 +197,7 @@ pub const Cr3Flags = packed struct {
     }
 };
 
-/// Contains the physical address of the level 4 page table.
+/// Contains the physical address of the highest-level page table.
 pub const Cr3 = struct {
     pub const Contents = struct {
         phys_frame: x86_64.structures.paging.PhysFrame,
@@ -270,9 +280,7 @@ pub const Cr3 = struct {
     }
 };
 
-/// Various control flags modifying the basic operation of the CPU while in protected mode.
-///
-/// Note: The documention for the individual fields is taken from the AMD64 and Intel x86_64 manuals.
+/// Contains various control flags that enable architectural extensions, and indicate support for specific processor capabilities.
 pub const Cr4 = packed struct {
     /// Enables hardware-supported performance enhancements for software running in
     /// virtual-8086 mode.
@@ -291,20 +299,19 @@ pub const Cr4 = packed struct {
     /// Enables the use of 4MB physical frames; ignored in long mode.
     page_size_extension: bool,
 
-    /// Enables physical address extension and 2MB physical frames; required in long mode.
-    physical_address_translation: bool,
+    /// Enables physical address extensions and 2MB physical frames. Required in long mode.
+    physical_address_extension: bool,
 
     /// Enables the machine-check exception mechanism.
     machine_check_exception: bool,
 
-    /// Enables the global-page mechanism, which allows to make page translations global
-    /// to all processes.
+    /// Enables the global page feature, allowing some page translations to be marked as global (see `PageTableFlags.global`).
     page_global: bool,
 
     /// Allows software running at any privilege level to use the RDPMC instruction.
     performance_monitor_counter: bool,
 
-    /// Enable the use of legacy SSE instructions; allows using FXSAVE/FXRSTOR for saving
+    /// Enables the use of legacy SSE instructions; allows using FXSAVE/FXRSTOR for saving
     /// processor state of 128-bit media instructions.
     osfxsr: bool,
 
@@ -316,13 +323,13 @@ pub const Cr4 = packed struct {
     /// user-mode software.
     user_mode_instruction_prevention: bool,
 
-    /// Enables 5-level paging on supported CPUs.
+    /// Enables 5-level paging on supported CPUs (Intel Only).
     l5_paging: bool,
 
-    /// Enables VMX insturctions.
+    /// Enables VMX instructions (Intel Only).
     virtual_machine_extensions: bool,
 
-    /// Enables SMX instructions.
+    /// Enables SMX instructions (Intel Only).
     safer_mode_extensions: bool,
 
     /// Enables software running in 64-bit mode at any privilege level to read and write
@@ -337,7 +344,12 @@ pub const Cr4 = packed struct {
     /// Enables extended processor state management instructions, including XGETBV and XSAVE.
     osxsave: bool,
 
-    z_reserved19: bool,
+    //// Enables the Key Locker feature (Intel Only).
+    ///
+    /// This enables creation and use of opaque AES key handles; see the
+    /// [Intel Key Locker Specification](https://software.intel.com/content/www/us/en/develop/download/intel-key-locker-specification.html)
+    /// for more information.
+    key_locker: bool,
 
     /// Prevents the execution of instructions that reside in pages accessible by user-mode
     /// software when the processor is in supervisor-mode.
@@ -347,10 +359,23 @@ pub const Cr4 = packed struct {
     /// pages.
     supervisor_mode_access_prevention: bool,
 
-    /// Enables 4-level paging to associate each linear address with a protection key.
-    protection_key: bool,
+    /// Enables protection keys for user-mode pages.
+    ///
+    /// Also enables access to the PKRU register (via the `RDPKRU`/`WRPKRU` instructions) to set user-mode protection key access
+    /// controls.
+    protection_key_user: bool,
 
-    z_reserved23_31: u9,
+    /// Enables Control-flow Enforcement Technology (CET)
+    ///
+    /// This enables the shadow stack feature, ensuring return addresses read via `RET` and `IRET` have not been corrupted.
+    control_flow_enforcement: bool,
+
+    /// Enables protection keys for supervisor-mode pages (Intel Only).
+    ///
+    /// Also enables the `IA32_PKRS` MSR to set supervisor-mode protection key access controls.
+    protection_key_supervisor: bool,
+
+    z_reserved25_31: u7,
     z_reserved32_63: u32,
 
     /// Read the current set of CR0 flags.
@@ -386,8 +411,7 @@ pub const Cr4 = packed struct {
     const ALL_RESERVED: u64 = blk: {
         var flags = std.mem.zeroes(Cr4);
         flags.z_reserved16 = true;
-        flags.z_reserved19 = true;
-        flags.z_reserved23_31 = std.math.maxInt(u9);
+        flags.z_reserved25_31 = std.math.maxInt(u7);
         flags.z_reserved32_63 = std.math.maxInt(u32);
         break :blk @bitCast(u64, flags);
     };
@@ -408,7 +432,7 @@ pub const Cr4 = packed struct {
             value,
             options,
             writer,
-            &.{"z_reserved"},
+            &.{ "z_reserved16", "z_reserved25_31", "z_reserved32_63" },
         );
     }
 

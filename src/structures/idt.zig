@@ -805,7 +805,7 @@ pub const PageFaultErrorCode = packed struct {
             value,
             options,
             writer,
-            &.{"z_reserved"},
+            &.{ "z_reserved5_7", "z_reserved8_15", "z_reserved16_31", "z_reserved32_63" },
         );
     }
 
@@ -819,13 +819,63 @@ pub const PageFaultErrorCode = packed struct {
     }
 };
 
+pub const SelectorErrorCode = packed struct {
+    flags: u64,
+
+    /// Create a `SelectorErrorCode`. Returns `null` is any of the reserved bits (16-64) are set.
+    pub fn init(value: u64) ?SelectorErrorCode {
+        if (value > std.math.maxInt(u16)) return null;
+        return SelectorErrorCode{ .flags = value };
+    }
+
+    pub fn initTruncate(value: u64) SelectorErrorCode {
+        return .{ .flags = @truncate(u16, value) };
+    }
+
+    /// If true, indicates that the exception occurred during delivery of an event external to the program, such as an interrupt
+    /// or an earlier exception.
+    pub fn external(self: SelectorErrorCode) bool {
+        return bitjuggle.getBit(self.flags, 0) == 1;
+    }
+
+    /// The descriptor table this error code refers to.
+    pub fn descriptorTable(self: SelectorErrorCode) DescriptorTable {
+        return switch (bitjuggle.getBits(self.flags, 1, 2)) {
+            0b00 => .Gdt,
+            0b01 => .Idt,
+            0b10 => .Ldt,
+            0b11 => .Idt,
+            else => unreachable,
+        };
+    }
+
+    pub fn index(self: SelectorErrorCode) u64 {
+        return bitjuggle.getBits(self.flags, 3, 13);
+    }
+
+    pub fn isNull(self: SelectorErrorCode) bool {
+        return self.flags == 0;
+    }
+
+    /// The possible descriptor table values.
+    ///
+    /// Used by `SelectorErrorCode` to indicate which table caused the error.
+    pub const DescriptorTable = enum {
+        /// Global Descriptor Table.
+        Gdt,
+        /// Interrupt Descriptor Table.
+        Idt,
+        /// Logical Descriptor Table.
+        Ldt,
+    };
+};
+
 /// An Interrupt Descriptor Table with 256 entries.
 /// ## **IMPORTANT** - must be align(16)
 ///
 /// The first 32 entries are used for CPU exceptions. The remaining entries are used for interrupts.
 ///
-/// This differs from `InterruptDescriptorTable` by providing a simplifed view
-/// of the IDT with only `naked` handlers.
+/// This differs from `InterruptDescriptorTable` by providing a simplifed view of the IDT with only `naked` handlers.
 /// Handling the interrupt stack frame and/or error code is left up to the user.
 pub const SimpleInterruptDescriptorTable = extern struct {
     entries: [NUMBER_OF_INTERRUPT_HANDLERS]SimpleIDTEntry = [_]SimpleIDTEntry{SimpleIDTEntry.missing()} ** NUMBER_OF_INTERRUPT_HANDLERS,

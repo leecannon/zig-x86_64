@@ -130,7 +130,7 @@ pub const RFlags = packed struct {
             value,
             options,
             writer,
-            &.{"z_reserved"},
+            &.{ "z_reserved1", "z_reserved15", "z_reserved22_31", "z_reserved3", "z_reserved32_63", "z_reserved5" },
         );
     }
 

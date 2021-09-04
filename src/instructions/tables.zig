@@ -42,6 +42,16 @@ pub fn loadTss(sel: x86_64.structures.gdt.SegmentSelector) void {
     );
 }
 
+/// Get the address of the current GDT.
+pub fn sgdt() x86_64.structures.DescriptorTablePointer {
+    var gdt: x86_64.structures.DescriptorTablePointer = undefined;
+    asm volatile ("sgdt (%[gdt])"
+        :
+        : [gdt] "r" (gdt),
+    );
+    return gdt;
+}
+
 comptime {
     std.testing.refAllDecls(@This());
 }

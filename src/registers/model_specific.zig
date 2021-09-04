@@ -76,7 +76,7 @@ pub const Efer = packed struct {
             value,
             options,
             writer,
-            &.{"z_reserved"},
+            &.{ "z_reserved1_7", "z_reserved9", "z_reserved16_31", "z_reserved32_63" },
         );
     }
 
