@@ -1,20 +1,32 @@
 # zig-x86_64
 
 [![CI](https://github.com/leecannon/zig-x86_64/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/leecannon/zig-x86_64/actions/workflows/main.yml)
-[![Publish](https://github.com/leecannon/zig-x86_64/actions/workflows/publish.yml/badge.svg?branch=master)](https://github.com/leecannon/zig-x86_64/actions/workflows/publish.yml)
 
 This repo contains various functionality required to make an x86_64 kernel (following [Writing an OS in Rust](https://os.phil-opp.com/))
 
 It is mainly a zig reimplementation of the rust crate [x86_64](https://github.com/rust-osdev/x86_64).
- 
+
 It includes a few additonal types in the `x86_64.additional` namespace:
- - `SerialPort` - Serial port type, mainly for debug output
- - `SimplePic` - Reimplementation of [pic8259_simple](https://docs.rs/pic8259_simple)
- 
-### Contributions are welcome!
+
+- `SerialPort` - Serial port type, mainly for debug output
+- `SimplePic` - Reimplementation of [pic8259_simple](https://docs.rs/pic8259_simple)
 
 ## How to get
 
-Currently [gyro](https://github.com/mattnite/gyro) is the only supported way of acquiring this package.
+### Gyro
 
-Just setup gyro as explained in it's documentation then `gyro add leecannon/x86_64`
+`gyro add leecannon/x86_64`
+
+### Zigmod
+
+`gyro add leecannon/x86_64`
+
+### Git
+
+#### Submodule
+
+`git submodule add https://github.com/leecannon/zig-x86_64 zig-x86_64`
+
+#### Clone
+
+`git clone https://github.com/leecannon/zig-x86_64`

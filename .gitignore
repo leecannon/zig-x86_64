@@ -3,3 +3,4 @@ zig-cache/
 gyro.lock
 deps.zig
 build_runner.zig
+.zigmod

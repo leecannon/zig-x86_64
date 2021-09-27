@@ -18,21 +18,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: true
       - uses: goto-bus-stop/setup-zig@v1.3.0
         with:
           version: master
       - uses: mattnite/setup-gyro@v1.1.0
       
       - name: build
-        run: gyro build test
+        run: gyro build
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: true
       - uses: goto-bus-stop/setup-zig@v1.3.0
         with:
           version: master
