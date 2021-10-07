@@ -19,7 +19,7 @@ It includes a few additonal types in the `x86_64.additional` namespace:
 
 ### Zigmod
 
-`gyro add leecannon/x86_64`
+`zigmod aq add 1/leecannon/x86_64`
 
 ### Git
 
