@@ -16,18 +16,18 @@ pub const OffsetPageTable = MappedPageTable(x86_64.VirtAddr, physToVirt);
 
 /// A Mapper implementation that relies on a x86_64.PhysAddr to x86_64.VirtAddr conversion function.
 pub fn MappedPageTable(
-    comptime context_type: type,
-    comptime frame_to_pointer: fn (context_type, phys_frame: paging.PhysFrame) *paging.PageTable,
+    comptime ContextType: type,
+    comptime frame_to_pointer: fn (ContextType, phys_frame: paging.PhysFrame) *paging.PageTable,
 ) type {
     return struct {
         const Self = @This();
-        const page_table_walker = PageTableWalker(context_type, frame_to_pointer);
+        const page_table_walker = PageTableWalker(ContextType, frame_to_pointer);
 
         mapper: Mapper,
         level_4_table: *paging.PageTable,
-        context: context_type,
+        context: ContextType,
 
-        pub fn init(context: context_type, level_4_table: *paging.PageTable) Self {
+        pub fn init(context: ContextType, level_4_table: *paging.PageTable) Self {
             return .{
                 .mapper = makeMapper(),
                 .context = context,
@@ -712,6 +712,90 @@ pub fn MappedPageTable(
             };
         }
 
+        fn impl_clean_up(
+            mapper: *Mapper,
+            frame_allocator: *paging.FrameAllocator,
+        ) void {
+            impl_clean_up_range(
+                mapper,
+                paging.PageIterator.rangeInclusive(
+                    paging.Page.fromStartAddressUnchecked(x86_64.VirtAddr.initUnchecked(0)),
+                    paging.Page.fromStartAddressUnchecked(x86_64.VirtAddr.initUnchecked(0xffff_ffff_ffff_f000)),
+                ),
+                frame_allocator,
+            );
+        }
+
+        fn impl_clean_up_range(
+            mapper: *Mapper,
+            range: paging.PageRangeInclusive,
+            frame_allocator: *paging.FrameAllocator,
+        ) void {
+            const self = getSelfPtr(mapper);
+            _ = cleanUp(self.level_4_table, self.context, .four, range, frame_allocator);
+        }
+
+        fn cleanUp(
+            page_table: *paging.PageTable,
+            context: ContextType,
+            level: paging.PageTableLevel,
+            range: paging.PageRangeInclusive,
+            frame_allocator: *paging.FrameAllocator,
+        ) bool {
+            if (range.isEmpty()) return false;
+
+            const table_addr = range.start.start_address.alignDown(level.tableAddressSpaceAlignment());
+
+            const start = range.start.pageTableIndex(level);
+            const end = range.end.pageTableIndex(level);
+
+            while (level.nextLowerLevel()) |next_level| {
+                const offset_per_entry = level.entryAddressSpaceAlignment();
+
+                var i: usize = start.value;
+                while (i < end.value) : (i += 1) {
+                    const entry = &page_table.entries[i];
+
+                    if (page_table_walker.nextTable(context, entry)) |next_table| {
+                        // TODO: This is extremely ugly code, the rust version uses alot of shadowing here...
+                        const start2 = table_addr.value + (offset_per_entry * @as(u64, i));
+                        const end2 = start2 + (offset_per_entry - 1);
+                        const start3 = paging.Page.containingAddress(x86_64.VirtAddr.initUnchecked(start2));
+                        const start4 = paging.Page.containingAddress(x86_64.VirtAddr.initUnchecked(
+                            std.math.max(
+                                start3.start_address.value,
+                                range.start.start_address.value,
+                            ),
+                        ));
+                        const end3 = paging.Page.containingAddress(x86_64.VirtAddr.initUnchecked(end2));
+                        const end4 = paging.Page.containingAddress(x86_64.VirtAddr.initUnchecked(
+                            std.math.min(
+                                end3.start_address.value,
+                                range.end.start_address.value,
+                            ),
+                        ));
+
+                        if (cleanUp(
+                            next_table,
+                            context,
+                            next_level,
+                            paging.PageIterator.rangeInclusive(start4, end4),
+                            frame_allocator,
+                        )) {
+                            const frame = entry.getFrame() catch unreachable;
+                            entry.setUnused();
+                            frame_allocator.deallocate4KiB(frame);
+                        }
+                    } else |_| {}
+                }
+            }
+
+            for (page_table.entries) |entry| {
+                if (!entry.isUnused()) return false;
+            }
+            return true;
+        }
+
         fn makeMapper() Mapper {
             return .{
                 .z_impl_mapToWithTableFlags1GiB = impl_mapToWithTableFlags1GiB,
@@ -733,6 +817,8 @@ pub fn MappedPageTable(
                 .z_impl_setFlagsP2Entry = impl_setFlagsP2Entry,
                 .z_impl_translatePage = impl_translatePage,
                 .z_impl_translate = impl_translate,
+                .z_impl_clean_up = impl_clean_up,
+                .z_impl_clean_up_range = impl_clean_up_range,
             };
         }
 
@@ -743,14 +829,14 @@ pub fn MappedPageTable(
 }
 
 fn PageTableWalker(
-    comptime context_type: type,
-    comptime frame_to_pointer: fn (context_type, phys_frame: paging.PhysFrame) *paging.PageTable,
+    comptime ContextType: type,
+    comptime frame_to_pointer: fn (ContextType, phys_frame: paging.PhysFrame) *paging.PageTable,
 ) type {
     return struct {
         const Self = @This();
 
         /// Internal helper function to get a reference to the page table of the next level.
-        pub fn nextTable(context: context_type, entry: *paging.PageTableEntry) PageTableWalkError!*paging.PageTable {
+        pub fn nextTable(context: ContextType, entry: *paging.PageTableEntry) PageTableWalkError!*paging.PageTable {
             return frame_to_pointer(context, entry.getFrame() catch |err| switch (err) {
                 error.HugeFrame => return PageTableWalkError.MappedToHugePage,
                 error.FrameNotPresent => return PageTableWalkError.NotMapped,
@@ -759,7 +845,7 @@ fn PageTableWalker(
 
         /// Internal helper function to create the page table of the next level if needed.
         pub fn createNextTable(
-            context: context_type,
+            context: ContextType,
             entry: *paging.PageTableEntry,
             insert_flags: paging.PageTableFlags,
             frame_allocator: *paging.FrameAllocator,

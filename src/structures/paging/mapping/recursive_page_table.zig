@@ -676,6 +676,98 @@ pub const RecursivePageTable = struct {
         };
     }
 
+    fn impl_clean_up(
+        mapper: *Mapper,
+        frame_allocator: *paging.FrameAllocator,
+    ) void {
+        impl_clean_up_range(
+            mapper,
+            paging.PageIterator.rangeInclusive(
+                paging.Page.fromStartAddressUnchecked(x86_64.VirtAddr.initUnchecked(0)),
+                paging.Page.fromStartAddressUnchecked(x86_64.VirtAddr.initUnchecked(0xffff_ffff_ffff_f000)),
+            ),
+            frame_allocator,
+        );
+    }
+
+    fn impl_clean_up_range(
+        mapper: *Mapper,
+        range: paging.PageRangeInclusive,
+        frame_allocator: *paging.FrameAllocator,
+    ) void {
+        const self = getSelfPtr(mapper);
+        _ = cleanUp(self.recursive_index, self.level_4_table, .four, range, frame_allocator);
+    }
+
+    fn cleanUp(
+        recursive_index: paging.PageTableIndex,
+        page_table: *paging.PageTable,
+        level: paging.PageTableLevel,
+        range: paging.PageRangeInclusive,
+        frame_allocator: *paging.FrameAllocator,
+    ) bool {
+        if (range.isEmpty()) return false;
+
+        const table_addr = range.start.start_address.alignDown(level.tableAddressSpaceAlignment());
+
+        const start = range.start.pageTableIndex(level);
+        const end = range.end.pageTableIndex(level);
+
+        while (level.nextLowerLevel()) |next_level| {
+            const offset_per_entry = level.entryAddressSpaceAlignment();
+
+            var i: usize = start.value;
+            while (i < end.value) : (i += 1) {
+                if (level == .four and i == recursive_index.value) continue;
+
+                const entry = &page_table.entries[i];
+
+                if (entry.getFrame()) |frame| {
+                    // TODO: This is extremely ugly code, the rust version uses alot of shadowing here...
+                    const start2 = table_addr.value + (offset_per_entry * @as(u64, i));
+                    const end2 = start2 + (offset_per_entry - 1);
+                    const start3 = paging.Page.containingAddress(x86_64.VirtAddr.initUnchecked(start2));
+                    const start4 = paging.Page.containingAddress(x86_64.VirtAddr.initUnchecked(
+                        std.math.max(
+                            start3.start_address.value,
+                            range.start.start_address.value,
+                        ),
+                    ));
+                    const end3 = paging.Page.containingAddress(x86_64.VirtAddr.initUnchecked(end2));
+                    const end4 = paging.Page.containingAddress(x86_64.VirtAddr.initUnchecked(
+                        std.math.min(
+                            end3.start_address.value,
+                            range.end.start_address.value,
+                        ),
+                    ));
+
+                    const next_table = switch (level) {
+                        .one => unreachable,
+                        .two => p1Ptr(.Size4KiB, start4, recursive_index),
+                        .three => p2Ptr(.Size4KiB, start4, recursive_index),
+                        .four => p3Ptr(.Size4KiB, start4, recursive_index),
+                    };
+
+                    if (cleanUp(
+                        recursive_index,
+                        next_table,
+                        next_level,
+                        paging.PageIterator.rangeInclusive(start4, end4),
+                        frame_allocator,
+                    )) {
+                        entry.setUnused();
+                        frame_allocator.deallocate4KiB(frame);
+                    }
+                } else |_| {}
+            }
+        }
+
+        for (page_table.entries) |entry| {
+            if (!entry.isUnused()) return false;
+        }
+        return true;
+    }
+
     fn makeMapper() Mapper {
         return .{
             .z_impl_mapToWithTableFlags1GiB = mapToWithTableFlags1GiB,
@@ -697,6 +789,8 @@ pub const RecursivePageTable = struct {
             .z_impl_setFlagsP2Entry = setFlagsP2Entry,
             .z_impl_translatePage = translatePage,
             .z_impl_translate = translate,
+            .z_impl_clean_up = impl_clean_up,
+            .z_impl_clean_up_range = impl_clean_up_range,
         };
     }
 

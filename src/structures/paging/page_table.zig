@@ -218,6 +218,41 @@ pub const PageTable = extern struct {
     }
 };
 
+pub const PageTableLevel = enum(u6) {
+    /// Represents the level for a page table.
+    one = 1,
+    /// Represents the level for a page directory.
+    two,
+    /// Represents the level for a page-directory pointer.
+    three,
+    /// Represents the level for a page-map level-4.
+    four,
+
+    /// Returns the next lower level or `null` for level 1
+    pub fn nextLowerLevel(self: PageTableLevel) ?PageTableLevel {
+        return switch (self) {
+            .one => null,
+            .two => .one,
+            .three => .two,
+            .four => .three,
+        };
+    }
+
+    /// Returns the alignment for the address space described by a table of this level.
+    pub fn tableAddressSpaceAlignment(self: PageTableLevel) u64 {
+        return @as(u64, 1) << (@enumToInt(self) * 9 + 12);
+    }
+
+    /// Returns the alignment for the address space described by an entry in a table of this level.
+    pub fn entryAddressSpaceAlignment(self: PageTableLevel) u64 {
+        return @as(u64, 1) << (((@enumToInt(self) - 1) * 9) + 12);
+    }
+
+    comptime {
+        std.testing.refAllDecls(@This());
+    }
+};
+
 /// A 9-bit index into a page table.
 pub const PageTableIndex = struct {
     value: u9,

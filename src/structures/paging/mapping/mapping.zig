@@ -127,6 +127,35 @@ pub const Mapper = struct {
         addr: x86_64.VirtAddr,
     ) TranslateError!TranslateResult,
 
+    z_impl_clean_up: fn (
+        mapper: *Mapper,
+        frame_allocator: *paging.FrameAllocator,
+    ) void,
+
+    z_impl_clean_up_range: fn (
+        mapper: *Mapper,
+        range: paging.PageRangeInclusive,
+        frame_allocator: *paging.FrameAllocator,
+    ) void,
+
+    /// Remove all empty P1-P3 tables
+    ///
+    /// The caller has to guarantee that it's safe to free page table frames:
+    /// All page table frames must only be used once and only in this page table
+    /// (e.g. no reference counted page tables or reusing the same page tables for different virtual addresses ranges in the same page table).
+    pub inline fn cleanUp(mapper: *Mapper, frame_allocator: *paging.FrameAllocator) void {
+        mapper.z_impl_clean_up(mapper, frame_allocator);
+    }
+
+    /// Remove all empty P1-P3 tables in a certain range
+    ///
+    /// The caller has to guarantee that it's safe to free page table frames:
+    /// All page table frames must only be used once and only in this page table
+    /// (e.g. no reference counted page tables or reusing the same page tables for different virtual addresses ranges in the same page table).
+    pub inline fn cleanUpRange(mapper: *Mapper, range: paging.PageRangeInclusive, frame_allocator: *paging.FrameAllocator) void {
+        mapper.z_impl_clean_up_range(mapper, range, frame_allocator);
+    }
+
     /// Creates a new mapping in the page table.
     ///
     /// This function might need additional physical frames to create new page tables. These

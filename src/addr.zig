@@ -3,6 +3,7 @@ const bitjuggle = @import("bitjuggle");
 const std = @import("std");
 
 const PageTableIndex = x86_64.structures.paging.PageTableIndex;
+const PageTableLevel = x86_64.structures.paging.PageTableLevel;
 const PageOffset = x86_64.structures.paging.PageOffset;
 
 /// A canonical 64-bit virtual memory address.
@@ -117,6 +118,11 @@ pub const VirtAddr = packed struct {
     /// Returns the 9-bit level 4 page table index.
     pub fn p4Index(self: VirtAddr) PageTableIndex {
         return PageTableIndex.init(@truncate(u9, self.value >> 39));
+    }
+
+    /// Returns the 9-bit level page table index.
+    pub fn pageTableIndex(self: VirtAddr, level: PageTableLevel) PageTableIndex {
+        return PageTableIndex.init(@truncate(u9, self.value >> 12 >> ((@enumToInt(level) - 1) * 9)));
     }
 
     pub fn format(value: VirtAddr, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {

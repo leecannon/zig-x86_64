@@ -6,6 +6,7 @@ pub const PageTableFlags = page_table.PageTableFlags;
 pub const PageTable = page_table.PageTable;
 pub const PageTableIndex = page_table.PageTableIndex;
 pub const PageOffset = page_table.PageOffset;
+pub const PageTableLevel = page_table.PageTableLevel;
 
 const frame = @import("frame.zig");
 

@@ -3,6 +3,7 @@ const bitjuggle = @import("bitjuggle");
 const std = @import("std");
 
 const PageTableIndex = x86_64.structures.paging.PageTableIndex;
+const PageTableLevel = x86_64.structures.paging.PageTableLevel;
 
 const SIZE_4KiB_STR: []const u8 = "4KiB";
 const SIZE_2MiB_STR: []const u8 = "2MiB";
@@ -79,6 +80,11 @@ pub const Page = extern struct {
     /// Returns the level 1 page table index of this page.
     pub fn p1Index(self: Page) PageTableIndex {
         return self.start_address.p1Index();
+    }
+
+    /// Returns the level 3 page table index of this page.
+    pub fn pageTableIndex(self: Page, level: PageTableLevel) PageTableIndex {
+        return self.start_address.pageTableIndex(level);
     }
 
     pub fn format(value: Page, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
