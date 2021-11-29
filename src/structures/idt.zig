@@ -752,6 +752,10 @@ pub const InterruptStackFrame = extern struct {
 };
 
 /// Describes an page fault error code.
+///
+/// This structure is defined by the following manual sections:
+///   * AMD Volume 2: 8.4.2
+///   * Intel Volume 3A: 4.7
 pub const PageFaultErrorCode = packed struct {
     /// If this flag is set, the page fault was caused by a page-protection violation,
     /// else the page fault was caused by a not-present page.
@@ -775,16 +779,33 @@ pub const PageFaultErrorCode = packed struct {
     /// instruction fetch.
     instruction_fetch: bool,
 
-    z_reserved5_7: u3,
-    z_reserved8_15: u8,
-    z_reserved16_31: u16,
+    /// If this flag is set, it indicates that the page fault was caused by a protection key.
+    protection_key: bool,
+
+    /// If this flag is set, it indicates that the page fault was caused by a shadow stack
+    /// access.
+    shadow_stack: bool,
+
+    z_reserved7: u1,
+    z_reserved8_14: u7,
+
+    /// If this flag is set, it indicates that the page fault was caused by SGX access-control
+    /// requirements (Intel-only).
+    sgx: bool,
+
+    z_reserved16_30: u15,
+
+    /// If this flag is set, it indicates that the page fault is a result of the processor
+    /// encountering an RMP violation (AMD-only).
+    rmp: bool,
+
     z_reserved32_63: u32,
 
     const ALL_RESERVED: u64 = blk: {
         var flags = std.mem.zeroes(PageFaultErrorCode);
-        flags.z_reserved5_7 = std.math.maxInt(u3);
-        flags.z_reserved8_15 = std.math.maxInt(u8);
-        flags.z_reserved16_31 = std.math.maxInt(u16);
+        flags.z_reserved7 = std.math.maxInt(u1);
+        flags.z_reserved8_14 = std.math.maxInt(u7);
+        flags.z_reserved16_30 = std.math.maxInt(u15);
         flags.z_reserved32_63 = std.math.maxInt(u32);
         break :blk @bitCast(u64, flags);
     };
@@ -805,7 +826,7 @@ pub const PageFaultErrorCode = packed struct {
             value,
             options,
             writer,
-            &.{ "z_reserved5_7", "z_reserved8_15", "z_reserved16_31", "z_reserved32_63" },
+            &.{ "z_reserved7", "z_reserved8_14", "z_reserved16_30", "z_reserved32_63" },
         );
     }
 
