@@ -15,7 +15,7 @@ pub const PhysFrame = extern struct {
         if (!address.isAligned(size.bytes())) {
             return PhysFrameError.AddressNotAligned;
         }
-        return containingAddress(address);
+        return fromStartAddressUnchecked(address);
     }
 
     /// Returns the frame that starts at the given physical address.
