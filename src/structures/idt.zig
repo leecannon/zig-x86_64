@@ -437,8 +437,8 @@ pub const InterruptDescriptorTable = extern struct {
             19 => &self.simd_floating_point,
             20 => &self.virtualization,
             32...255 => &self.interrupts[index - 32],
-            15, 31, 21...29 => @panic("entry is reserved"),
-            8, 10...14, 17, 30 => @panic("entry has an error code"),
+            15, 31, 21...28 => @panic("entry is reserved"),
+            8, 10...14, 17, 29, 30 => @panic("entry has an error code"),
             18 => @panic("entry is a diverging exception"),
             else => @panic("no entry with that index"),
         };
