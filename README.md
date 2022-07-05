@@ -2,6 +2,10 @@
 
 [![CI](https://github.com/leecannon/zig-x86_64/actions/workflows/main.yml/badge.svg?branch=master)](https://github.com/leecannon/zig-x86_64/actions/workflows/main.yml)
 
+**I don't use this library anymore. I made this as a port of the rust crate but over time I have come to dislike the API.**
+
+**I will continue to ensure it works with zig master but not much more than that.**
+
 This repo contains various functionality required to make an x86_64 kernel (following [Writing an OS in Rust](https://os.phil-opp.com/))
 
 It is mainly a zig reimplementation of the rust crate [x86_64](https://github.com/rust-osdev/x86_64).
