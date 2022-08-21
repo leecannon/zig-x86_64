@@ -18,18 +18,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: goto-bus-stop/setup-zig@v1.3.0
+      - uses: goto-bus-stop/setup-zig@v1
         with:
           version: master
-      - uses: mattnite/setup-gyro@v1.1.0
+      - uses: mattnite/setup-gyro@v1
       
       - name: build
-        run: gyro build
+        run: gyro build -fstage1
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: goto-bus-stop/setup-zig@v1.3.0
+      - uses: goto-bus-stop/setup-zig@v1
         with:
           version: master
       - run: zig fmt --check --ast-check **.zig

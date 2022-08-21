@@ -4,7 +4,7 @@
 
 **I don't use this library anymore. I made this as a port of the rust crate but over time I have come to dislike the API.**
 
-**I will continue to ensure it works with zig master but not much more than that.**
+**As written it does not support self-hosted so will probably be deleted with the release of zig 0.11**
 
 This repo contains various functionality required to make an x86_64 kernel (following [Writing an OS in Rust](https://os.phil-opp.com/))
 
