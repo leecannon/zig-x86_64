@@ -24,7 +24,7 @@ jobs:
       - uses: mattnite/setup-gyro@v1
       
       - name: build
-        run: gyro build -fstage1
+        run: gyro build
   lint:
     runs-on: ubuntu-latest
     steps:
